@@ -20,6 +20,20 @@ import {
   ChevronLeft,
 } from "lucide-react";
 
+const AUDIT_RESULT_KEY = "rankypulse_audit_result";
+
+interface AuditData {
+  url?: string;
+  hostname?: string;
+  scores?: { seo?: number };
+  issues?: Array<{ id: string; title: string; severity: string; category: string }>;
+  summary?: {
+    title?: string;
+    metaDescription?: string;
+    canonical?: string;
+  };
+}
+
 const TABS = [
   { id: "overview", label: "Overview", icon: BarChart3 },
   { id: "title-meta", label: "Title & Meta", icon: FileText },
@@ -71,12 +85,14 @@ const HAS_AUDIT_KEY = "rankypulse_has_audit";
 export default function AuditResultsPage() {
   const searchParams = useSearchParams();
   const tabFromUrl = searchParams.get("tab");
+  const urlParam = searchParams.get("url");
+  const isSample = searchParams.get("sample") === "1";
   const [activeTab, setActiveTab] = useState(
     ["overview", "title-meta", "schema", "issues", "quick-wins"].includes(tabFromUrl || "")
       ? tabFromUrl!
       : "overview"
   );
-  const top5Impact = SCORE_STAGES[SCORE_STAGES.length - 1].score - SCORE_STAGES[0].score;
+  const [auditData, setAuditData] = useState<AuditData | null>(null);
 
   useEffect(() => {
     const t = searchParams.get("tab");
@@ -91,6 +107,46 @@ export default function AuditResultsPage() {
       window.dispatchEvent(new CustomEvent("rankypulse-has-audit"));
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && urlParam && !isSample) {
+      try {
+        const stored = sessionStorage.getItem(AUDIT_RESULT_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored) as AuditData;
+          setAuditData(parsed);
+        }
+      } catch {
+        setAuditData(null);
+      }
+    }
+  }, [urlParam, isSample]);
+
+  const isRealAudit = !!auditData && !isSample;
+  const currentScore = isRealAudit && auditData.scores?.seo != null
+    ? auditData.scores.seo
+    : SCORE_STAGES[0].score;
+  const potentialScore = Math.min(
+    100,
+    currentScore +
+      (isRealAudit && auditData.issues
+        ? auditData.issues.filter((i) => i.severity === "high").length * 12 +
+          auditData.issues.filter((i) => i.severity === "medium").length * 5
+        : SCORE_STAGES[SCORE_STAGES.length - 1].score - SCORE_STAGES[0].score)
+  );
+  const top5Impact = Math.round(potentialScore - currentScore);
+  const displayHost = isRealAudit && auditData.hostname
+    ? auditData.hostname
+    : "example.com";
+  const issues = isRealAudit && auditData.issues?.length
+    ? auditData.issues.map((i, idx) => ({
+        id: idx + 1,
+        title: i.title,
+        severity: i.severity as "high" | "medium" | "low",
+        difficulty: "easy" as const,
+        eta: "5 min",
+      }))
+    : SAMPLE_ISSUES;
 
   return (
     <PageLayout className="pb-32">
@@ -107,17 +163,17 @@ export default function AuditResultsPage() {
         <div className="flex flex-wrap items-center gap-8">
           <div className="flex items-center gap-6">
             <div className="rounded-2xl border-2 border-gray-200/80 bg-white p-6 shadow-lg">
-              <CircularProgress percentage={62} size={120} />
+              <CircularProgress percentage={currentScore} size={120} />
               <p className="mt-2 text-center text-sm font-semibold text-gray-600">Current</p>
             </div>
             <div className="rounded-2xl border-2 border-green-200/80 bg-green-50/30 p-6 shadow-lg">
-              <CircularProgress percentage={88} size={120} />
+              <CircularProgress percentage={potentialScore} size={120} />
               <p className="mt-2 text-center text-sm font-semibold text-green-600">Potential</p>
             </div>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#1B2559] md:text-3xl">example.com</h1>
-            <p className="mt-1 text-gray-600">Sample report</p>
+            <h1 className="text-2xl font-bold text-[#1B2559] md:text-3xl">{displayHost}</h1>
+            <p className="mt-1 text-gray-600">{isRealAudit ? "Audit report" : "Sample report"}</p>
             <p className="mt-4 text-lg font-semibold text-green-600">+{top5Impact} pts after fixes</p>
           </div>
         </div>
@@ -148,7 +204,12 @@ export default function AuditResultsPage() {
         <p className="mb-6 text-gray-600">
           Forecast: current score → after quick wins → after high-priority fixes
         </p>
-        <ScoreImpactChart stages={SCORE_STAGES} />
+        <ScoreImpactChart
+          stages={[
+            { label: "Current", score: currentScore },
+            { label: "Potential", score: potentialScore },
+          ]}
+        />
         <div className="mt-6 rounded-xl bg-gradient-to-r from-[#eff6ff] to-[#e0e7ff] p-4">
           <p className="font-semibold text-[#1B2559]">Top 5 fixes → +{top5Impact} points</p>
         </div>
@@ -198,7 +259,7 @@ export default function AuditResultsPage() {
               </div>
             ) : (
               <ul className="space-y-4">
-                {SAMPLE_ISSUES.map((issue) => (
+                {issues.map((issue) => (
                   <li
                     key={issue.id}
                     className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-4"
@@ -265,7 +326,7 @@ export default function AuditResultsPage() {
         <Card extra="p-6 md:p-8" default={true}>
           <h4 className="mb-6 font-semibold text-[#1B2559]">All issues</h4>
           <ul className="space-y-4">
-            {SAMPLE_ISSUES.map((issue) => (
+            {issues.map((issue) => (
               <li
                 key={issue.id}
                 className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-6 sm:flex-row sm:items-center sm:justify-between"

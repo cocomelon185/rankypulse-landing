@@ -8,10 +8,14 @@ import { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ApiErrorRetry } from "@/components/ui/ApiErrorRetry";
 import { useBilling } from "@/hooks/useBilling";
 import { isValidAuditUrl, normalizeUrl } from "@/lib/url-validation";
-import { Search, FileText } from "lucide-react";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+import { Search, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+
+const AUDIT_RESULT_KEY = "rankypulse_audit_result";
 
 const EXAMPLE_CHIPS = ["example.com", "mysite.com", "project.io"];
 
@@ -20,16 +24,53 @@ function AuditForm() {
   const searchParams = useSearchParams();
   const { plan, getAuditCap } = useBilling();
   const [urlError, setUrlError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   useEffect(() => {
     if (searchParams.get("sample") === "1") {
-      router.replace("/audit/results");
+      router.replace("/audit/results?sample=1");
     }
   }, [router, searchParams]);
+
+  const runAudit = async (url: string) => {
+    setLoading(true);
+    setApiError(null);
+    try {
+      const res = await fetchWithTimeout("/api/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+        timeout: 35000,
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        const msg = json?.error || "Something went wrong. Please try again.";
+        setApiError(msg);
+        toast.error(msg);
+        return;
+      }
+      if (!json?.ok || !json?.data) {
+        setApiError("Invalid response. Please try again.");
+        return;
+      }
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(AUDIT_RESULT_KEY, JSON.stringify(json.data));
+      }
+      router.push(`/audit/results?url=${encodeURIComponent(url)}`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Something went wrong. Please try again.";
+      setApiError(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setUrlError(null);
+    setApiError(null);
     const input = e.currentTarget.elements.namedItem("url") as HTMLInputElement;
     const raw = input?.value?.trim() || "";
     const url = normalizeUrl(raw);
@@ -38,7 +79,7 @@ function AuditForm() {
       toast.error("Invalid URL. Must start with http:// or https://.");
       return;
     }
-    router.push("/audit/results");
+    runAudit(url);
   };
 
   const auditCap = getAuditCap();
@@ -79,6 +120,14 @@ function AuditForm() {
                 {urlError}
               </p>
             )}
+            {apiError && (
+              <div className="mt-4">
+                <ApiErrorRetry
+                  message={apiError}
+                  onRetry={() => setApiError(null)}
+                />
+              </div>
+            )}
             <div className="mt-4 flex flex-wrap gap-2">
               {EXAMPLE_CHIPS.map((chip) => (
                 <button
@@ -94,9 +143,23 @@ function AuditForm() {
                 </button>
               ))}
             </div>
-            <Button type="submit" className="mt-6 w-full" size="lg">
-              <Search className="mr-2 h-5 w-5" />
-              Start Audit
+            <Button
+              type="submit"
+              className="mt-6 w-full"
+              size="lg"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Running audit…
+                </>
+              ) : (
+                <>
+                  <Search className="mr-2 h-5 w-5" />
+                  Start Audit
+                </>
+              )}
             </Button>
           </form>
         </Card>
