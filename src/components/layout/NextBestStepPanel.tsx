@@ -42,7 +42,7 @@ export function NextBestStepPanel() {
         {!hasAudit ? (
           <>
             <p className="text-sm text-gray-600">Run your first audit to get personalized SEO fixes.</p>
-            <Link href="/audit" className="mt-4 block">
+            <Link href="https://rankypulse.com/audit" className="mt-4 block">
               <Button size="sm" className="w-full">
                 <FileSearch className="mr-2 h-4 w-4" />
                 Run your first audit

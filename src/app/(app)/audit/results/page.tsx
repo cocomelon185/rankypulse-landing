@@ -151,7 +151,7 @@ export default function AuditResultsPage() {
   return (
     <PageLayout className="pb-32">
       <Link
-        href="/audit"
+        href="https://rankypulse.com/audit"
         className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-gray-600 transition-colors hover:text-[#4318ff]"
       >
         <ChevronLeft className="h-4 w-4" />
@@ -369,7 +369,7 @@ export default function AuditResultsPage() {
           <p className="text-white/90">Start with the highest-impact changes first</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Link href="/auth/signup">
+          <Link href="https://rankypulse.com/auth/signup">
             <Button
               variant="secondary"
               className="bg-white text-[#4318ff] hover:bg-gray-100"
@@ -377,7 +377,7 @@ export default function AuditResultsPage() {
               Upgrade for more audits
             </Button>
           </Link>
-          <Link href="/audit">
+          <Link href="https://rankypulse.com/audit">
             <Button
               variant="secondary"
               className="border-2 border-white/50 bg-transparent text-white hover:bg-white/10"

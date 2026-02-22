@@ -12,7 +12,7 @@ export function FinalCTASection() {
           Your first audit takes 30 seconds. Your growth starts immediately.
         </p>
         <Link
-          href="/audit"
+          href="https://rankypulse.com/audit"
           className="inline-flex h-14 items-center justify-center rounded-xl bg-white px-10 text-base font-semibold text-[#4318ff] shadow-xl transition-all hover:bg-gray-100"
         >
           Run your first audit

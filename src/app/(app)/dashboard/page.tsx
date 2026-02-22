@@ -118,7 +118,7 @@ export default function DashboardPage() {
               </li>
             ))}
           </ul>
-          <Link href="/audit" className="mt-6 block">
+          <Link href="https://rankypulse.com/audit" className="mt-6 block">
             <Button variant="secondary" size="sm" className="w-full">
               Run new audit
             </Button>
@@ -170,7 +170,7 @@ export default function DashboardPage() {
         <div className="mb-6 flex items-center justify-between">
           <h3 className="font-semibold text-[#1B2559]">Recent audits</h3>
           <Link
-            href="/audit"
+            href="https://rankypulse.com/audit"
             className="flex items-center gap-1 text-sm font-semibold text-[#4318ff] transition-colors hover:underline"
           >
             Run new <ChevronRight className="h-4 w-4" />

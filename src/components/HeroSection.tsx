@@ -51,7 +51,7 @@ export function HeroSection() {
             </p>
             <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
               <Link
-                href="/audit"
+                href="https://rankypulse.com/audit"
                 className="inline-flex h-14 items-center justify-center rounded-xl bg-[#4318ff] px-10 text-base font-semibold text-white shadow-lg transition-all hover:bg-[#3311db] hover:shadow-xl"
               >
                 Run free audit

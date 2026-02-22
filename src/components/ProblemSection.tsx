@@ -30,7 +30,7 @@ export function ProblemSection() {
           </p>
           <div className="flex justify-center">
             <Link
-              href="/audit"
+              href="https://rankypulse.com/audit"
               className="inline-flex h-12 items-center justify-center rounded-xl bg-[#4318ff] px-6 text-base font-semibold text-white shadow-md transition-all hover:bg-[#3311db] hover:shadow-lg"
             >
               Run free audit

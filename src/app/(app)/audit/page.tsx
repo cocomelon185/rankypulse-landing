@@ -167,7 +167,7 @@ function AuditForm() {
         <div className="mt-8 flex flex-col gap-4 text-center sm:flex-row sm:justify-center sm:gap-8">
           <p className="text-sm text-gray-500">
             No signup required for the free trial.{" "}
-            <Link href="/auth/signup" className="font-semibold text-[#4318ff] transition-colors hover:underline">
+            <Link href="https://rankypulse.com/auth/signup" className="font-semibold text-[#4318ff] transition-colors hover:underline">
               Sign up
             </Link>{" "}
             for more audits.

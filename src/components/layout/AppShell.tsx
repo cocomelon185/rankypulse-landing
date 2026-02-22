@@ -66,7 +66,7 @@ function SidebarNavContent() {
       </nav>
       <div className="border-t border-gray-100 space-y-1 p-4">
         <Link
-          href="/pricing"
+          href="https://rankypulse.com/pricing"
           className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-[#4318ff]/10 to-[#7551ff]/10 px-4 py-3 text-sm font-semibold text-[#4318ff] transition-all hover:from-[#4318ff]/20 hover:to-[#7551ff]/20"
         >
           <Zap className="h-5 w-5" />

@@ -26,7 +26,7 @@ export function PricingTeaserSection() {
             </span>
           </div>
           <Link
-            href="/pricing"
+            href="https://rankypulse.com/pricing"
             className="inline-flex h-12 items-center justify-center rounded-xl bg-[#4318ff] px-8 text-base font-semibold text-white transition-all hover:bg-[#3311db]"
           >
             View pricing

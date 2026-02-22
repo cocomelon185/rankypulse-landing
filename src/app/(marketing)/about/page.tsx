@@ -52,7 +52,7 @@ export default function AboutPage() {
           </div>
 
           <div className="mt-12 flex flex-wrap gap-4">
-            <Link href="/audit">
+            <Link href="https://rankypulse.com/audit">
               <Button size="lg">Run Free Audit</Button>
             </Link>
             <Link href="/">

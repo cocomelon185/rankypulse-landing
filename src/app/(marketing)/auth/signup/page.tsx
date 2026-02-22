@@ -34,7 +34,7 @@ export default function SignUpPage() {
             <div className="mt-6 space-y-2 text-center">
               <p className="text-sm text-gray-600">
                 Already have an account?{" "}
-                <Link href="/auth/signin" className="font-semibold text-[#4318ff] transition-colors hover:underline">
+                <Link href="https://rankypulse.com/auth/signin" className="font-semibold text-[#4318ff] transition-colors hover:underline">
                   Sign in
                 </Link>
               </p>

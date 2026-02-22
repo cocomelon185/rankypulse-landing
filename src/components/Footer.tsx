@@ -22,19 +22,19 @@ export function Footer() {
               Features
             </Link>
             <Link
-              href="/pricing"
+              href="https://rankypulse.com/pricing"
               className="text-sm text-gray-600 transition-colors hover:text-[#4318ff]"
             >
               Pricing
             </Link>
             <Link
-              href="/audit"
+              href="https://rankypulse.com/audit"
               className="text-sm text-gray-600 transition-colors hover:text-[#4318ff]"
             >
               Run audit
             </Link>
             <Link
-              href="/auth/signin"
+              href="https://rankypulse.com/auth/signin"
               className="text-sm text-gray-600 transition-colors hover:text-[#4318ff]"
             >
               Sign in

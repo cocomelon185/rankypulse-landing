@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
 
             <p className="mt-6 text-center text-sm text-gray-600">
               Remember your password?{" "}
-              <Link href="/auth/signin" className="font-semibold text-[#4318ff] transition-colors hover:underline">
+              <Link href="https://rankypulse.com/auth/signin" className="font-semibold text-[#4318ff] transition-colors hover:underline">
                 Sign in
               </Link>
             </p>
