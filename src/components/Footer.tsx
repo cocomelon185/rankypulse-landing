@@ -1,21 +1,26 @@
-"use client";
-
 import Link from "next/link";
-import { BarChart3 } from "lucide-react";
+import { Zap } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="border-t border-gray-200 bg-white py-12 px-4 shadow-[0_-4px_6px_-1px_rgba(112,144,176,0.04)] md:px-8">
+    <footer className="border-t border-gray-200 bg-white py-10 px-4 md:px-8" role="contentinfo">
       <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
+        <div className="flex flex-col items-center gap-6 text-center md:flex-row md:justify-between md:text-left">
           <Link
             href="/"
-            className="flex items-center gap-2 text-sm font-semibold text-[#1B2559]"
+            className="flex items-center gap-2 text-lg font-bold text-[#1B2559]"
+            aria-label="RankyPulse home"
           >
-            <BarChart3 className="h-5 w-5 text-[#4318ff]" />
+            <Zap className="h-5 w-5 text-[#4318ff]" />
             RankyPulse
           </Link>
-          <div className="flex gap-6 md:gap-8">
+          <div className="flex flex-wrap justify-center gap-6 md:gap-8">
+            <Link
+              href="/#features"
+              className="text-sm text-gray-600 transition-colors hover:text-[#4318ff]"
+            >
+              Features
+            </Link>
             <Link
               href="/pricing"
               className="text-sm text-gray-600 transition-colors hover:text-[#4318ff]"
@@ -23,16 +28,10 @@ export function Footer() {
               Pricing
             </Link>
             <Link
-              href="/about"
-              className="text-sm text-gray-600 transition-colors hover:text-[#4318ff]"
-            >
-              About
-            </Link>
-            <Link
               href="/audit"
               className="text-sm text-gray-600 transition-colors hover:text-[#4318ff]"
             >
-              Run Audit
+              Run audit
             </Link>
             <Link
               href="/auth/signin"
@@ -42,7 +41,10 @@ export function Footer() {
             </Link>
           </div>
         </div>
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-sm text-gray-500 md:text-left">
+          Built for founders, marketers, and agencies who want real SEO results — not just reports.
+        </p>
+        <p className="mt-4 text-center text-sm text-gray-400 md:text-left">
           © {new Date().getFullYear()} RankyPulse. All rights reserved.
         </p>
       </div>
