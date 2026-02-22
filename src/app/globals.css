@@ -2,25 +2,130 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1a202c;
+  --brand-primary: #4318ff;
+  --brand-secondary: #7551ff;
+  --brand-accent: #06b6d4;
+  --brand-warning: #f59e0b;
+  --gradient-hero: linear-gradient(135deg, #f6f8fb 0%, #e9ecf5 50%, #f0f4ff 100%);
+  --gradient-cta: linear-gradient(135deg, #4318ff 0%, #7551ff 50%, #a78bfa 100%);
+  --gradient-card: linear-gradient(135deg, #ffffff 0%, #fafbff 100%);
+  --bg-subtle: #f8fafc;
+  --bg-dotted: radial-gradient(circle at 1px 1px, rgba(67, 24, 255, 0.06) 1px, transparent 0);
+  --bg-dotted-size: 24px;
+  --card-shadow: 14px 17px 40px 4px rgba(112, 144, 176, 0.08);
+  --card-shadow-hover: 14px 17px 40px 4px rgba(112, 144, 176, 0.15);
+  --spacing-section: 4rem;
+  --spacing-section-md: 6rem;
+  --radius-card: 1.25rem;
+  --radius-button: 0.75rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-heading: var(--font-sora), system-ui, sans-serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Horizon UI design tokens */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #4318ff;
+  --color-brand-600: #3311db;
+  --color-brand-700: #2d1b9e;
+  --color-accent-500: #06b6d4;
+  --color-accent-400: #22d3ee;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-success-500: #10b981;
+  --color-success-400: #34d399;
+  --color-navy-600: #24388a;
+  --color-navy-700: #1B2559;
+  --color-navy-800: #111c44;
+  --color-navy-900: #0b1437;
+  --shadow-3xl: 14px 17px 40px 4px rgba(112, 144, 176, 0.08);
+  --shadow-card: 0 4px 6px -1px rgba(112, 144, 176, 0.06), 0 2px 4px -2px rgba(112, 144, 176, 0.05);
+  --shadow-card-hover: 14px 17px 40px 4px rgba(112, 144, 176, 0.15);
+  --radius-card: 1.25rem;
+  --radius-button: 0.75rem;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
 }
+
+/* Premium design system utilities */
+.page-shell {
+  min-height: 100vh;
+  background: var(--bg-subtle);
+  background-image: var(--bg-dotted);
+  background-size: var(--bg-dotted-size);
+}
+
+.section-padding {
+  padding-top: var(--spacing-section);
+  padding-bottom: var(--spacing-section);
+}
+
+@media (min-width: 768px) {
+  .section-padding {
+    padding-top: var(--spacing-section-md);
+    padding-bottom: var(--spacing-section-md);
+  }
+}
+
+.card-surface {
+  background: var(--gradient-card);
+  border: 1px solid rgba(112, 144, 176, 0.08);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card-surface:hover {
+  box-shadow: var(--card-shadow-hover);
+}
+
+.hero-gradient {
+  background: var(--gradient-hero);
+}
+
+.cta-gradient {
+  background: var(--gradient-cta);
+}
+
+.text-page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-navy-700);
+}
+
+.text-section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-navy-700);
+}
+
+.text-body {
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.text-helper {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+/* Badge variants */
+.badge-free { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); color: #047857; }
+.badge-starter { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); color: #1d4ed8; }
+.badge-pro { background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); color: #5b21b6; }
+.badge-locked { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); color: #b45309; }
+.badge-popular { background: linear-gradient(135deg, #4318ff 0%, #7551ff 100%); color: white; }
+.badge-new { background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%); color: white; }
