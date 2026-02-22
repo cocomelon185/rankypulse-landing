@@ -1,6 +1,11 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://rankypulse.com/api/:path*" }
+    { "source": "/api/:path*", "destination": "https://rankypulse.com/api/:path*" },
+    { "source": "/audit/:path*", "destination": "https://rankypulse.com/audit/:path*" },
+    { "source": "/pricing", "destination": "https://rankypulse.com/pricing" },
+    { "source": "/auth/:path*", "destination": "https://rankypulse.com/auth/:path*" },
+    { "source": "/dashboard", "destination": "https://rankypulse.com/dashboard" },
+    { "source": "/billing", "destination": "https://rankypulse.com/billing" }
   ],
   "headers": [
     {
