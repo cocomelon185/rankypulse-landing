@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og.jpg",
+        url: "/og",
         width: 1200,
         height: 630,
         alt: "RankyPulse — Instant SEO Audit",
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    images: ["/og.jpg"],
+    images: ["/og"],
   },
 };
 

@@ -17,11 +17,15 @@ export async function generateMetadata(): Promise<Metadata> {
       url: "/auth/signin",
       siteName: "RankyPulse",
       type: "website",
+      images: [
+        { url: "/og/signin", width: 1200, height: 630, alt: "RankyPulse — Sign In" },
+      ],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title,
       description,
+      images: ["/og/signin"],
     },
   };
 }
