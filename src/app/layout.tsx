@@ -1,41 +1,37 @@
 import type { Metadata } from "next";
-import { Inter, Sora } from "next/font/google";
-import { Toaster } from "sonner";
 import "./globals.css";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
-
-const sora = Sora({
-  variable: "--font-sora",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://rankypulse.com"),
-  robots: { index: true, follow: true },
-  title: "RankyPulse | Fix Your SEO in Minutes — Not Weeks",
+  title: {
+    default: "RankyPulse | Instant SEO Audit & Fix List",
+    template: "%s | RankyPulse",
+  },
   description:
-    "RankyPulse audits your site, shows exactly what to fix, and predicts how your score improves. Copy-ready SEO fixes, AI competitor insights, discoverability score tracking.",
+    "Run a free SEO audit in ~30 seconds. Get prioritized issues, clear fixes, and a score you can track over time.",
+  robots: { index: true, follow: true },
   openGraph: {
-    title: "RankyPulse | Fix Your SEO in Minutes",
-    description: "AI-powered SEO audits with actionable fixes and score tracking.",
+    siteName: "RankyPulse",
+    type: "website",
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "RankyPulse — Instant SEO Audit",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og.png"],
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${sora.variable} antialiased`}>
-        {children}
-        <Toaster position="top-right" richColors closeButton />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
