@@ -5,12 +5,16 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://rankypulse.com"),
   title: {
     default: "RankyPulse | Instant SEO Audit & Fix List",
-    template: "%s | RankyPulse",
+    template: "%s",
   },
   description:
     "Run a free SEO audit in ~30 seconds. Get prioritized issues, clear fixes, and a score you can track over time.",
   robots: { index: true, follow: true },
   openGraph: {
+    title: "RankyPulse | Instant SEO Audit & Fix List",
+    description:
+      "Run a free SEO audit in ~30 seconds. Get prioritized issues, clear fixes, and a score you can track over time.",
+    url: "/",
     siteName: "RankyPulse",
     type: "website",
     images: [
@@ -24,6 +28,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
+    title: "RankyPulse | Instant SEO Audit & Fix List",
+    description:
+      "Run a free SEO audit in ~30 seconds. Get prioritized issues, clear fixes, and a score you can track over time.",
     images: ["/og.jpg"],
   },
 };
