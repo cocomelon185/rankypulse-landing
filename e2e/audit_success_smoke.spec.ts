@@ -11,11 +11,7 @@ test.describe("Audit: success smoke", () => {
     // Wait for results page
     await expect(page).toHaveURL(/\/audit\/results/, { timeout: 15000 });
 
-    // Dismiss email capture modal if present (unsigned users)
-    await page
-      .getByRole("button", { name: /not now/i })
-      .click({ timeout: 1500 })
-      .catch(() => {});
+    // Email capture card is inline; no modal to dismiss
 
     // Stable assertions: heading and site URL (avoids flaky tab-label matches)
     await expect(
@@ -27,13 +23,12 @@ test.describe("Audit: success smoke", () => {
     await expect(page.getByText("Current score")).toBeVisible();
   });
 
-  test("results page shows Save this report email capture for unsigned users", async ({
+  test("results page shows Unlock full report email capture for unsigned users", async ({
     page,
   }) => {
     await page.goto("/audit/results?sample=1");
-    await expect(page.getByText("Save this report")).toBeVisible();
+    await expect(page.getByText(/email me the full report/i)).toBeVisible();
     await expect(page.getByPlaceholder("you@example.com")).toBeVisible();
-    await expect(page.getByRole("button", { name: /email me the report/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /not now/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /send full report/i })).toBeVisible();
   });
 });
