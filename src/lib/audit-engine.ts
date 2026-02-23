@@ -1,188 +1,206 @@
-/**
- * Lightweight audit engine: fetch HTML and run basic SEO checks.
- */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 
-const MAX_BODY_SIZE = 2 * 1024 * 1024; // 2MB
-const FETCH_TIMEOUT_MS = 30_000;
+export type IssueSeverity = "LOW" | "MED" | "HIGH";
 
-export interface AuditIssue {
+export type AuditIssue = {
   id: string;
-  title: string;
-  severity: "high" | "medium" | "low";
-  category: string;
-  detail?: string;
-}
+  sev: IssueSeverity;
+  msg: string;
+};
 
-export interface AuditScores {
-  seo: number;
-  performance?: number;
-  accessibility?: number;
-}
+export type AuditChecks = {
+  fetch_ok: boolean;
+  https: boolean;
+  title_present: boolean;
+  meta_description_present: boolean;
+  h1_present: boolean;
+  canonical_present: boolean;
+  robots_noindex: boolean;
+  images_missing_alt: number;
+};
 
-export interface AuditResult {
+export type AuditResult = {
   url: string;
-  hostname: string;
-  scores: AuditScores;
+  fetchedAt: string;
+  durationMs: number;
+  status: number;
+  score: number;
+  checks: AuditChecks;
   issues: AuditIssue[];
-  summary: {
-    title?: string;
-    metaDescription?: string;
-    canonical?: string;
-    h1Count: number;
-    imagesWithAlt: number;
-    imagesWithoutAlt: number;
-    linkCount: number;
-  };
+};
+
+function stripTags(html: string) {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<\/?[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-function extractText(html: string, regex: RegExp): string | undefined {
-  const m = html.match(regex);
-  return m ? m[1].trim() : undefined;
+function getFirstMatch(html: string, re: RegExp) {
+  const m = html.match(re);
+  return m && m[1] ? m[1].trim() : "";
 }
 
-export async function runAudit(url: string): Promise<AuditResult> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+function countMatches(html: string, re: RegExp) {
+  const m = html.match(re);
+  return m ? m.length : 0;
+}
+
+async function fetchHtml(url: string, timeoutMs = 15000) {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(new Error("Fetch timeout")), timeoutMs);
 
   try {
     const res = await fetch(url, {
       method: "GET",
-      signal: controller.signal,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; RankyPulse/1.0; +https://rankypulse.com)",
-      },
       redirect: "follow",
-    });
-    clearTimeout(timeout);
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
-
-    const contentType = res.headers.get("content-type") || "";
-    if (!contentType.includes("text/html")) {
-      throw new Error("URL did not return HTML");
-    }
-
-    const contentLength = parseInt(res.headers.get("content-length") || "0", 10);
-    if (contentLength > MAX_BODY_SIZE) {
-      throw new Error("Response too large");
-    }
-
-    const h = await res.text();
-    if (h.length > MAX_BODY_SIZE) {
-      throw new Error("Response too large");
-    }
-
-    const title = extractText(h, /<title[^>]*>([\s\S]*?)<\/title>/i);
-    const metaDesc =
-      extractText(
-        h,
-        /<meta\s+[^>]*(?:name|property)=["'](?:description|og:description)["'][^>]*content=["']([^"']*)["']/i
-      ) ||
-      extractText(
-        h,
-        /<meta\s+[^>]*content=["']([^"']*)["'][^>]*(?:name|property)=["'](?:description|og:description)["']/i
-      );
-    const canonical =
-      extractText(
-        h,
-        /<link\s+[^>]*rel=["']canonical["'][^>]*href=["']([^"']*)["']/i
-      ) ||
-      extractText(
-        h,
-        /<link\s+[^>]*href=["']([^"']*)["'][^>]*rel=["']canonical["']/i
-      );
-    const h1Matches = h.match(/<h1[^>]*>[\s\S]*?<\/h1>/gi) || [];
-    const h1Count = h1Matches.length;
-    const imgTags = h.match(/<img[^>]*>/gi) || [];
-    let imagesWithAlt = 0;
-    let imagesWithoutAlt = 0;
-    for (const img of imgTags) {
-      if (
-        /alt\s*=\s*["'][^"']*["']/i.test(img) ||
-        /alt\s*=\s*[\w-]+/i.test(img)
-      ) {
-        imagesWithAlt++;
-      } else {
-        imagesWithoutAlt++;
-      }
-    }
-    const linkCount = (h.match(/<a\s+[^>]*href\s*=/gi) || []).length;
-
-    const issues: AuditIssue[] = [];
-    if (!title || !title.trim()) {
-      issues.push({
-        id: "missing_title",
-        title: "Meta title missing",
-        severity: "high",
-        category: "SEO",
-      });
-    }
-    if (!metaDesc || !metaDesc.trim()) {
-      issues.push({
-        id: "missing_meta_description",
-        title: "Meta description missing",
-        severity: "high",
-        category: "SEO",
-      });
-    }
-    if (!canonical || !canonical.trim()) {
-      issues.push({
-        id: "missing_canonical",
-        title: "Canonical URL missing",
-        severity: "medium",
-        category: "SEO",
-      });
-    }
-    if (h1Count === 0) {
-      issues.push({
-        id: "missing_h1",
-        title: "No H1 heading found",
-        severity: "high",
-        category: "SEO",
-      });
-    } else if (h1Count > 1) {
-      issues.push({
-        id: "multiple_h1",
-        title: `Multiple H1 headings (${h1Count})`,
-        severity: "medium",
-        category: "SEO",
-      });
-    }
-    const totalImages = imagesWithAlt + imagesWithoutAlt;
-    if (totalImages > 0 && imagesWithoutAlt > 0) {
-      issues.push({
-        id: "images_missing_alt",
-        title: `${imagesWithoutAlt} image(s) missing alt attribute`,
-        severity: imagesWithoutAlt > 3 ? "high" : "medium",
-        category: "Accessibility",
-      });
-    }
-
-    const highCount = issues.filter((i) => i.severity === "high").length;
-    const medCount = issues.filter((i) => i.severity === "medium").length;
-    const baseScore = 100 - highCount * 15 - medCount * 5;
-    const seoScore = Math.max(0, Math.min(100, baseScore));
-
-    const parsedUrl = new URL(url);
-    return {
-      url,
-      hostname: parsedUrl.hostname,
-      scores: { seo: seoScore },
-      issues,
-      summary: {
-        title: title || undefined,
-        metaDescription: metaDesc || undefined,
-        canonical: canonical || undefined,
-        h1Count,
-        imagesWithAlt,
-        imagesWithoutAlt,
-        linkCount,
+      cache: "no-store",
+      signal: ac.signal,
+      headers: {
+        "user-agent":
+          "RankyPulseAuditBot/1.0 (+https://rankypulse.com) Mozilla/5.0",
+        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       },
-    };
+    });
+
+    const status = res.status;
+    const ct = res.headers.get("content-type") || "";
+    const text = await res.text();
+
+    return { status, contentType: ct, html: text };
+  } catch (e: any) {
+    const msg =
+      e?.name === "AbortError"
+        ? "fetch timeout"
+        : e?.cause?.message || e?.message || String(e);
+    throw new Error(`fetch failed: ${msg}`);
   } finally {
-    clearTimeout(timeout);
+    clearTimeout(t);
   }
+}
+
+export async function runAudit(url: string): Promise<AuditResult> {
+  const started = Date.now();
+  const issues: AuditIssue[] = [];
+
+  const https = /^https:\/\//i.test(url);
+
+  if (!https) {
+    issues.push({ id: "https", sev: "MED", msg: "URL is not HTTPS" });
+  }
+
+  const { status, contentType, html } = await fetchHtml(url, 15000);
+
+  if (status < 200 || status >= 400) {
+    issues.push({
+      id: "http_status",
+      sev: "HIGH",
+      msg: `Non-success HTTP status: ${status}`,
+    });
+  }
+
+  if (!/text\/html/i.test(contentType) && html.length < 50) {
+    issues.push({
+      id: "not_html",
+      sev: "MED",
+      msg: "Response does not look like HTML content",
+    });
+  }
+
+  const title = getFirstMatch(html, /<title[^>]*>([\s\S]*?)<\/title>/i);
+  const metaDesc = getFirstMatch(
+    html,
+    /<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["'][^>]*>/i
+  );
+  const h1 = getFirstMatch(html, /<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  const canonical = getFirstMatch(
+    html,
+    /<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["'][^>]*>/i
+  );
+  const robots = getFirstMatch(
+    html,
+    /<meta[^>]+name=["']robots["'][^>]+content=["']([^"']+)["'][^>]*>/i
+  );
+
+  const imagesMissingAlt = (() => {
+    const imgTags = html.match(/<img\b[^>]*>/gi) || [];
+    let missing = 0;
+    for (const tag of imgTags) {
+      if (!/\balt\s*=\s*["'][^"']*["']/i.test(tag)) missing += 1;
+    }
+    return missing;
+  })();
+
+  if (!title) issues.push({ id: "title", sev: "HIGH", msg: "Missing <title>" });
+  if (!metaDesc)
+    issues.push({
+      id: "meta_description",
+      sev: "MED",
+      msg: 'Missing meta description: <meta name="description">',
+    });
+  if (!h1) issues.push({ id: "h1", sev: "MED", msg: "Missing <h1>" });
+  if (!canonical)
+    issues.push({
+      id: "canonical",
+      sev: "MED",
+      msg: "Missing canonical link tag",
+    });
+
+  const robotsNoindex = /noindex/i.test(robots || "");
+  if (robotsNoindex) {
+    issues.push({
+      id: "noindex",
+      sev: "HIGH",
+      msg: "Page is set to noindex in robots meta",
+    });
+  }
+
+  if (imagesMissingAlt > 0) {
+    issues.push({
+      id: "img_alt",
+      sev: "LOW",
+      msg: `${imagesMissingAlt} image(s) missing alt attribute`,
+    });
+  }
+
+  const text = stripTags(html);
+  const wordCount = text ? text.split(" ").filter(Boolean).length : 0;
+  if (wordCount < 150) {
+    issues.push({
+      id: "thin_content",
+      sev: "LOW",
+      msg: `Thin content detected (~${wordCount} words)`,
+    });
+  }
+
+  const checks: AuditChecks = {
+    fetch_ok: true,
+    https,
+    title_present: !!title,
+    meta_description_present: !!metaDesc,
+    h1_present: !!h1,
+    canonical_present: !!canonical,
+    robots_noindex: robotsNoindex,
+    images_missing_alt: imagesMissingAlt,
+  };
+
+  let score = 100;
+  for (const it of issues) {
+    if (it.sev === "HIGH") score -= 20;
+    if (it.sev === "MED") score -= 10;
+    if (it.sev === "LOW") score -= 5;
+  }
+  if (score < 0) score = 0;
+
+  return {
+    url,
+    fetchedAt: new Date().toISOString(),
+    durationMs: Date.now() - started,
+    status,
+    score,
+    checks,
+    issues,
+  };
 }

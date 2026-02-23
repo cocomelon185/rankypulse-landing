@@ -17,11 +17,12 @@ import {
   X,
   CreditCard,
 } from "lucide-react";
-import { NextBestStepPanel } from "@/components/layout/NextBestStepPanel";
+import NextBestStepPanel from "@/components/layout/NextBestStepPanel";
 
 const SIDEBAR_LINKS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/audit", label: "Run Audit", icon: FileSearch },
+  { href: "/dashboard?view=quickwins", label: "Quick Wins", icon: Zap },
+  { href: "/audit", label: "Start audit", icon: FileSearch },
   { href: "/features/discoverability", label: "Discoverability", icon: BarChart3 },
   { href: "/features/growth", label: "Growth Tracker", icon: TrendingUp },
   { href: "/features/competitors", label: "Competitors", icon: Users },
@@ -45,7 +46,8 @@ function SidebarNavContent() {
           Main
         </p>
         {SIDEBAR_LINKS.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href || pathname.startsWith(href + "/");
+          const p = pathname ?? "";
+          const isActive = p === href || p.startsWith(href + "/");
           return (
             <Link
               key={href}

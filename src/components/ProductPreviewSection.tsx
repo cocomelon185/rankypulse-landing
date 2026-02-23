@@ -21,10 +21,10 @@ export function ProductPreviewSection() {
     <section className="py-14 px-4 md:px-8 bg-[#f8fafc]" aria-labelledby="product-preview-heading">
       <div className="mx-auto max-w-7xl">
         <h2 id="product-preview-heading" className="mb-3 text-center text-2xl font-bold text-[#1B2559] md:text-3xl">
-          Your SEO command center
+          Your SEO score, issues, and action plan — in one place
         </h2>
         <p className="mx-auto mb-6 max-w-2xl text-center text-base text-gray-600 md:text-lg">
-          Track issues, prioritize fixes, and monitor improvements — all in one place.
+          One dashboard. Clear priorities. Track progress over time.
         </p>
         <Card extra="overflow-hidden border-2 border-gray-200/80 shadow-[14px_17px_40px_4px_rgba(112,144,176,0.12)]" default={true}>
           <div className="grid gap-8 p-8 md:grid-cols-3 md:p-10">

@@ -8,19 +8,32 @@ test.describe("Audit: success smoke", () => {
     await page.locator("input[name='url']").fill("https://example.com");
     await page.getByRole("button", { name: /start audit/i }).click();
 
-    // Brief loading may appear (button disabled or loading text)
-    // Results page is the main assertion
-    // Expect results container (score/summary/issue list) - on /audit/results
+    // Wait for results page
     await expect(page).toHaveURL(/\/audit\/results/, { timeout: 15000 });
 
-    // Results page: score, summary, and at least one known category
-    await expect(
-      page.getByText(/current|potential|score/i).first()
-    ).toBeVisible({ timeout: 5000 });
+    // Dismiss email capture modal if present (unsigned users)
+    await page
+      .getByRole("button", { name: /not now/i })
+      .click({ timeout: 1500 })
+      .catch(() => {});
 
-    // At least one known category: Issues, Overview, Title & Meta, Schema, Quick Wins
+    // Stable assertions: heading and site URL (avoids flaky tab-label matches)
     await expect(
-      page.getByText(/issues|overview|title|meta|schema|quick wins/i).first()
+      page.getByRole("heading", { name: /audit results/i })
+    ).toBeVisible({ timeout: 5000 });
+    await expect(
+      page.getByText(/Site:\s*https:\/\/example\.com/i)
     ).toBeVisible();
+    await expect(page.getByText("Current score")).toBeVisible();
+  });
+
+  test("results page shows Save this report email capture for unsigned users", async ({
+    page,
+  }) => {
+    await page.goto("/audit/results?sample=1");
+    await expect(page.getByText("Save this report")).toBeVisible();
+    await expect(page.getByPlaceholder("you@example.com")).toBeVisible();
+    await expect(page.getByRole("button", { name: /email me the report/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /not now/i })).toBeVisible();
   });
 });

@@ -129,3 +129,11 @@ body {
 .badge-locked { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); color: #b45309; }
 .badge-popular { background: linear-gradient(135deg, #4318ff 0%, #7551ff 100%); color: white; }
 .badge-new { background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%); color: white; }
+
+@keyframes shimmer {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(200%); }
+}
+.animate-shimmer {
+  animation: shimmer 1.8s ease-in-out infinite;
+}

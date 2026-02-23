@@ -22,19 +22,19 @@ export function Footer() {
               Features
             </Link>
             <Link
-              href="https://rankypulse.com/pricing"
+              href="/pricing"
               className="text-sm text-gray-600 transition-colors hover:text-[#4318ff]"
             >
               Pricing
             </Link>
             <Link
-              href="https://rankypulse.com/audit"
+              href="/audit"
               className="text-sm text-gray-600 transition-colors hover:text-[#4318ff]"
             >
-              Run audit
+              Run free audit
             </Link>
             <Link
-              href="https://rankypulse.com/auth/signin"
+              href="/auth/signin"
               className="text-sm text-gray-600 transition-colors hover:text-[#4318ff]"
             >
               Sign in
@@ -42,7 +42,7 @@ export function Footer() {
           </div>
         </div>
         <p className="mt-6 text-center text-sm text-gray-500 md:text-left">
-          Built for founders, marketers, and agencies who want real SEO results — not just reports.
+          Built for founders, marketers, and agencies who want actionable SEO — not just scores.
         </p>
         <p className="mt-4 text-center text-sm text-gray-400 md:text-left">
           © {new Date().getFullYear()} RankyPulse. All rights reserved.

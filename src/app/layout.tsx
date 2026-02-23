@@ -14,6 +14,8 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://rankypulse.com"),
+  robots: { index: true, follow: true },
   title: "RankyPulse | Fix Your SEO in Minutes — Not Weeks",
   description:
     "RankyPulse audits your site, shows exactly what to fix, and predicts how your score improves. Copy-ready SEO fixes, AI competitor insights, discoverability score tracking.",

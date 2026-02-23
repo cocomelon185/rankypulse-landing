@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Smoke: Key routes load", () => {
   test("landing page /", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("h1")).toContainText(/Find the SEO mistakes|30 seconds/i);
+    await expect(page.locator("h1")).toContainText(/SEO audit|rankings|instant/i);
   });
 
   test("audit page", async ({ page }) => {

@@ -21,7 +21,7 @@ export function BeforeAfterSection() {
     <section className="py-14 px-4 md:px-8" aria-labelledby="before-after-heading">
       <div className="mx-auto max-w-7xl">
         <h2 id="before-after-heading" className="mb-6 text-center text-2xl font-bold text-[#1B2559] md:text-3xl">
-          See what RankyPulse finds that others miss
+          What you fix with RankyPulse vs. what other tools leave behind
         </h2>
         <div className="grid gap-6 lg:grid-cols-2">
           <Card extra="p-6 border-2 border-red-200/60" default={true}>

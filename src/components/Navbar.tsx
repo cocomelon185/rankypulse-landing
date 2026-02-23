@@ -40,17 +40,17 @@ export function Navbar() {
             </Link>
           ))}
           <Link
-            href="https://rankypulse.com/auth/signin"
+            href="/auth/signin"
             className="rounded-xl px-4 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
           >
             Sign in
           </Link>
           <Link
-            href="https://rankypulse.com/audit"
+            href="/audit"
             className="shrink-0 rounded-xl bg-[#4318ff] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-[#3311db] hover:shadow-lg"
-            aria-label="Run audit"
+            aria-label="Scan your site now"
           >
-            Run audit
+            Run My Free Audit
           </Link>
         </div>
       </div>

@@ -1,11 +1,9 @@
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/HeroSection";
-import { SocialProofSection } from "@/components/SocialProofSection";
-import { BeforeAfterSection } from "@/components/BeforeAfterSection";
-import { ProblemSection } from "@/components/ProblemSection";
-import { HowItWorksSection } from "@/components/HowItWorksSection";
+import { TrustStrip } from "@/components/TrustStrip";
+import { ReportPreviewSection } from "@/components/ReportPreviewSection";
 import { FeaturesSection } from "@/components/FeaturesSection";
-import { ProductPreviewSection } from "@/components/ProductPreviewSection";
+import { ProblemSection } from "@/components/ProblemSection";
 import { PricingTeaserSection } from "@/components/PricingTeaserSection";
 import { FinalCTASection } from "@/components/FinalCTASection";
 import { Footer } from "@/components/Footer";
@@ -16,12 +14,10 @@ export default function Home() {
       <Navbar />
       <main>
         <HeroSection />
-        <SocialProofSection />
-        <BeforeAfterSection />
-        <ProblemSection />
-        <HowItWorksSection />
+        <TrustStrip />
+        <ReportPreviewSection />
         <FeaturesSection />
-        <ProductPreviewSection />
+        <ProblemSection />
         <PricingTeaserSection />
         <FinalCTASection />
       </main>

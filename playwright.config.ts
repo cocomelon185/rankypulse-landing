@@ -1,18 +1,21 @@
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig } from "@playwright/test";
+
+const PORT = Number(process.env.PLAYWRIGHT_PORT ?? 3001);
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: "html",
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
+  retries: 0,
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000",
-    trace: "on-first-retry",
+    baseURL: BASE_URL,
+    trace: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: process.env.CI
-    ? { command: "npm run build && npm run start", url: "http://localhost:3000", reuseExistingServer: false, timeout: 120000 }
-    : undefined,
+  webServer: {
+    command: `NODE_OPTIONS="--max-old-space-size=4096" NEXT_TELEMETRY_DISABLED=1 npm run build && NODE_OPTIONS="--max-old-space-size=4096" NEXT_TELEMETRY_DISABLED=1 npx next start -p ${PORT}`,
+    url: BASE_URL,
+    reuseExistingServer: true,
+    timeout: 180_000,
+  },
 });
