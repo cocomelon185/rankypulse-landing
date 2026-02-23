@@ -1,14 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Card } from "@/components/horizon";
 import { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Chrome, HelpCircle } from "lucide-react";
+import { track } from "@/lib/analytics";
 
 export default function SignUpClientPage() {
+  useEffect(() => {
+    track("signup_view");
+  }, []);
+
   return (
     <div className="page-shell">
       <Navbar />
@@ -25,7 +31,11 @@ export default function SignUpClientPage() {
             </div>
 
             <Link href="/" className="block">
-              <Button className="w-full" size="lg">
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={() => track("signup_submit")}
+              >
                 <Chrome className="mr-2 h-5 w-5" />
                 Sign up with Google
               </Button>

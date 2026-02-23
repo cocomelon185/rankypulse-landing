@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/horizon";
 import { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/layout/PageLayout";
@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { RazorpayCheckoutButton } from "@/components/RazorpayCheckoutButton";
 import { RazorpayComingSoonModal } from "@/components/RazorpayComingSoonModal";
 import { Check, ChevronDown, Sparkles, CreditCard } from "lucide-react";
+import { track } from "@/lib/analytics";
 
 const plans = [
   {
@@ -75,6 +76,10 @@ export default function PricingClientPage() {
   const [currency, setCurrency] = useState<"USD" | "INR">("INR");
   const [showRazorpayModal, setShowRazorpayModal] = useState(false);
   const [razorpayModalPlan, setRazorpayModalPlan] = useState<string>("Starter");
+
+  useEffect(() => {
+    track("pricing_view");
+  }, []);
 
   return (
     <PageLayout>
@@ -158,6 +163,7 @@ export default function PricingClientPage() {
                   currency="INR"
                   variant={plan.popular ? "primary" : "secondary"}
                   className="w-full"
+                  onClick={() => track("pricing_cta_click", { plan: plan.name })}
                 >
                   {plan.cta}
                 </RazorpayCheckoutButton>
@@ -167,6 +173,7 @@ export default function PricingClientPage() {
                   variant={plan.popular ? "primary" : "secondary"}
                   size="lg"
                   onClick={() => {
+                    track("pricing_cta_click", { plan: plan.name });
                     setRazorpayModalPlan(plan.name);
                     setShowRazorpayModal(true);
                   }}
@@ -178,6 +185,7 @@ export default function PricingClientPage() {
               <Link
                 href={plan.href}
                 className="inline-flex h-12 w-full items-center justify-center rounded-xl px-8 text-base font-semibold transition-all bg-gray-100 text-gray-800 hover:bg-gray-200 md:h-12"
+                onClick={() => track("pricing_cta_click", { plan: plan.name })}
               >
                 {plan.cta}
               </Link>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Zap } from "lucide-react";
+import { track } from "@/lib/analytics";
 
 const navLinks: { href: string; label: string }[] = [
   { href: "/#features", label: "Features" },
@@ -49,6 +50,7 @@ export function Navbar() {
             href="/audit"
             className="shrink-0 rounded-xl bg-[#4318ff] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-[#3311db] hover:shadow-lg"
             aria-label="Scan your site now"
+            onClick={() => track("nav_cta_click", { target: "/audit" })}
           >
             Run My Free Audit
           </Link>

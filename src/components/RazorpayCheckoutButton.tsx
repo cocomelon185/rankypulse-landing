@@ -18,6 +18,7 @@ interface RazorpayCheckoutButtonProps {
   variant?: "primary" | "secondary";
   className?: string;
   children?: React.ReactNode;
+  onClick?: () => void;
 }
 
 export function RazorpayCheckoutButton({
@@ -27,11 +28,13 @@ export function RazorpayCheckoutButton({
   variant = "primary",
   className,
   children,
+  onClick,
 }: RazorpayCheckoutButtonProps) {
   const [loading, setLoading] = useState(false);
   const { upgradePlan } = useBilling();
 
   const handleClick = async () => {
+    onClick?.();
     if (currency === "USD") {
       toast.info("USD payments via Stripe coming soon. Switch to INR for Razorpay.");
       return;

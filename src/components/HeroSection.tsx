@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Card, CircularProgress } from "@/components/horizon";
 import { isValidAuditUrl, normalizeUrl } from "@/lib/url-validation";
+import { track, toSafeDomain } from "@/lib/analytics";
 
 function AuditPreviewCard() {
   return (
@@ -52,6 +53,7 @@ export function HeroSection() {
       setUrlError("Enter a valid URL (e.g. https://example.com)");
       return;
     }
+    track("landing_hero_submit", { url_domain: toSafeDomain(url), source: "hero" });
     router.push(`/audit/results?url=${encodeURIComponent(url)}`);
   };
 
