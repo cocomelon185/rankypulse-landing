@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og.jpg",
+        url: "https://rankypulse.com/og.png",
         width: 1200,
         height: 630,
         alt: "RankyPulse — Instant SEO Audit",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     title: "RankyPulse | Instant SEO Audit & Fix List",
     description:
       "Run a free SEO audit in ~30 seconds. Get prioritized issues, clear fixes, and a score you can track over time.",
-    images: ["/og.jpg"],
+    images: ["https://rankypulse.com/og.png"],
   },
 };
 
