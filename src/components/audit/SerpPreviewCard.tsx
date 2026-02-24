@@ -25,9 +25,8 @@ export function SerpPreviewCard({
 
   return (
     <Card
-      extra="p-3 border border-gray-200/90 shadow-sm max-w-md"
+      extra="p-3 mt-3 border border-gray-200/90 shadow-[var(--audit-card-shadow)] max-w-md rounded-lg"
       default
-      className="mt-2"
       role="region"
       aria-label="Google snippet preview"
     >

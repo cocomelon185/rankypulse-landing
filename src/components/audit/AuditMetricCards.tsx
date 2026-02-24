@@ -65,51 +65,51 @@ export function AuditMetricCards({ issues }: AuditMetricCardsProps) {
   const trafficRange = estimateTrafficLossRange(issues);
 
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="list" aria-label="Audit metrics">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3" role="list" aria-label="Audit metrics">
       <div
-        className="flex items-center gap-3 rounded-xl border border-gray-200/80 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.03)]"
+        className="flex items-center gap-4 rounded-xl bg-white px-5 py-4 shadow-[14px_17px_40px_4px_rgba(112,144,176,0.08)] transition-shadow hover:shadow-[14px_17px_40px_4px_rgba(112,144,176,0.12)]"
         role="listitem"
       >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-          <AlertTriangle className="h-5 w-5" aria-hidden />
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+          <AlertTriangle className="h-6 w-6" aria-hidden />
         </div>
-        <div>
-          <p className="text-[11px] font-medium text-gray-500">Issues found</p>
-          <p className="text-sm font-bold text-[#1B2559]">{issuesFound}</p>
+        <div className="min-w-0">
+          <p className="mb-0.5 text-sm font-medium text-gray-600">Issues found</p>
+          <h3 className="text-xl font-bold text-[#1B2559]">{issuesFound}</h3>
         </div>
       </div>
       <div
-        className="flex items-center gap-3 rounded-xl border border-gray-200/80 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.03)]"
+        className="flex items-center gap-4 rounded-xl bg-white px-5 py-4 shadow-[14px_17px_40px_4px_rgba(112,144,176,0.08)] transition-shadow hover:shadow-[14px_17px_40px_4px_rgba(112,144,176,0.12)]"
         role="listitem"
       >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-          <Clock className="h-5 w-5" aria-hidden />
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+          <Clock className="h-6 w-6" aria-hidden />
         </div>
-        <div>
-          <p className="text-[11px] font-medium text-gray-500">Estimated effort</p>
-          <p className="text-sm font-bold text-[#1B2559]">~{top3Effort} min</p>
-          <p className="text-[10px] text-gray-500">to fix top 3</p>
+        <div className="min-w-0">
+          <p className="mb-0.5 text-sm font-medium text-gray-600">Estimated effort</p>
+          <h3 className="text-xl font-bold text-[#1B2559]">~{top3Effort} min</h3>
+          <p className="text-xs text-gray-500">to fix top 3</p>
         </div>
       </div>
       <div
-        className="col-span-2 sm:col-span-1 flex items-center gap-3 rounded-xl border border-gray-200/80 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.03)]"
+        className="col-span-2 sm:col-span-1 flex items-center gap-4 rounded-xl bg-white px-5 py-4 shadow-[14px_17px_40px_4px_rgba(112,144,176,0.08)] transition-shadow hover:shadow-[14px_17px_40px_4px_rgba(112,144,176,0.12)]"
         role="listitem"
         title="Estimate based on typical impact"
       >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
-          <TrendingDown className="h-5 w-5" aria-hidden />
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+          <TrendingDown className="h-6 w-6" aria-hidden />
         </div>
-        <div>
-          <p className="text-[11px] font-medium text-gray-500">Potential traffic loss</p>
+        <div className="min-w-0">
+          <p className="mb-0.5 text-sm font-medium text-gray-600">Potential traffic loss</p>
           {trafficRange ? (
             <>
-              <p className="text-sm font-bold text-[#1B2559]">
+              <h3 className="text-xl font-bold text-[#1B2559]">
                 {trafficRange.min}–{trafficRange.max}/mo
-              </p>
-              <p className="text-[10px] text-gray-500">Estimate</p>
+              </h3>
+              <p className="text-xs text-gray-500">Estimate</p>
             </>
           ) : (
-            <p className="text-sm font-bold text-[#1B2559]">Low risk</p>
+            <h3 className="text-xl font-bold text-[#1B2559]">Low risk</h3>
           )}
         </div>
       </div>

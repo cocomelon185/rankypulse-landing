@@ -14,10 +14,11 @@ import Link from "next/link";
 import { track, toSafeDomain, initVariantFromSearchParams } from "@/lib/analytics";
 import { isValidEmail } from "@/lib/email-validation";
 import { Card } from "@/components/horizon";
-import { Zap, Mail, Shield, MailCheck, Link2, ExternalLink, RotateCcw } from "lucide-react";
+import { Zap, Mail, Shield, MailCheck, Link2, ExternalLink, RotateCcw, BarChart2, Target, ListChecks } from "lucide-react";
 import { IssueRow } from "@/components/audit/IssueRow";
 import { AuditActionsPanel, type EmailSubmitStatus } from "@/components/audit/AuditActionsPanel";
-import { UnlockUpsellSection } from "@/components/audit/UnlockUpsellSection";
+import { UnlockUpsellSection, UpgradePreviewModal } from "@/components/audit/UnlockUpsellSection";
+import { SectionHeader } from "@/components/audit/SectionHeader";
 import { ScoreDoughnutChart } from "@/components/audit/ScoreDoughnutChart";
 import { AuditMetricCards } from "@/components/audit/AuditMetricCards";
 import { BenchmarkBarChart } from "@/components/audit/BenchmarkBarChart";
@@ -235,6 +236,7 @@ export default function AuditResultsClientPage() {
   const showUnlockCard = (sampleMode || !isSignedIn()) && !unlocked;
   const hasData = displayData !== null && !loading && !error;
 
+  const [showRoadmapModal, setShowRoadmapModal] = useState(false);
   const [resendTick, setResendTick] = useState(0);
   const canResend =
     lastSentAt !== null &&
@@ -506,8 +508,8 @@ export default function AuditResultsClientPage() {
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="rounded-lg border border-gray-200/70 bg-white/80 p-4">
-                      <div className="audit-heading text-sm font-semibold text-gray-500">SEO Score</div>
-                      <div className="mt-1 flex items-center gap-3">
+                      <SectionHeader title="SEO Score" icon={BarChart2} />
+                      <div className="mt-3 flex items-center gap-3">
                         <ScoreDoughnutChart score={displayData!.scores.seo} size={56} />
                         <p className="min-w-0 text-sm text-gray-600">{displayData!.summary}</p>
                       </div>
@@ -517,8 +519,8 @@ export default function AuditResultsClientPage() {
                       )}
                     </div>
                     <div className="rounded-lg border border-gray-200/70 bg-white/80 p-4">
-                      <div className="audit-heading text-sm font-semibold text-gray-500">Overview</div>
-                      <p className="mt-1 text-sm text-gray-700">{displayData!.summary}</p>
+                      <SectionHeader title="Overview" icon={Target} />
+                      <p className="mt-3 text-sm text-gray-700">{displayData!.summary}</p>
                     </div>
                   </div>
                   {/* Metric cards */}
@@ -530,8 +532,11 @@ export default function AuditResultsClientPage() {
                   {/* What happens next */}
                   {sortIssuesBySeverity(displayData!.issues).slice(0, 3).length > 0 && (
                     <div className="mt-4 rounded-xl border border-gray-200/70 bg-white/80 p-4">
-                      <h3 className="audit-heading text-sm font-semibold text-[#1B2559]">What happens next</h3>
-                      <p className="mt-0.5 text-xs text-gray-500">Fixing these issues helps your site grow step by step.</p>
+                      <SectionHeader
+                        title="What happens next"
+                        subtitle="Fixing these issues helps your site grow step by step."
+                        icon={ListChecks}
+                      />
                       <div className="mt-3 space-y-1.5">
                         {sortIssuesBySeverity(displayData!.issues).slice(0, 3).map((i, idx) => (
                           <div key={i.id} className="flex items-center gap-2 text-sm">
@@ -546,10 +551,13 @@ export default function AuditResultsClientPage() {
                   {/* Top fixes – within Hero Summary */}
                   {topIssues.length > 0 && (
                     <div className="mt-4 border-t border-gray-200/70 pt-4">
-                      <h2 className="audit-heading text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        Top fixes (highest impact first)
-                      </h2>
-                      <div className="mt-2.5 space-y-2">
+                      <SectionHeader
+                        title="Top fixes"
+                        subtitle="Highest impact first"
+                        icon={ListChecks}
+                        className="mb-2.5"
+                      />
+                      <div className="space-y-2">
                         {topIssues.slice(0, 3).map((i) => (
                           <IssueRow
                             key={i.id}
@@ -569,14 +577,17 @@ export default function AuditResultsClientPage() {
                 </div>
               )}
 
-              {/* Top issues – before Email CTA so user sees fixes first */}
+              {/* Top issues */}
               {hasData && (
                 <Card extra="p-4 border border-gray-200/90 shadow-[var(--audit-card-shadow)]" default>
-                  <div className="flex items-center justify-between">
-                    <span className="audit-heading text-xs font-semibold uppercase tracking-wider text-[#1B2559]">Top issues</span>
-                    <span className="text-xs text-gray-500">{getIssuesSummary(displayData!.issues)}</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <SectionHeader
+                      title="Top issues"
+                      subtitle={getIssuesSummary(displayData!.issues)}
+                      icon={ListChecks}
+                    />
                   </div>
-                  <div className="mt-2.5 space-y-2">
+                  <div className="mt-3 space-y-3">
                     {topIssues.length === 0 ? (
                       <p className="rounded-lg border border-gray-100 bg-gray-50/50 p-4 text-sm text-gray-600">
                         No critical issues found. Your site looks good!
@@ -673,10 +684,25 @@ export default function AuditResultsClientPage() {
                 </Card>
               )}
 
-              {/* Primary CTA: Email full report – after Top fixes + Top issues */}
+              {/* Roadmap upsell (primary CTA) – before Email */}
+              {hasData && !isUnlocked && (
+                <UnlockUpsellSection
+                  onOpenRoadmapModal={() => setShowRoadmapModal(true)}
+                  additionalIssuesCount={remainingIssues.length}
+                  totalIssuesCount={displayData!.issues.length}
+                  topIssues={displayData!.issues.map((i) => ({
+                    id: i.id,
+                    title: i.title,
+                    severity: i.severity,
+                  }))}
+                  yourScore={Math.round(score)}
+                />
+              )}
+
+              {/* Email capture (secondary CTA) – hidden on desktop when sidebar shows */}
               {showUnlockCard && (
                 <Card
-                  extra="overflow-hidden border-2 border-[#4318ff]/25 bg-gradient-to-br from-[#eff6ff] to-white p-4 shadow-[var(--audit-primary-card-shadow)]"
+                  extra="overflow-hidden border-2 border-[#4318ff]/25 bg-gradient-to-br from-[#eff6ff] to-white p-4 shadow-[var(--audit-primary-card-shadow)] lg:hidden"
                   default
                   role="region"
                   aria-labelledby="unlock-heading"
@@ -775,12 +801,9 @@ export default function AuditResultsClientPage() {
                 </Card>
               )}
 
-              {/* Quick Wins – inline for mobile */}
+              {/* Quick Wins – proper section (mobile only; desktop has in sidebar) */}
               <Card extra="p-4 border border-gray-200/90 shadow-[var(--audit-card-shadow)]" default className="lg:hidden">
-                <div className="flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-[#4318ff]" aria-hidden />
-                  <span className="audit-heading text-sm font-semibold text-[#1B2559]">Quick Wins</span>
-                </div>
+                <SectionHeader title="Quick Wins" icon={Zap} />
                 {topQuickWin ? (
                   <>
                     <p className="mt-1 text-sm text-gray-600">
@@ -819,7 +842,7 @@ export default function AuditResultsClientPage() {
                 )}
               </Card>
 
-              {/* Remaining issues – when unlocked */}
+              {/* Remaining issues (when unlocked) */}
               {hasData && remainingIssues.length > 0 && isUnlocked && (
                 <Card extra="p-4 border border-gray-200/90 shadow-[var(--audit-card-shadow)]" default>
                   <div className="audit-heading text-sm font-semibold text-[#1B2559]">Remaining issues</div>
@@ -829,20 +852,6 @@ export default function AuditResultsClientPage() {
                     ))}
                   </div>
                 </Card>
-              )}
-
-              {/* Unlock upsell – clean list, no blur */}
-              {hasData && !isUnlocked && (
-                <UnlockUpsellSection
-                  additionalIssuesCount={remainingIssues.length}
-                  totalIssuesCount={displayData!.issues.length}
-                  topIssues={displayData!.issues.map((i) => ({
-                    id: i.id,
-                    title: i.title,
-                    severity: i.severity,
-                  }))}
-                  yourScore={Math.round(score)}
-                />
               )}
             </div>
 
@@ -871,19 +880,27 @@ export default function AuditResultsClientPage() {
                   hasCompetitorData={false}
                   competitorAvgEstimate={sampleMode ? 74 : null}
                   additionalIssuesCount={remainingIssues.length}
+                  onOpenRoadmapModal={() => setShowRoadmapModal(true)}
                 />
               </div>
             </div>
           </div>
         )}
 
+        {showRoadmapModal && (
+          <UpgradePreviewModal
+            onClose={() => setShowRoadmapModal(false)}
+            additionalIssuesCount={remainingIssues.length}
+            yourScore={Math.round(score)}
+          />
+        )}
+
         {sampleMode && hasData && (
-          <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4">
-            <div className="text-sm font-semibold text-[#1B2559]">Sample mode</div>
-            <div className="mt-1 text-sm text-gray-600">Fix the next issue in minutes.</div>
+          <div className="mt-4 rounded-xl border border-gray-200/80 bg-white p-4 shadow-[var(--audit-card-shadow)]">
+            <SectionHeader title="Quick Wins" subtitle="Fix the next issue in minutes" icon={Zap} />
             <Link
               href="/dashboard?view=quickwins"
-              className="mt-3 inline-flex rounded-xl bg-[#4318ff] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3311db]"
+              className="mt-3 inline-flex rounded-xl bg-[#4318ff] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#3311db]"
             >
               Open Quick Wins
             </Link>

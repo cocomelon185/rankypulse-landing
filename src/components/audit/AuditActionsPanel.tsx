@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from "react";
 import { Zap, Lock, Mail, Link2, Shield, MailCheck } from "lucide-react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 import { BenchmarkBarChart } from "./BenchmarkBarChart";
 
 export type EmailSubmitStatus = "idle" | "submitting" | "success" | "error";
@@ -45,6 +46,8 @@ interface AuditActionsPanelProps {
   competitorAvgEstimate?: number | null;
   /** Additional issues count for unlock teaser */
   additionalIssuesCount?: number;
+  /** Opens the Roadmap preview modal before navigating to pricing */
+  onOpenRoadmapModal?: () => void;
 }
 
 const RESEND_COOLDOWN_MS = 15_000;
@@ -71,6 +74,7 @@ export function AuditActionsPanel({
   hasCompetitorData = false,
   competitorAvgEstimate = null,
   additionalIssuesCount = 0,
+  onOpenRoadmapModal,
 }: AuditActionsPanelProps) {
   const successRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
@@ -301,7 +305,15 @@ export function AuditActionsPanel({
               : "See all issues, competitor benchmarks, and page-level fixes."}
           </p>
           <a
-            href="https://rankypulse.com/pricing"
+            href="/pricing?source=audit"
+            onClick={(e) => {
+              if (onOpenRoadmapModal) {
+                e.preventDefault();
+                track("roadmap_cta_click");
+                track("modal_open");
+                onOpenRoadmapModal();
+              }
+            }}
             className="mt-2 flex h-9 w-full items-center justify-center rounded-lg bg-[#4318ff] text-xs font-semibold text-white hover:bg-[#3311db]"
           >
             Get my SEO Roadmap

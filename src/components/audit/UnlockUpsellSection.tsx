@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BarChart2, Search, FileCheck, X } from "lucide-react";
 import { track } from "@/lib/analytics";
 
@@ -9,6 +9,8 @@ type TopIssue = { id: string; title: string; severity: string };
 
 interface UnlockUpsellSectionProps {
   onUpgrade?: () => void;
+  /** When true, opens the preview modal instead of navigating directly */
+  onOpenRoadmapModal?: () => void;
   /** Number of issues beyond the top 3 shown */
   additionalIssuesCount?: number;
   /** Total issues in audit */
@@ -56,13 +58,15 @@ function CompetitorChartThumbnail({ yourScore }: { yourScore: number }) {
   );
 }
 
-interface UpgradePreviewModalProps {
+export interface UpgradePreviewModalProps {
   onClose: () => void;
   additionalIssuesCount: number;
   yourScore: number;
 }
 
-function UpgradePreviewModal({ onClose, additionalIssuesCount, yourScore }: UpgradePreviewModalProps) {
+export function UpgradePreviewModal({ onClose, additionalIssuesCount, yourScore }: UpgradePreviewModalProps) {
+  const router = useRouter();
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -74,6 +78,12 @@ function UpgradePreviewModal({ onClose, additionalIssuesCount, yourScore }: Upgr
       document.body.style.overflow = "";
     };
   }, [onClose]);
+
+  function handleContinue() {
+    onClose();
+    track("modal_continue");
+    router.push("/pricing?source=audit");
+  }
 
   return (
     <div
@@ -119,16 +129,13 @@ function UpgradePreviewModal({ onClose, additionalIssuesCount, yourScore }: Upgr
           <CompetitorChartThumbnail yourScore={yourScore} />
         </div>
 
-        <Link
-          href="/pricing?source=audit"
-          onClick={() => {
-            track("modal_continue");
-            onClose();
-          }}
+        <button
+          type="button"
+          onClick={handleContinue}
           className="mt-4 flex h-10 w-full items-center justify-center rounded-xl bg-[#4318ff] text-sm font-semibold text-white hover:bg-[#3311db]"
         >
           Continue to pricing
-        </Link>
+        </button>
       </div>
     </div>
   );
@@ -136,6 +143,7 @@ function UpgradePreviewModal({ onClose, additionalIssuesCount, yourScore }: Upgr
 
 export function UnlockUpsellSection({
   onUpgrade,
+  onOpenRoadmapModal,
   additionalIssuesCount = 0,
   totalIssuesCount = 3,
   topIssues = [],
@@ -169,9 +177,14 @@ export function UnlockUpsellSection({
   const handleCtaClick = (e: React.MouseEvent) => {
     track("roadmap_cta_click");
     onUpgrade?.();
-    setShowPreviewModal(true);
+    if (onOpenRoadmapModal) {
+      onOpenRoadmapModal();
+      e.preventDefault();
+    } else {
+      setShowPreviewModal(true);
+      e.preventDefault();
+    }
     track("modal_open");
-    e.preventDefault();
   };
 
   return (
@@ -241,7 +254,7 @@ export function UnlockUpsellSection({
         <p className="mt-1.5 text-center text-xs text-gray-500">{ctaMicrocopy}</p>
       </div>
 
-      {showPreviewModal && (
+      {showPreviewModal && !onOpenRoadmapModal && (
         <UpgradePreviewModal
           onClose={() => setShowPreviewModal(false)}
           additionalIssuesCount={additionalIssuesCount}

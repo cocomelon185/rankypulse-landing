@@ -113,10 +113,15 @@ interface IssueRowProps {
   metaDescription?: string | null;
 }
 
-function isMetaDescriptionIssue(issue: AuditIssue): boolean {
+function isMetaOrTitleIssue(issue: AuditIssue): boolean {
   const cat = (issue.category ?? "").toLowerCase();
   const code = (issue.code ?? "").toLowerCase();
-  return (cat.includes("meta") && code.includes("meta_description")) || code.includes("meta_description_missing");
+  return (
+    (cat.includes("meta") && (code.includes("meta_description") || code.includes("meta_title") || code.includes("title"))) ||
+    code.includes("meta_description_missing") ||
+    code.includes("meta_title") ||
+    code.includes("title_missing")
+  );
 }
 
 export function IssueRow({
@@ -221,7 +226,7 @@ export function IssueRow({
             <button
               type="button"
               onClick={handleFixClick}
-              className="shrink-0 rounded-lg border-2 border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4318ff]/20"
+              className="shrink-0 rounded-xl bg-[#4318ff] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#3311db] focus:outline-none focus:ring-2 focus:ring-[#4318ff]/30"
             >
               {actionLabel}
             </button>
@@ -229,7 +234,7 @@ export function IssueRow({
             <Link
               href="/dashboard?view=quickwins"
               onClick={handleLinkFixClick}
-              className="shrink-0 rounded-lg border-2 border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4318ff]/20"
+              className="shrink-0 rounded-xl bg-[#4318ff] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#3311db] focus:outline-none focus:ring-2 focus:ring-[#4318ff]/30"
             >
               {actionLabel}
             </Link>
@@ -272,8 +277,8 @@ export function IssueRow({
         </div>
       )}
 
-      {/* SERP preview for Meta Description issues */}
-      {isMetaDescriptionIssue(issue) && (pageTitle || pageDisplayUrl) && (
+      {/* SERP preview for meta/title issues */}
+      {isMetaOrTitleIssue(issue) && (pageTitle || pageDisplayUrl) && (
         <SerpPreviewCard
           title={pageTitle ?? "Page Title"}
           displayUrl={pageDisplayUrl ?? "example.com"}
