@@ -25,6 +25,7 @@ const FREE_FIX_LIMIT_ENV = Number(process.env.NEXT_PUBLIC_AUDIT_FREE_FIX_LIMIT ?
 const FREE_FIX_LIMIT = Math.max(1, Math.min(2, Number.isFinite(FREE_FIX_LIMIT_ENV) ? FREE_FIX_LIMIT_ENV : 2));
 const USE_ONE_CTA_SIDEBAR = process.env.NEXT_PUBLIC_AUDIT_ONE_CTA_SIDEBAR !== "0";
 const HEADLINE_MODE = process.env.NEXT_PUBLIC_AUDIT_HEADLINE_MODE ?? "visits_lost";
+const FALLBACK_URL = "https://example.com";
 const SEVERITY_ORDER = ["CRITICAL", "HIGH", "MED", "MEDIUM", "LOW"] as const;
 
 function sortIssuesBySeverity<T extends { severity: string }>(issues: T[]): T[] {
@@ -102,8 +103,9 @@ export default function AuditResultsClientPage() {
     if (isValidHttpUrl(fromQuery)) return fromQuery;
     const fromStorage = safeGet("rankypulse_last_url");
     if (isValidHttpUrl(fromStorage)) return fromStorage;
-    return "https://example.com";
+    return FALLBACK_URL;
   }, [queryUrl]);
+  const hasUserUrl = url !== FALLBACK_URL;
 
   const displayData = useMemo(() => {
     if (sampleMode && !data && !loading) return getSampleAuditData(url);
@@ -160,13 +162,25 @@ export default function AuditResultsClientPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
       });
-      if (!res.ok) throw new Error("bad_response");
-      const json = (await res.json()) as { ok: boolean; data?: AuditData };
-      if (!json.ok || !json.data) throw new Error("bad_payload");
+
+      type ApiResponse = { ok?: boolean; data?: AuditData; error?: string; details?: string };
+      let json: ApiResponse | null = null;
+      try { json = await res.json(); } catch { /* non-JSON response */ }
+
+      if (!res.ok) {
+        const detail = json?.details || json?.error || `HTTP ${res.status}`;
+        setError(`Couldn't load audit report \u2014 ${detail}`);
+        return;
+      }
+      if (!json?.ok || !json?.data) {
+        setError("Unexpected response from the audit API.");
+        return;
+      }
       setData(json.data);
       setScannedAt(new Date());
-    } catch {
-      setError("Something went wrong. Try again.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Network error";
+      setError(`Couldn't reach the audit service \u2014 ${msg}`);
     } finally {
       setLoading(false);
     }
@@ -174,10 +188,11 @@ export default function AuditResultsClientPage() {
 
   useEffect(() => {
     if (sampleMode) return;
+    if (!hasUserUrl) return;
     safeSet("rankypulse_last_url", url);
     runAudit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url, sampleMode]);
+  }, [url, sampleMode, hasUserUrl]);
 
   useEffect(() => {
     if (!hasData || !displayData || reportViewedRef.current) return;
@@ -276,8 +291,43 @@ export default function AuditResultsClientPage() {
           </header>
         )}
 
-        {loading && <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm text-gray-600">Running audit...</div>}
-        {error && <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">{error}</div>}
+        {loading && <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm text-gray-600">Running audit&hellip;</div>}
+
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-5">
+            <p className="text-sm font-semibold text-red-800">Couldn&apos;t load your audit report</p>
+            <p className="mt-1 text-sm text-red-700">{error}</p>
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={runAudit}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
+              >
+                <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+                Retry
+              </button>
+              <a
+                href="/audit"
+                className="inline-flex items-center rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+              >
+                New audit
+              </a>
+            </div>
+          </div>
+        )}
+
+        {!hasUserUrl && !loading && !error && !hasData && !sampleMode && (
+          <div className="rounded-xl border border-gray-200 bg-white p-6 text-center">
+            <p className="text-sm font-semibold text-[#1B2559]">No URL to audit</p>
+            <p className="mt-1 text-sm text-gray-600">Enter a website address to get your SEO report.</p>
+            <a
+              href="/audit"
+              className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-[#4318ff] px-5 text-sm font-semibold text-white hover:bg-[#3311db]"
+            >
+              Start an audit
+            </a>
+          </div>
+        )}
 
         {hasData && (
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
