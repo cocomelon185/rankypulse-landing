@@ -10,8 +10,9 @@ type AuditIssue = {
 
 /**
  * Heuristic: CRITICAL/HIGH = 500–1500, MED = 100–500, LOW = 10–100 visits/mo risk
+ * Exported for trust strip and outcome copy.
  */
-function estimateTrafficLossRange(issues: AuditIssue[]): { min: number; max: number } | null {
+export function estimateTrafficLossRange(issues: AuditIssue[]): { min: number; max: number } | null {
   if (!issues.length) return null;
   let min = 0;
   let max = 0;

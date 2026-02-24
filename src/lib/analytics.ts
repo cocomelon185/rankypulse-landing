@@ -42,19 +42,22 @@ function isClient(): boolean {
   return typeof window !== "undefined";
 }
 
+/** Safe flag: when true, new conversion UI (variant B) is the default. Set to false to roll back. */
+export const AUDIT_CONVERSION_VARIANT_B_DEFAULT = true;
+
 /**
- * Get current A/B variant ("a" | "b"). Default "a".
+ * Get current A/B variant ("a" | "b"). Default "a" unless AUDIT_CONVERSION_VARIANT_B_DEFAULT.
  * Read from localStorage key rp_variant_v1. No PII.
  */
 export function getVariant(): "a" | "b" {
-  if (!isClient()) return "a";
+  if (!isClient()) return AUDIT_CONVERSION_VARIANT_B_DEFAULT ? "b" : "a";
   try {
     const v = localStorage.getItem(VARIANT_KEY);
     if (v === "a" || v === "b") return v;
   } catch {
     // ignore
   }
-  return "a";
+  return AUDIT_CONVERSION_VARIANT_B_DEFAULT ? "b" : "a";
 }
 
 /**

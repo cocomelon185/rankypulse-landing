@@ -25,6 +25,14 @@ function severityColor(severity: string): string {
   return "bg-gray-100 text-gray-700 border-gray-200";
 }
 
+/** Left border color by severity for issue cards */
+function severityBorderColor(severity: string): string {
+  const s = severity.toUpperCase();
+  if (s === "HIGH" || s === "CRITICAL") return "border-l-red-500";
+  if (s === "MED" || s === "MEDIUM") return "border-l-amber-400";
+  return "border-l-blue-400";
+}
+
 function getPotentialLift(severity: string): number {
   const s = severity.toUpperCase();
   if (s === "HIGH" || s === "CRITICAL") return 5;
@@ -178,9 +186,9 @@ export function IssueRow({
   return (
     <div
       id={id}
-      className={`rounded-xl border border-gray-200 bg-white shadow-sm ${
+      className={`rounded-xl border border-gray-200 border-l-4 bg-white shadow-sm ${
         compact ? "p-3" : "p-4"
-      }`}
+      } ${severityBorderColor(issue.severity)}`}
       style={{ contain: "layout" }}
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -204,7 +212,7 @@ export function IssueRow({
               </span>
             )}
           </div>
-          <h3 className="mt-1.5 text-sm font-semibold text-[#1B2559]">{issue.title}</h3>
+          <h3 className="mt-1.5 text-base font-bold text-[#1B2559]">{issue.title}</h3>
           {compact ? (
             <div className="mt-1 space-y-0.5 text-xs text-gray-600">
               <p><span className="font-medium text-gray-500">Impact:</span> {displayImpact}</p>
@@ -226,7 +234,7 @@ export function IssueRow({
             <button
               type="button"
               onClick={handleFixClick}
-              className="shrink-0 rounded-xl bg-[#4318ff] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#3311db] focus:outline-none focus:ring-2 focus:ring-[#4318ff]/30"
+              className="shrink-0 rounded-xl bg-gradient-to-r from-[#4318ff] to-[#6d4cff] px-4 py-2.5 text-xs font-semibold text-white shadow-md hover:from-[#3311db] hover:to-[#5a3dd9] focus:outline-none focus:ring-2 focus:ring-[#4318ff]/30"
             >
               {actionLabel}
             </button>
@@ -234,7 +242,7 @@ export function IssueRow({
             <Link
               href="/dashboard?view=quickwins"
               onClick={handleLinkFixClick}
-              className="shrink-0 rounded-xl bg-[#4318ff] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#3311db] focus:outline-none focus:ring-2 focus:ring-[#4318ff]/30"
+              className="shrink-0 rounded-xl bg-gradient-to-r from-[#4318ff] to-[#6d4cff] px-4 py-2.5 text-xs font-semibold text-white shadow-md hover:from-[#3311db] hover:to-[#5a3dd9] focus:outline-none focus:ring-2 focus:ring-[#4318ff]/30"
             >
               {actionLabel}
             </Link>
@@ -267,7 +275,7 @@ export function IssueRow({
               <button
                 type="button"
                 onClick={handleCopySteps}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100"
+                className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#4318ff] to-[#6d4cff] px-3 py-2 text-xs font-semibold text-white shadow-sm hover:from-[#3311db] hover:to-[#5a3dd9]"
               >
                 <Copy className="h-3.5 w-3.5" aria-hidden />
                 Copy fix steps

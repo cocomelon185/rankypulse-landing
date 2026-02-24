@@ -1,37 +1,17 @@
 "use client";
 
-/**
- * UI REGRESSION GUARD — Do NOT break:
- * - No backdrop-blur on main wrappers; no transform/scale on layout
- * - Keep 2-column layout (left: results, right: sticky actions)
- * - Keep: success state, share link, sticky mobile bar, trust chips
- * - Preserve visual stability: contain:layout, no zoom/jitter on scroll
- */
-
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { track, toSafeDomain, initVariantFromSearchParams } from "@/lib/analytics";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ExternalLink, RotateCcw } from "lucide-react";
+import { track, toSafeDomain } from "@/lib/analytics";
 import { isValidEmail } from "@/lib/email-validation";
-import { Card } from "@/components/horizon";
-import { Zap, Mail, Shield, MailCheck, Link2, ExternalLink, RotateCcw, BarChart2, Target, ListChecks } from "lucide-react";
-import { IssueRow } from "@/components/audit/IssueRow";
+import { estimateTrafficLossRange } from "@/components/audit/AuditMetricCards";
+import { ActionPanel } from "@/components/audit/ActionPanel";
+import { IssueCard } from "@/components/audit/IssueCard";
+import { FixDrawer } from "@/components/audit/FixDrawer";
+import { PaywallGate } from "@/components/audit/PaywallGate";
 import { AuditActionsPanel, type EmailSubmitStatus } from "@/components/audit/AuditActionsPanel";
-import { UnlockUpsellSection, UpgradePreviewModal } from "@/components/audit/UnlockUpsellSection";
-import { SectionHeader } from "@/components/audit/SectionHeader";
-import { ScoreDoughnutChart } from "@/components/audit/ScoreDoughnutChart";
-import { AuditMetricCards } from "@/components/audit/AuditMetricCards";
-import { BenchmarkBarChart } from "@/components/audit/BenchmarkBarChart";
-
-type AuditIssue = {
-  id: string;
-  code: string;
-  title: string;
-  severity: string;
-  effortMinutes?: number;
-  category?: string;
-  suggestedFix?: string;
-};
+import { enrichIssues, issueWeight, type AuditIssue, type PresentedIssue } from "@/lib/audit-issue-presentation";
 
 type AuditData = {
   url: string;
@@ -40,6 +20,20 @@ type AuditData = {
   scores: { seo: number };
   issues: AuditIssue[];
 };
+
+const FREE_FIX_LIMIT_ENV = Number(process.env.NEXT_PUBLIC_AUDIT_FREE_FIX_LIMIT ?? "2");
+const FREE_FIX_LIMIT = Math.max(1, Math.min(2, Number.isFinite(FREE_FIX_LIMIT_ENV) ? FREE_FIX_LIMIT_ENV : 2));
+const USE_ONE_CTA_SIDEBAR = process.env.NEXT_PUBLIC_AUDIT_ONE_CTA_SIDEBAR !== "0";
+const HEADLINE_MODE = process.env.NEXT_PUBLIC_AUDIT_HEADLINE_MODE ?? "visits_lost";
+const SEVERITY_ORDER = ["CRITICAL", "HIGH", "MED", "MEDIUM", "LOW"] as const;
+
+function sortIssuesBySeverity<T extends { severity: string }>(issues: T[]): T[] {
+  return [...issues].sort(
+    (a, b) =>
+      SEVERITY_ORDER.indexOf(a.severity.toUpperCase() as (typeof SEVERITY_ORDER)[number]) -
+      SEVERITY_ORDER.indexOf(b.severity.toUpperCase() as (typeof SEVERITY_ORDER)[number])
+  );
+}
 
 function safeGet(key: string): string {
   try {
@@ -55,10 +49,6 @@ function safeSet(key: string, value: string) {
   } catch {}
 }
 
-function isSignedIn(): boolean {
-  return safeGet("rankypulse_is_signed_in") === "1";
-}
-
 function isValidHttpUrl(s: string) {
   try {
     const u = new URL(s);
@@ -68,83 +58,6 @@ function isValidHttpUrl(s: string) {
   }
 }
 
-function getIssuesSummary(issues: AuditIssue[]): string {
-  if (!issues.length) return "No critical issues found";
-  const high = issues.filter((i) => i.severity.toUpperCase() === "HIGH").length;
-  const med = issues.filter((i) => ["MED", "MEDIUM"].includes(i.severity.toUpperCase())).length;
-  const low = issues.length - high - med;
-  const parts: string[] = [];
-  if (high) parts.push(`${high} critical`);
-  if (med) parts.push(`${med} medium`);
-  if (low) parts.push(`${low} low`);
-  return `${parts.join(", ")} issue${issues.length !== 1 ? "s" : ""} detected`;
-}
-
-function getScoreLabel(score: number): string {
-  if (score >= 80) return "Excellent";
-  if (score >= 60) return "Good";
-  return "Needs work";
-}
-
-const SEVERITY_ORDER = ["CRITICAL", "HIGH", "MED", "MEDIUM", "LOW"] as const;
-
-function sortIssuesBySeverity<T extends { severity: string }>(issues: T[]): T[] {
-  return [...issues].sort(
-    (a, b) =>
-      SEVERITY_ORDER.indexOf(b.severity.toUpperCase() as (typeof SEVERITY_ORDER)[number]) -
-      SEVERITY_ORDER.indexOf(a.severity.toUpperCase() as (typeof SEVERITY_ORDER)[number])
-  );
-}
-
-/** Short impact text for "What happens next" roadmap summary. */
-function getShortImpactForRoadmap(issue: AuditIssue): string {
-  const cat = (issue.category ?? "").toLowerCase();
-  const code = (issue.code ?? "").toLowerCase();
-  if (cat.includes("canonical") || code.includes("canonical")) return "improves crawlability";
-  if (cat.includes("meta") || code.includes("meta") || code.includes("title")) return "improves click-through rate";
-  if (cat.includes("performance") || code.includes("performance") || code.includes("image")) return "improves page speed";
-  if (cat.includes("schema") || code.includes("schema") || cat.includes("heading") || code.includes("heading") || cat.includes("link") || code.includes("link")) return "improves visibility";
-  return "improves SEO";
-}
-
-function getImpactText(issue: AuditIssue): string {
-  if (issue.suggestedFix?.trim()) {
-    const s = issue.suggestedFix.trim();
-    const clean = s.startsWith("Impact:") ? s.replace(/^Impact:\s*/i, "").trim() : s;
-    return clean.length > 60 ? clean.slice(0, 60).trim() + "…" : clean;
-  }
-  const cat = (issue.category ?? "").toLowerCase();
-  const code = (issue.code ?? "").toLowerCase();
-  if (cat.includes("canonical") || code.includes("canonical")) return "Improves crawlability and avoids duplicate content.";
-  if (cat.includes("meta") || code.includes("meta")) return "Improves ranking signals and click-through.";
-  if (cat.includes("schema") || code.includes("schema")) return "Improves rich results and search visibility.";
-  if (cat.includes("performance") || code.includes("performance") || code.includes("core")) return "Improves page experience and Core Web Vitals.";
-  if (cat.includes("heading") || code.includes("heading")) return "Improves structure and readability for search.";
-  if (cat.includes("image") || code.includes("image")) return "Improves image indexing and accessibility.";
-  if (cat.includes("link") || code.includes("link")) return "Improves link equity and user navigation.";
-  return "Improves SEO and page experience.";
-}
-
-function getWhyItMatters(issue: AuditIssue): string | null {
-  const cat = (issue.category ?? "").toLowerCase();
-  const code = (issue.code ?? "").toLowerCase();
-  if (cat.includes("canonical") || code.includes("canonical")) return "Search engines prioritize canonical URLs to index the right content.";
-  if (cat.includes("meta") || code.includes("meta")) return "Titles and descriptions influence rankings and click-through in search.";
-  if (cat.includes("schema") || code.includes("schema")) return "Structured data helps Google show rich snippets and answer boxes.";
-  if (cat.includes("performance") || code.includes("performance") || code.includes("core")) return "Core Web Vitals affect ranking and user trust.";
-  if (cat.includes("heading") || code.includes("heading")) return "Proper headings help crawlers understand page structure.";
-  if (cat.includes("image") || code.includes("image")) return "Alt text and filenames help images rank and improve accessibility.";
-  if (cat.includes("link") || code.includes("link")) return "Healthy links pass authority and improve navigation.";
-  return null;
-}
-
-function truncateDomain(domain: string, maxLen = 28): string {
-  if (domain.length <= maxLen) return domain;
-  return domain.slice(0, maxLen - 3) + "…";
-}
-
-const RESEND_COOLDOWN_MS = 15_000;
-
 function getSampleAuditData(url: string): AuditData {
   let hostname = "example.com";
   try {
@@ -153,105 +66,90 @@ function getSampleAuditData(url: string): AuditData {
   return {
     url,
     hostname,
-    summary: "Sample report — realistic issues for demo.",
+    summary: "Opportunities identified",
     scores: { seo: 68 },
     issues: [
-      {
-        id: "meta_desc_home",
-        code: "meta_description_missing",
-        title: "Missing meta description on homepage",
-        severity: "MED",
-        effortMinutes: 5,
-        category: "Meta",
-        suggestedFix:
-          "Add a concise meta description (140–160 chars) that summarizes your homepage. Include primary keyword and value proposition.",
-      },
-      {
-        id: "canonical_non_preferred",
-        code: "canonical_mismatch",
-        title: "Canonical tag points to a non-preferred URL",
-        severity: "HIGH",
-        effortMinutes: 15,
-        category: "Canonical",
-        suggestedFix:
-          "Update the canonical tag to point to your preferred URL (with or without trailing slash). Ensure consistency across internal links.",
-      },
-      {
-        id: "img_dimensions",
-        code: "image_dimensions_missing",
-        title: "Large images without width/height cause layout shifts",
-        severity: "MED",
-        effortMinutes: 10,
-        category: "Performance",
-        suggestedFix:
-          "Add explicit width and height attributes to img tags, or use aspect-ratio in CSS. This prevents Cumulative Layout Shift (CLS) and improves Core Web Vitals.",
-      },
+      { id: "canonical_non_preferred", code: "canonical_mismatch", title: "Canonical mismatch", severity: "HIGH", effortMinutes: 15, category: "Canonical" },
+      { id: "meta_desc_home", code: "meta_description_missing", title: "Missing meta description", severity: "MED", effortMinutes: 8, category: "Meta" },
+      { id: "title_long", code: "title_too_long", title: "Title tag too long", severity: "MED", effortMinutes: 10, category: "Meta" },
+      { id: "img_dimensions", code: "image_dimensions_missing", title: "Image dimensions missing", severity: "LOW", effortMinutes: 8, category: "Performance" },
     ],
   };
 }
 
 export default function AuditResultsClientPage() {
   const searchParams = useSearchParams();
-  const sampleMode = (searchParams ? searchParams.get("sample") : null) === "1";
-  const queryUrl = searchParams ? searchParams.get("url") || "" : "";
-
-  // Variant selection: ?variant=a|b → localStorage, else read from storage, else "a"
-  useEffect(() => {
-    initVariantFromSearchParams(searchParams);
-  }, [searchParams]);
-
-  const url = useMemo(() => {
-    const fromQuery = queryUrl.trim();
-    if (isValidHttpUrl(fromQuery)) return fromQuery;
-
-    const fromStorage = safeGet("rankypulse_last_url");
-    if (isValidHttpUrl(fromStorage)) return fromStorage;
-
-    return "https://example.com";
-  }, [queryUrl]);
+  const router = useRouter();
+  const sampleMode = (searchParams?.get("sample") ?? "") === "1";
+  const queryUrl = searchParams?.get("url") || "";
+  const reportViewedRef = useRef(false);
 
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<AuditData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [scannedAt, setScannedAt] = useState<Date | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [activeIssue, setActiveIssue] = useState<PresentedIssue | null>(null);
+  const [completedFixIds, setCompletedFixIds] = useState<string[]>([]);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [guidedDismissed, setGuidedDismissed] = useState(false);
 
-  const [email, setEmail] = useState("");
-  const [emailStatus, setEmailStatus] = useState<EmailSubmitStatus>("idle");
-  const [emailTouched, setEmailTouched] = useState(false);
-  const [unlocked, setUnlocked] = useState(false);
-  const [lastSentAt, setLastSentAt] = useState<number | null>(null);
-  const emailInputRef = useRef<HTMLInputElement>(null);
-  const successMessageRef = useRef<HTMLDivElement>(null);
+  const [legacyEmail, setLegacyEmail] = useState("");
+  const [legacyEmailStatus, setLegacyEmailStatus] = useState<EmailSubmitStatus>("idle");
 
-  const emailValid = isValidEmail(email.trim());
-  const emailError = emailTouched && email.trim() && !emailValid ? "Please enter a valid email address." : null;
+  const url = useMemo(() => {
+    const fromQuery = queryUrl.trim();
+    if (isValidHttpUrl(fromQuery)) return fromQuery;
+    const fromStorage = safeGet("rankypulse_last_url");
+    if (isValidHttpUrl(fromStorage)) return fromStorage;
+    return "https://example.com";
+  }, [queryUrl]);
 
   const displayData = useMemo(() => {
     if (sampleMode && !data && !loading) return getSampleAuditData(url);
     return data;
   }, [sampleMode, data, loading, url]);
 
+  const hasData = !!displayData && !loading && !error;
   const domain = toSafeDomain(url);
-  const truncatedDomain = truncateDomain(domain);
-  const showUnlockCard = (sampleMode || !isSignedIn()) && !unlocked;
-  const hasData = displayData !== null && !loading && !error;
+  const reportUrl = typeof window !== "undefined" ? `${window.location.origin}/audit/results?url=${encodeURIComponent(url)}` : "";
 
-  const [showRoadmapModal, setShowRoadmapModal] = useState(false);
-  const [resendTick, setResendTick] = useState(0);
-  const canResend =
-    lastSentAt !== null &&
-    Date.now() - lastSentAt >= RESEND_COOLDOWN_MS;
+  const issues = useMemo(() => {
+    if (!displayData) return [];
+    return enrichIssues(sortIssuesBySeverity(displayData.issues), displayData.hostname);
+  }, [displayData]);
+  const top3 = issues.slice(0, 3);
+  const currentTask = top3.find((i) => !completedFixIds.includes(i.id)) ?? top3[0] ?? null;
+  const completedCount = top3.filter((i) => completedFixIds.includes(i.id)).length;
+
+  const totalWeight = top3.reduce((sum, issue) => sum + issueWeight(issue), 0);
+  const completedWeight = top3.filter((i) => completedFixIds.includes(i.id)).reduce((sum, issue) => sum + issueWeight(issue), 0);
+  const riskReducedPercent = totalWeight > 0 ? Math.round((completedWeight / totalWeight) * 100) : 0;
+  const trafficRange = useMemo(() => estimateTrafficLossRange(issues), [issues]);
+  const trafficLossText = trafficRange ? `${trafficRange.min}-${trafficRange.max}` : "50-200";
+
+  const topQuickWin = useMemo(
+    () =>
+      issues
+        .filter((i) => (i.effortMinutes ?? 0) <= 10)
+        .sort((a, b) => (a.effortMinutes ?? 0) - (b.effortMinutes ?? 0))[0] ?? null,
+    [issues]
+  );
 
   useEffect(() => {
-    if (lastSentAt === null) return;
-    const remaining = RESEND_COOLDOWN_MS - (Date.now() - lastSentAt);
-    if (remaining <= 0) {
-      setResendTick((t) => t + 1);
-      return;
+    setGuidedDismissed(safeGet("rankypulse_guide_dismissed") === "1");
+    const stored = safeGet("rankypulse_completed_fixes");
+    if (stored) {
+      try {
+        setCompletedFixIds(JSON.parse(stored));
+      } catch {}
     }
-    const t = setTimeout(() => setResendTick((x) => x + 1), remaining);
-    return () => clearTimeout(t);
-  }, [lastSentAt, resendTick]);
+  }, []);
+
+  useEffect(() => {
+    const upgradeStatus = searchParams?.get("upgrade");
+    if (upgradeStatus === "success") track("upgrade_completed", { source: "audit_results" });
+  }, [searchParams]);
 
   async function runAudit() {
     setError(null);
@@ -262,11 +160,9 @@ export default function AuditResultsClientPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
       });
-
       if (!res.ok) throw new Error("bad_response");
       const json = (await res.json()) as { ok: boolean; data?: AuditData };
       if (!json.ok || !json.data) throw new Error("bad_payload");
-
       setData(json.data);
       setScannedAt(new Date());
     } catch {
@@ -278,657 +174,294 @@ export default function AuditResultsClientPage() {
 
   useEffect(() => {
     if (sampleMode) return;
-
-    try {
-      safeSet("rankypulse_last_url", url);
-      safeSet("rankypulse_autorun_audit", "1");
-    } catch {}
-
+    safeSet("rankypulse_last_url", url);
     runAudit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, sampleMode]);
 
   useEffect(() => {
-    if (hasData && displayData) {
-      const issues = displayData.issues ?? [];
-      const issuesCritical = issues.filter((i) =>
-        ["CRITICAL", "HIGH"].includes(i.severity.toUpperCase())
-      ).length;
-      const issuesMedium = issues.filter((i) =>
-        ["MED", "MEDIUM"].includes(i.severity.toUpperCase())
-      ).length;
-      track("audit_results_view", {
-        mode: sampleMode ? "sample" : "live",
-        score: Math.round(displayData.scores.seo ?? 0),
-        issuesTotal: issues.length,
-        issuesCritical,
-        issuesMedium,
-      });
-    }
+    if (!hasData || !displayData || reportViewedRef.current) return;
+    reportViewedRef.current = true;
+    track("report_viewed", {
+      mode: sampleMode ? "sample" : "live",
+      score: Math.round(displayData.scores.seo || 0),
+      issuesTotal: displayData.issues.length,
+    });
   }, [hasData, displayData, sampleMode]);
 
   useEffect(() => {
-    if (emailStatus === "success") {
-      successMessageRef.current?.focus({ preventScroll: true });
+    if (!showPaywall) return;
+    track("upgrade_viewed", {
+      placement: "audit_results_gate",
+      remainingFixes: Math.max(0, issues.length - FREE_FIX_LIMIT),
+    });
+  }, [showPaywall, issues.length]);
+
+  function openFix(issue: PresentedIssue, source: "next_best_action" | "top_fixes" | "action_panel") {
+    const index = top3.findIndex((i) => i.id === issue.id);
+    const isLocked = index >= FREE_FIX_LIMIT && !completedFixIds.includes(issue.id);
+    if (isLocked) {
+      setShowPaywall(true);
+      return;
     }
-  }, [emailStatus]);
+    setActiveIssue(issue);
+    setDrawerOpen(true);
+    track("fix_drawer_opened", { issueId: issue.id, source });
+  }
 
-  const reportUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/audit/results?url=${encodeURIComponent(url)}`
-      : "";
+  function handlePrimaryFixClick() {
+    if (!top3[0]) return;
+    track("primary_cta_clicked", { cta: "fix_1_now", issueId: top3[0].id });
+    openFix(top3[0], "next_best_action");
+  }
 
-  async function sendReportEmail() {
-    if (!email.trim()) return;
-    track("email_submit_clicked");
-    setEmailStatus("submitting");
+  function markFixDone(issueId: string) {
+    if (!completedFixIds.includes(issueId)) {
+      const next = [...completedFixIds, issueId];
+      setCompletedFixIds(next);
+      safeSet("rankypulse_completed_fixes", JSON.stringify(next));
+      track("fix_marked_done", { issueId, completedCount: next.length, completedTop3: top3.filter((i) => next.includes(i.id)).length });
+    }
+    setDrawerOpen(false);
+  }
+
+  function handleUpgradeClick() {
+    track("upgrade_clicked", { source: "audit_results_gate" });
+    router.push("/pricing?source=audit");
+  }
+
+  async function sendLegacyReportEmail() {
+    if (!isValidEmail(legacyEmail)) return;
+    setLegacyEmailStatus("submitting");
     try {
       const res = await fetch("/api/email-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim(),
-          reportUrl,
-          siteUrl: url,
-          summary: displayData ? { score: displayData.scores.seo, current: displayData.scores.seo } : undefined,
-          issues: displayData?.issues.slice(0, 10).map((i) => ({
-            title: i.title,
-            severity: i.severity,
-            eta: i.effortMinutes ? `${i.effortMinutes} min` : undefined,
-          })),
-        }),
+        body: JSON.stringify({ email: legacyEmail, reportUrl, siteUrl: url }),
       });
-
-      if (!res.ok) throw new Error("email_failed");
-
-      setEmailStatus("success");
-      setLastSentAt(Date.now());
-      setUnlocked(true);
-      safeSet("rankypulse_has_audit", "1");
-      track("email_submit_success");
-    } catch (err) {
-      setEmailStatus("error");
-      const reason =
-        err instanceof Error && err.message === "email_failed"
-          ? "api_error"
-          : "send_failed";
-      track("email_submit_error", { reason });
+      if (!res.ok) throw new Error("failed");
+      setLegacyEmailStatus("success");
+    } catch {
+      setLegacyEmailStatus("error");
     }
   }
 
-  async function resendReportEmail() {
-    if (!email.trim() || !canResend) return;
-    await sendReportEmail();
-    setLastSentAt(Date.now());
-  }
-
-  const topIssues = displayData?.issues.slice(0, 3) ?? [];
-  const remainingIssues = displayData?.issues.slice(3) ?? [];
-  const isUnlocked = unlocked || isSignedIn();
-  const quickWinCount = displayData?.issues.filter((i) => (i.effortMinutes ?? 10) <= 10).length ?? 0;
-  const topQuickWin = useMemo(() => {
-    const qw = (displayData?.issues ?? [])
-      .filter((i) => (i.effortMinutes ?? 10) <= 10)
-      .sort((a, b) => (a.effortMinutes ?? 10) - (b.effortMinutes ?? 10))[0];
-    return qw ? { title: qw.title, effortMinutes: qw.effortMinutes ?? 5 } : null;
-  }, [displayData?.issues]);
-
-  const score = displayData?.scores.seo ?? 0;
-  const scoreLabel = getScoreLabel(Math.round(score));
-  const executiveSummary = useMemo(() => {
-    const issues = displayData?.issues ?? [];
-    const topHighCritical = issues.find(
-      (i) => ["HIGH", "CRITICAL"].includes(i.severity.toUpperCase())
-    );
-    if (topHighCritical) {
-      const maxTitleLen = 110 - "Biggest risk: . Fixing it should improve crawlability and rankings.".length;
-      const title = topHighCritical.title.length > maxTitleLen
-        ? topHighCritical.title.slice(0, maxTitleLen - 1).trim() + "…"
-        : topHighCritical.title;
-      const s = `Biggest risk: ${title}. Fixing it should improve crawlability and rankings.`;
-      return s.length > 110 ? s.slice(0, 107) + "…" : s;
-    }
-    return "Your site is in good shape — fixing the items below can improve visibility and clicks.";
-  }, [displayData?.issues]);
-  const lastScannedText = scannedAt
-    ? `Last scanned ${scannedAt.toLocaleDateString(undefined, { month: "short", day: "numeric" })} at ${scannedAt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`
-    : "Just scanned";
+  const lastScannedText = scannedAt ? `Last scanned ${scannedAt.toLocaleDateString()}` : "Just scanned";
 
   return (
-    <div
-      className="audit-results-page audit-bg min-h-screen"
-      style={{ contain: "layout", transition: "none" }}
-    >
-      <main
-        className={`mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 md:px-8 md:py-8 ${
-          showUnlockCard && emailStatus !== "success" && (hasData || sampleMode)
-            ? "pb-24 sm:pb-8 md:pb-12"
-            : ""
-        }`}
-      >
-        {/* Premium header bar */}
+    <div className="audit-results-page audit-bg min-h-screen">
+      <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:px-8">
         {(hasData || sampleMode) && (
-          <header
-            className="mb-3 flex flex-col gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 shadow-[var(--audit-card-shadow,0_4px_12px_rgba(0,0,0,0.04))] sm:flex-row sm:items-center sm:justify-between sm:gap-4"
-            style={{ contain: "layout" }}
-          >
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <Link
-                href="/"
-                className="audit-heading flex shrink-0 items-center gap-1.5 rounded-lg py-1 pr-2 hover:bg-gray-50/80"
-                aria-label="RankyPulse home"
-              >
-                <img src="/favicon.ico" alt="" className="h-5 w-5 shrink-0 rounded" width={20} height={20} />
-                <span className="text-sm font-semibold text-[#1B2559]">RankyPulse</span>
-              </Link>
-              <span className="hidden shrink-0 text-gray-300 sm:inline" aria-hidden>|</span>
-              <a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex min-w-0 items-center gap-2 truncate rounded-lg hover:bg-gray-50/80"
-                aria-label={`Open ${domain} in new tab`}
-              >
-                <img
-                  src={`https://www.google.com/s2/favicons?sz=24&domain=${encodeURIComponent(url)}`}
-                  alt=""
-                  className="h-5 w-5 shrink-0 rounded"
-                  width={20}
-                  height={20}
-                />
-                <span className="truncate text-sm font-medium text-[#1B2559]">{truncatedDomain}</span>
-                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-gray-400" aria-hidden />
+          <header className="mb-4 flex flex-col gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-2">
+              <a href={url} target="_blank" rel="noopener noreferrer" className="truncate text-sm font-semibold text-[#1B2559]">
+                {displayData?.hostname ?? domain}
               </a>
+              <ExternalLink className="h-3.5 w-3.5 text-gray-400" aria-hidden />
+              <span className="rounded-full bg-[#4318ff]/10 px-2 py-0.5 text-xs font-semibold text-[#4318ff]">
+                Score {Math.round(displayData?.scores.seo ?? 0)}
+              </span>
             </div>
-            {hasData && (
-              <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-6">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#4318ff]/10"
-                    style={{ contain: "layout" }}
-                  >
-                    <span className="text-lg font-bold text-[#4318ff]">{Math.round(score)}</span>
-                  </div>
-                    <div>
-                    <span className="audit-heading text-sm font-semibold text-[#1B2559]">{scoreLabel}</span>
-                    <p className="text-xs text-gray-500">{displayData!.summary}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">{lastScannedText}</span>
-                  <button
-                    type="button"
-                    onClick={runAudit}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-                    Re-run audit
-                  </button>
-                </div>
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                track("rerun_audit_clicked", { source: "header" });
+                runAudit();
+              }}
+              className="inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-gray-200 px-3 text-xs font-medium text-gray-700 hover:bg-gray-50"
+            >
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+              Re-run audit
+            </button>
           </header>
         )}
 
-        {loading && (
-          <div className="mt-4 min-h-[120px] rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="text-sm font-semibold text-[#1B2559]">Running audit…</div>
-            <div className="mt-1 text-sm text-gray-500">This usually takes a few seconds.</div>
-          </div>
-        )}
+        {loading && <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm text-gray-600">Running audit...</div>}
+        {error && <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">{error}</div>}
 
-        {error && (
-          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4">
-            <div className="text-sm font-semibold text-red-700">{error}</div>
-            <button
-              type="button"
-              onClick={runAudit}
-              className="mt-3 inline-flex rounded-xl bg-[#4318ff] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3311db]"
-            >
-              Try again
-            </button>
-          </div>
-        )}
-
-        {(hasData || sampleMode) && (
-          <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:gap-6">
-            {/* Left column: results */}
-            <div className="min-w-0 flex-1 space-y-3">
-              {hasData && (
-                <div
-                  className="overflow-hidden rounded-xl border p-4"
-                  style={{
-                    backgroundColor: "var(--audit-hero-bg)",
-                    borderColor: "var(--audit-hero-border)",
-                    boxShadow: "var(--audit-hero-shadow)",
-                    contain: "layout",
-                  }}
-                  role="region"
-                  aria-label="Hero summary"
-                >
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-lg border border-gray-200/70 bg-white/80 p-4">
-                      <SectionHeader title="SEO Score" icon={BarChart2} />
-                      <div className="mt-3 flex items-center gap-3">
-                        <ScoreDoughnutChart score={displayData!.scores.seo} size={56} />
-                        <p className="min-w-0 text-sm text-gray-600">{displayData!.summary}</p>
-                      </div>
-                      <p className="mt-1.5 text-xs text-gray-600">{executiveSummary}</p>
-                      {displayData!.issues.some((i) => ["HIGH", "CRITICAL"].includes(i.severity.toUpperCase())) && (
-                        <p className="mt-1 text-xs text-gray-500">Fixing your top issue could improve search visibility within days.</p>
-                      )}
+        {hasData && (
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+            <div className="space-y-5">
+              {!guidedDismissed && completedCount === 0 && (
+                <section className="rounded-xl border border-gray-200 bg-white p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Guided mode</p>
+                      <ol className="mt-2 space-y-1 text-sm text-gray-700">
+                        <li>Step 1: Fix #1</li>
+                        <li>Step 2: Re-run audit</li>
+                        <li>Step 3: See improvement</li>
+                      </ol>
                     </div>
-                    <div className="rounded-lg border border-gray-200/70 bg-white/80 p-4">
-                      <SectionHeader title="Overview" icon={Target} />
-                      <p className="mt-3 text-sm text-gray-700">{displayData!.summary}</p>
-                    </div>
-                  </div>
-                  {/* Metric cards */}
-                  {displayData!.issues.length > 0 && (
-                    <div className="mt-4">
-                      <AuditMetricCards issues={displayData!.issues} />
-                    </div>
-                  )}
-                  {/* What happens next */}
-                  {sortIssuesBySeverity(displayData!.issues).slice(0, 3).length > 0 && (
-                    <div className="mt-4 rounded-xl border border-gray-200/70 bg-white/80 p-4">
-                      <SectionHeader
-                        title="What happens next"
-                        subtitle="Fixing these issues helps your site grow step by step."
-                        icon={ListChecks}
-                      />
-                      <div className="mt-3 space-y-1.5">
-                        {sortIssuesBySeverity(displayData!.issues).slice(0, 3).map((i, idx) => (
-                          <div key={i.id} className="flex items-center gap-2 text-sm">
-                            <span className="shrink-0 font-medium text-gray-600">Fix #{idx + 1}</span>
-                            <span className="text-gray-400">→</span>
-                            <span className="text-gray-700">{getShortImpactForRoadmap(i)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {/* Top fixes – within Hero Summary */}
-                  {topIssues.length > 0 && (
-                    <div className="mt-4 border-t border-gray-200/70 pt-4">
-                      <SectionHeader
-                        title="Top fixes"
-                        subtitle="Highest impact first"
-                        icon={ListChecks}
-                        className="mb-2.5"
-                      />
-                      <div className="space-y-2">
-                        {topIssues.slice(0, 3).map((i) => (
-                          <IssueRow
-                            key={i.id}
-                            issue={i}
-                            showFixAction
-                            compact
-                            scrollTargetId={`issue-${i.id}`}
-                            impactText={getImpactText(i)}
-                            whyItMattersText={getWhyItMatters(i)}
-                            pageTitle={displayData!.hostname}
-                            pageDisplayUrl={`${displayData!.hostname} › page`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Top issues */}
-              {hasData && (
-                <Card extra="p-4 border border-gray-200/90 shadow-[var(--audit-card-shadow)]" default>
-                  <div className="flex items-center justify-between gap-2">
-                    <SectionHeader
-                      title="Top issues"
-                      subtitle={getIssuesSummary(displayData!.issues)}
-                      icon={ListChecks}
-                    />
-                  </div>
-                  <div className="mt-3 space-y-3">
-                    {topIssues.length === 0 ? (
-                      <p className="rounded-lg border border-gray-100 bg-gray-50/50 p-4 text-sm text-gray-600">
-                        No critical issues found. Your site looks good!
-                      </p>
-                    ) : (
-                      <>
-                        {topIssues.slice(0, 2).map((i) => (
-                          <IssueRow
-                            key={i.id}
-                            issue={i}
-                            showFixAction
-                            id={`issue-${i.id}`}
-                            pageTitle={displayData!.hostname}
-                            pageDisplayUrl={`${displayData!.hostname} › page`}
-                          />
-                        ))}
-                        {topIssues.length >= 3 && (
-                          <div className="relative rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden" style={{ contain: "layout" }}>
-                            <div
-                              className="absolute inset-0 z-10 pointer-events-none"
-                              style={{
-                                background: "linear-gradient(to bottom, transparent 40%, rgba(255,255,255,0.92) 70%, white 85%)",
-                              }}
-                            />
-                            <div className="relative p-4 opacity-70">
-                              <IssueRow
-                                issue={topIssues[2]}
-                                showFixAction
-                                id={`issue-${topIssues[2].id}`}
-                                pageTitle={displayData!.hostname}
-                                pageDisplayUrl={`${displayData!.hostname} › page`}
-                              />
-                            </div>
-                            <div className="absolute bottom-2 left-0 right-0 z-20 flex justify-center pointer-events-auto">
-                              <Link
-                                href="/pricing?source=audit"
-                                className="inline-flex items-center gap-1.5 rounded-lg bg-[#4318ff] px-4 py-2 text-xs font-semibold text-white hover:bg-[#3311db]"
-                              >
-                                Unlock to see the rest of the fixes
-                              </Link>
-                            </div>
-                          </div>
-                        )}
-                        {remainingIssues.length > 0 && (
-                          <Link
-                            href="/dashboard?view=quickwins"
-                            className="mt-2 block text-center text-sm font-semibold text-[#4318ff] hover:underline"
-                          >
-                            View all {displayData!.issues.length} issues →
-                          </Link>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  {/* Sample fixes: 2 full, 3rd blurred */}
-                  {topIssues.length >= 2 && (
-                    <div className="mt-4 space-y-2">
-                      {topIssues.slice(0, 2).map((fix) =>
-                        fix.suggestedFix ? (
-                          <div key={fix.id} className="rounded-lg border-l-4 border-[#4318ff] bg-[#eff6ff] p-3">
-                            <div className="text-xs font-semibold uppercase tracking-wider text-[#4318ff]">
-                              Sample fix — {fix.title}
-                            </div>
-                            <p className="mt-1 text-sm text-gray-700">{fix.suggestedFix}</p>
-                          </div>
-                        ) : null
-                      )}
-                      {topIssues.length >= 3 && topIssues[2].suggestedFix && (
-                        <div className="relative overflow-hidden rounded-lg border-l-4 border-[#4318ff] bg-[#eff6ff] p-3">
-                          <div
-                            className="absolute inset-0 z-10"
-                            style={{
-                              background: "linear-gradient(to bottom, transparent 30%, rgba(239,246,255,0.95) 60%)",
-                            }}
-                          />
-                          <div className="relative opacity-60">
-                            <div className="text-xs font-semibold uppercase tracking-wider text-[#4318ff]">
-                              Sample fix — {topIssues[2].title}
-                            </div>
-                            <p className="mt-1 text-sm text-gray-700 line-clamp-2">{topIssues[2].suggestedFix}</p>
-                          </div>
-                          <div className="relative z-20 mt-2">
-                            <Link
-                              href="/pricing?source=audit"
-                              className="text-xs font-semibold text-[#4318ff] hover:underline"
-                            >
-                              Unlock to see the rest of the fixes
-                            </Link>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </Card>
-              )}
-
-              {/* Roadmap upsell (primary CTA) – before Email */}
-              {hasData && !isUnlocked && (
-                <UnlockUpsellSection
-                  onOpenRoadmapModal={() => setShowRoadmapModal(true)}
-                  additionalIssuesCount={remainingIssues.length}
-                  totalIssuesCount={displayData!.issues.length}
-                  topIssues={displayData!.issues.map((i) => ({
-                    id: i.id,
-                    title: i.title,
-                    severity: i.severity,
-                  }))}
-                  yourScore={Math.round(score)}
-                />
-              )}
-
-              {/* Email capture (secondary CTA) – hidden on desktop when sidebar shows */}
-              {showUnlockCard && (
-                <Card
-                  extra="overflow-hidden border-2 border-[#4318ff]/25 bg-gradient-to-br from-[#eff6ff] to-white p-4 shadow-[var(--audit-primary-card-shadow)] lg:hidden"
-                  default
-                  role="region"
-                  aria-labelledby="unlock-heading"
-                  aria-describedby="unlock-desc"
-                  style={{ minHeight: 220 }}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#4318ff] text-white">
-                      <Mail className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h2 id="unlock-heading" className="audit-heading text-lg font-bold text-[#1B2559]">
-                        Want this roadmap in your inbox?
-                      </h2>
-                      {emailStatus === "success" ? (
-                        <div
-                          ref={successMessageRef}
-                          tabIndex={-1}
-                          role="status"
-                          aria-live="polite"
-                          aria-label="Report sent successfully"
-                          className="mt-3 rounded-lg border border-green-200/80 bg-green-50/50 p-3 focus:outline-none focus:ring-2 focus:ring-[#4318ff]/20"
-                        >
-                          <p className="text-sm font-medium text-green-800">
-                            Report link sent to {email}
-                          </p>
-                          <p className="mt-1 text-xs text-green-700/90">Check spam or promotions if you don&apos;t see it.</p>
-                          <button
-                            type="button"
-                            onClick={resendReportEmail}
-                            disabled={!canResend}
-                            className="mt-2 text-xs font-medium text-[#4318ff] hover:underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
-                          >
-                            Didn&apos;t get it? Resend
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <p id="unlock-desc" className="mt-1 text-sm text-gray-600">
-                            We&apos;ll send you a secure link to your full SEO roadmap in ~10 seconds.
-                          </p>
-                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500" role="list" aria-label="Trust guarantees">
-                            <span className="inline-flex items-center gap-1" role="listitem"><Shield className="h-3.5 w-3.5 text-gray-400" aria-hidden /> Secure & private</span>
-                            <span className="inline-flex items-center gap-1" role="listitem"><MailCheck className="h-3.5 w-3.5 text-gray-400" aria-hidden /> No spam</span>
-                            <span className="inline-flex items-center gap-1" role="listitem"><Link2 className="h-3.5 w-3.5 text-gray-400" aria-hidden /> Shareable link</span>
-                            <span className="text-xs text-gray-400" role="listitem">Used by 1,200+ sites</span>
-                          </div>
-
-                          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                            <div className="relative flex-1">
-                              <label htmlFor="unlock-email" className="sr-only">
-                                Your email address
-                              </label>
-                              <input
-                                ref={emailInputRef}
-                                id="unlock-email"
-                                name="email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                onBlur={() => setEmailTouched(true)}
-                                placeholder="you@example.com"
-                                disabled={emailStatus === "submitting"}
-                                aria-invalid={emailStatus === "error" || !!emailError}
-                                aria-describedby={
-                                  emailError || emailStatus === "error"
-                                    ? "unlock-email-error"
-                                    : undefined
-                                }
-                                className={`h-11 w-full rounded-xl border-2 px-4 text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#4318ff]/20 disabled:opacity-60 ${
-                                  emailError || emailStatus === "error"
-                                    ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
-                                    : "border-gray-200 focus:border-[#4318ff]"
-                                }`}
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              onClick={sendReportEmail}
-                              disabled={!emailValid || emailStatus === "submitting"}
-                              className="h-11 shrink-0 rounded-xl bg-[#4318ff] px-6 text-sm font-semibold text-white hover:bg-[#3311db] disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                              {emailStatus === "submitting" ? "Sending…" : "Email my roadmap"}
-                            </button>
-                          </div>
-
-                          {(emailError || emailStatus === "error") && (
-                            <p id="unlock-email-error" className="mt-2 text-sm text-red-600" role="alert">
-                              {emailError || "Could not send. Try again."}
-                            </p>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              )}
-
-              {/* Quick Wins – proper section (mobile only; desktop has in sidebar) */}
-              <Card extra="p-4 border border-gray-200/90 shadow-[var(--audit-card-shadow)]" default className="lg:hidden">
-                <SectionHeader title="Quick Wins" icon={Zap} />
-                {topQuickWin ? (
-                  <>
-                    <p className="mt-1 text-sm text-gray-600">
-                      Next win: <span className="font-medium text-[#1B2559]">{topQuickWin.title}</span>
-                    </p>
-                    <span className="mt-1 inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
-                      ~{topQuickWin.effortMinutes} min
-                    </span>
-                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <Link
-                        href="/dashboard?view=quickwins"
-                        className="inline-flex justify-center rounded-xl bg-[#4318ff] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#3311db]"
-                      >
-                        Fix next quick win
-                      </Link>
-                      <Link
-                        href="/dashboard?view=quickwins"
-                        className="text-center text-sm font-medium text-[#4318ff] hover:underline"
-                      >
-                        Browse all quick wins
-                      </Link>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p className="mt-1 text-sm text-gray-600">
-                      Fix the next issue in minutes. {quickWinCount > 0 ? `${quickWinCount} fix${quickWinCount !== 1 ? "es" : ""} ready.` : ""}
-                    </p>
-                    <Link
-                      href="/dashboard?view=quickwins"
-                      className="mt-3 inline-flex rounded-xl border-2 border-[#4318ff] bg-[#4318ff]/5 px-4 py-2 text-sm font-semibold text-[#4318ff] hover:bg-[#4318ff]/10"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGuidedDismissed(true);
+                        safeSet("rankypulse_guide_dismissed", "1");
+                      }}
+                      className="text-xs text-gray-500 hover:underline"
                     >
-                      Browse all quick wins
-                    </Link>
-                  </>
-                )}
-              </Card>
-
-              {/* Remaining issues (when unlocked) */}
-              {hasData && remainingIssues.length > 0 && isUnlocked && (
-                <Card extra="p-4 border border-gray-200/90 shadow-[var(--audit-card-shadow)]" default>
-                  <div className="audit-heading text-sm font-semibold text-[#1B2559]">Remaining issues</div>
-                  <div className="mt-3 space-y-3">
-                    {remainingIssues.map((i) => (
-                      <IssueRow key={i.id} issue={i} showFixAction />
-                    ))}
+                      Dismiss
+                    </button>
                   </div>
-                </Card>
+                </section>
               )}
+
+              <section className="rounded-xl border border-[#4318ff]/20 bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Next best action</p>
+                <h1 className="mt-1 text-xl font-semibold text-[#1B2559]">
+                  {currentTask ? currentTask.displayTitle : "Start with your highest-impact fix"}
+                </h1>
+                <p className="mt-1 text-sm text-gray-700">
+                  {currentTask?.whyItMatters ?? "Fix #1 first to create momentum and improve visibility quickly."}
+                </p>
+                <button
+                  type="button"
+                  onClick={handlePrimaryFixClick}
+                  className="mt-4 inline-flex h-11 items-center justify-center rounded-xl bg-[#4318ff] px-5 text-sm font-semibold text-white hover:bg-[#3311db]"
+                >
+                  Fix #1 now
+                </button>
+              </section>
+
+              <section className="rounded-xl border border-gray-200 bg-white p-4">
+                <h2 className="text-lg font-semibold text-[#1B2559]">Top fixes (3)</h2>
+                <p className="mt-1 text-sm text-gray-600">Prioritized by likely ranking impact.</p>
+                <div className="mt-3 space-y-3">
+                  {top3.map((issue, idx) => (
+                    <IssueCard
+                      key={issue.id}
+                      issue={issue}
+                      primaryAction={idx === 0}
+                      onPrimaryAction={() => openFix(issue, "top_fixes")}
+                      onSecondaryAction={() => openFix(issue, "top_fixes")}
+                    />
+                  ))}
+                </div>
+              </section>
+
+              <section className="rounded-xl border border-gray-200 bg-white p-4">
+                <h2 className="text-lg font-semibold text-[#1B2559]">Expected impact</h2>
+                <p className="mt-2 text-2xl font-semibold text-[#1B2559]">
+                  {HEADLINE_MODE === "score"
+                    ? `SEO score: ${Math.round(displayData!.scores.seo)}`
+                    : `You could be missing ${trafficLossText} visits/month`}
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                  <span className="rounded-full bg-gray-100 px-2 py-0.5">Confidence: Medium</span>
+                  <button
+                    type="button"
+                    title="Estimate is derived from issue severity, typical CTR effects, and benchmark ranges."
+                    className="text-[#4318ff] hover:underline"
+                  >
+                    How we estimate this
+                  </button>
+                </div>
+                <p className="mt-2 text-sm text-gray-600">
+                  {completedCount > 0
+                    ? `Great momentum: ${completedCount}/3 fixes done and estimated traffic risk reduced by ${riskReducedPercent}%.`
+                    : "Complete the first fix to unlock your first measurable win before deciding to upgrade."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    track("rerun_audit_clicked", { source: "progress_loop" });
+                    runAudit();
+                  }}
+                  className="mt-3 text-sm font-medium text-[#4318ff] hover:underline"
+                >
+                  Re-run audit
+                </button>
+              </section>
+
+              <section className="rounded-xl border border-gray-200 bg-white p-4">
+                <h2 className="text-lg font-semibold text-[#1B2559]">Roadmap</h2>
+                <p className="mt-1 text-sm text-gray-600">Preview your next actions with real task titles.</p>
+                <ul className="mt-3 space-y-2 text-sm text-gray-700">
+                  {issues.slice(0, 6).map((issue) => (
+                    <li key={issue.id} className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 px-3 py-2">
+                      <span className="truncate">{issue.displayTitle}</span>
+                      <span className="text-xs text-gray-500">{issue.impactLabel} impact</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setShowPaywall(true)}
+                    className="inline-flex h-10 items-center justify-center rounded-xl bg-[#4318ff] px-4 text-sm font-semibold text-white hover:bg-[#3311db]"
+                  >
+                    Unlock remaining fixes ({Math.max(0, issues.length - FREE_FIX_LIMIT)})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPaywall(true)}
+                    className="text-sm font-medium text-[#4318ff] hover:underline"
+                  >
+                    View competitor benchmark
+                  </button>
+                </div>
+              </section>
+
+              <div className="text-xs text-gray-500">Opportunities identified · {lastScannedText}</div>
             </div>
 
-            {/* Right column: sticky actions – desktop */}
-            <div className="hidden lg:block lg:w-72 lg:shrink-0">
-              <div className="sticky top-24">
+            <div className="lg:sticky lg:top-24 lg:h-fit">
+              {USE_ONE_CTA_SIDEBAR ? (
+                <ActionPanel
+                  currentTask={currentTask}
+                  completedCount={completedCount}
+                  totalCount={top3.length}
+                  riskReducedPercent={riskReducedPercent}
+                  onPrimaryClick={handlePrimaryFixClick}
+                  reportUrl={reportUrl}
+                />
+              ) : (
                 <AuditActionsPanel
                   url={url}
-                  canonicalReportUrl={reportUrl || null}
-                  isUnlocked={isUnlocked}
-                  firstIssueId={topIssues[0]?.id ?? null}
-                  firstIssueMinutes={topIssues[0]?.effortMinutes ?? 5}
-                  showEmailForm={showUnlockCard}
-                  email={email}
-                  onEmailChange={setEmail}
-                  onEmailBlur={() => setEmailTouched(true)}
-                  isEmailValid={emailValid}
-                  emailError={emailError ?? (emailStatus === "error" ? "Could not send. Try again." : null)}
-                  emailStatus={emailStatus}
-                  onSendReport={sendReportEmail}
-                  onResend={resendReportEmail}
-                  canResend={canResend}
-                  quickWinCount={quickWinCount}
-                  topQuickWin={topQuickWin}
-                  score={score}
+                  canonicalReportUrl={reportUrl}
+                  isUnlocked={false}
+                  firstIssueId={currentTask?.id ?? null}
+                  firstIssueMinutes={currentTask?.effortMinutes ?? 10}
+                  showEmailForm={false}
+                  email={legacyEmail}
+                  onEmailChange={setLegacyEmail}
+                  isEmailValid={isValidEmail(legacyEmail)}
+                  emailError={legacyEmailStatus === "error" ? "Could not send. Try again." : null}
+                  emailStatus={legacyEmailStatus}
+                  onSendReport={sendLegacyReportEmail}
+                  quickWinCount={issues.filter((i) => (i.effortMinutes ?? 0) <= 10).length}
+                  topQuickWin={
+                    topQuickWin
+                      ? { title: topQuickWin.displayTitle, effortMinutes: topQuickWin.effortMinutes ?? 10 }
+                      : null
+                  }
+                  score={displayData!.scores.seo}
                   hasCompetitorData={false}
-                  competitorAvgEstimate={sampleMode ? 74 : null}
-                  additionalIssuesCount={remainingIssues.length}
-                  onOpenRoadmapModal={() => setShowRoadmapModal(true)}
+                  additionalIssuesCount={Math.max(0, issues.length - 1)}
                 />
-              </div>
+              )}
             </div>
           </div>
         )}
-
-        {showRoadmapModal && (
-          <UpgradePreviewModal
-            onClose={() => setShowRoadmapModal(false)}
-            additionalIssuesCount={remainingIssues.length}
-            yourScore={Math.round(score)}
-          />
-        )}
-
-        {sampleMode && hasData && (
-          <div className="mt-4 rounded-xl border border-gray-200/80 bg-white p-4 shadow-[var(--audit-card-shadow)]">
-            <SectionHeader title="Quick Wins" subtitle="Fix the next issue in minutes" icon={Zap} />
-            <Link
-              href="/dashboard?view=quickwins"
-              className="mt-3 inline-flex rounded-xl bg-[#4318ff] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#3311db]"
-            >
-              Open Quick Wins
-            </Link>
-          </div>
-        )}
-
-        {/* Mobile sticky bottom bar – Send my report CTA */}
-        {showUnlockCard &&
-          emailStatus !== "success" &&
-          (hasData || sampleMode) && (
-            <div
-              className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/80 bg-white/95 px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] backdrop-blur sm:hidden"
-              style={{ contain: "layout" }}
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  emailInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-                  emailInputRef.current?.focus();
-                }}
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#4318ff] text-sm font-semibold text-white shadow-md hover:bg-[#3311db]"
-              >
-                <Mail className="h-5 w-5" aria-hidden />
-                Send my report
-              </button>
-            </div>
-          )}
       </main>
+
+      <FixDrawer
+        issue={activeIssue}
+        open={drawerOpen}
+        isLocked={!!activeIssue && top3.findIndex((i) => i.id === activeIssue.id) >= FREE_FIX_LIMIT}
+        onClose={() => setDrawerOpen(false)}
+        onMarkDone={markFixDone}
+        onUpgradeRequest={() => setShowPaywall(true)}
+      />
+
+      <PaywallGate
+        open={showPaywall}
+        remainingFixes={Math.max(0, issues.length - FREE_FIX_LIMIT)}
+        estimatedVisits={trafficLossText}
+        onClose={() => setShowPaywall(false)}
+        onUpgradeClick={handleUpgradeClick}
+      />
     </div>
   );
 }

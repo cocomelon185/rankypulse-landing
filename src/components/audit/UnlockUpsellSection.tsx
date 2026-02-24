@@ -2,10 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { BarChart2, Search, FileCheck, X } from "lucide-react";
-import { track } from "@/lib/analytics";
+import { BarChart2, Search, FileCheck, X, ArrowUpRight, Link2, FileText, Zap } from "lucide-react";
+import { track, getVariant } from "@/lib/analytics";
 
-type TopIssue = { id: string; title: string; severity: string };
+export type RoadmapIssue = {
+  id: string;
+  title: string;
+  severity: string;
+  /** Derived impact label, e.g. "improves crawlability" */
+  impactLabel?: string;
+};
 
 interface UnlockUpsellSectionProps {
   onUpgrade?: () => void;
@@ -15,10 +21,18 @@ interface UnlockUpsellSectionProps {
   additionalIssuesCount?: number;
   /** Total issues in audit */
   totalIssuesCount?: number;
-  /** Top issues (by severity) for 7-day roadmap preview */
-  topIssues?: TopIssue[];
+  /** Top issues for roadmap timeline (title, severity, impactLabel) */
+  topIssues?: RoadmapIssue[];
   /** Current SEO score for competitor chart thumbnail */
   yourScore?: number;
+  /** When true, use outcome-driven copy and value bullets */
+  useConversionB?: boolean;
+  /** For analytics: safe domain */
+  analyticsUrl?: string;
+  /** For analytics: issue count */
+  analyticsIssueCount?: number;
+  /** For analytics: top fix id */
+  analyticsTopFixId?: string;
 }
 
 const SEVERITY_ORDER = ["CRITICAL", "HIGH", "MED", "MEDIUM", "LOW"] as const;
@@ -29,6 +43,16 @@ function sortBySeverity<T extends { severity: string }>(issues: T[]): T[] {
       SEVERITY_ORDER.indexOf(b.severity.toUpperCase() as (typeof SEVERITY_ORDER)[number]) -
       SEVERITY_ORDER.indexOf(a.severity.toUpperCase() as (typeof SEVERITY_ORDER)[number])
   );
+}
+
+/** Map issue to small icon for roadmap step */
+function getStepIcon(issue: RoadmapIssue): typeof Link2 {
+  const title = (issue.title ?? "").toLowerCase();
+  const impact = (issue.impactLabel ?? "").toLowerCase();
+  if (impact.includes("crawlability") || title.includes("canonical")) return Link2;
+  if (impact.includes("ctr") || impact.includes("click") || title.includes("meta")) return FileText;
+  if (impact.includes("speed") || title.includes("image")) return Zap;
+  return FileCheck;
 }
 
 /** Minimal competitor chart thumbnail for modal preview */
@@ -62,9 +86,22 @@ export interface UpgradePreviewModalProps {
   onClose: () => void;
   additionalIssuesCount: number;
   yourScore: number;
+  /** For analytics: safe domain */
+  analyticsUrl?: string;
+  /** For analytics: issue count */
+  analyticsIssueCount?: number;
+  /** For analytics: top fix id */
+  analyticsTopFixId?: string;
 }
 
-export function UpgradePreviewModal({ onClose, additionalIssuesCount, yourScore }: UpgradePreviewModalProps) {
+export function UpgradePreviewModal({
+  onClose,
+  additionalIssuesCount,
+  yourScore,
+  analyticsUrl,
+  analyticsIssueCount,
+  analyticsTopFixId,
+}: UpgradePreviewModalProps) {
   const router = useRouter();
 
   useEffect(() => {
@@ -80,6 +117,13 @@ export function UpgradePreviewModal({ onClose, additionalIssuesCount, yourScore 
   }, [onClose]);
 
   function handleContinue() {
+    track("cta_unlock_roadmap_click", {
+      placement: "upgrade_modal",
+      url: analyticsUrl ?? "",
+      issue_count: analyticsIssueCount ?? 0,
+      top_fix_id: analyticsTopFixId ?? "",
+      variant: getVariant(),
+    });
     onClose();
     track("modal_continue");
     router.push("/pricing?source=audit");
@@ -111,17 +155,15 @@ export function UpgradePreviewModal({ onClose, additionalIssuesCount, yourScore 
         <ul className="mt-3 space-y-2 text-sm text-gray-700">
           <li className="flex items-center gap-2">
             <span className="text-[#4318ff]">•</span>
-            {additionalIssuesCount > 0
-              ? `${additionalIssuesCount} additional issue${additionalIssuesCount !== 1 ? "s" : ""}`
-              : "All remaining issues"}
+            All issue checks (not just preview)
           </li>
           <li className="flex items-center gap-2">
             <span className="text-[#4318ff]">•</span>
-            Competitor benchmark
+            Competitor gap benchmark
           </li>
           <li className="flex items-center gap-2">
             <span className="text-[#4318ff]">•</span>
-            Full page-level roadmap
+            Page-level weekly action plan
           </li>
         </ul>
 
@@ -132,9 +174,9 @@ export function UpgradePreviewModal({ onClose, additionalIssuesCount, yourScore 
         <button
           type="button"
           onClick={handleContinue}
-          className="mt-4 flex h-10 w-full items-center justify-center rounded-xl bg-[#4318ff] text-sm font-semibold text-white hover:bg-[#3311db]"
+          className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#4318ff] to-[#6d4cff] text-sm font-semibold text-white shadow-md hover:from-[#3311db] hover:to-[#5a3dd9]"
         >
-          Continue to pricing
+          Unlock your full 7-day SEO roadmap
         </button>
       </div>
     </div>
@@ -148,6 +190,10 @@ export function UnlockUpsellSection({
   totalIssuesCount = 3,
   topIssues = [],
   yourScore = 68,
+  useConversionB = false,
+  analyticsUrl,
+  analyticsIssueCount,
+  analyticsTopFixId,
 }: UnlockUpsellSectionProps) {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
@@ -159,22 +205,36 @@ export function UnlockUpsellSection({
     ? `Plans start at $${pricingStartsAt}/mo`
     : "Unlock takes < 1 minute · Cancel anytime";
 
-  const unlockItems = [
-    additionalIssuesCount > 0
-      ? `Unlock: ${additionalIssuesCount} additional issue${additionalIssuesCount !== 1 ? "s" : ""}`
-      : "Unlock: all issues",
-    "+ competitor benchmark",
-    "+ page-level roadmap",
-  ];
+  const unlockItems = useConversionB
+    ? [
+        "All issue checks (not just preview)",
+        "Competitor gap benchmark",
+        "Page-level weekly action plan",
+      ]
+    : [
+        additionalIssuesCount > 0
+          ? `Unlock: ${additionalIssuesCount} additional issue${additionalIssuesCount !== 1 ? "s" : ""}`
+          : "Unlock: all issues",
+        "+ competitor benchmark",
+        "+ page-level roadmap",
+      ];
 
-  const supportingCopy =
-    additionalIssuesCount > 0
+  const supportingCopy = useConversionB
+    ? "Unlock your full 7-day SEO roadmap and see every fix, benchmark, and action plan."
+    : additionalIssuesCount > 0
       ? `See ${additionalIssuesCount} more issues, competitor benchmarks, and step-by-step fixes.`
       : "See all issues, competitor benchmarks, and page-level fixes.";
 
   const icons = [BarChart2, Search, FileCheck];
 
   const handleCtaClick = (e: React.MouseEvent) => {
+    track("cta_unlock_roadmap_click", {
+      placement: "unlock_upsell",
+      url: analyticsUrl ?? "",
+      issue_count: analyticsIssueCount ?? 0,
+      top_fix_id: analyticsTopFixId ?? "",
+      variant: getVariant(),
+    });
     track("roadmap_cta_click");
     onUpgrade?.();
     if (onOpenRoadmapModal) {
@@ -196,7 +256,7 @@ export function UnlockUpsellSection({
         aria-labelledby="unlock-upsell-heading"
       >
         <h2 id="unlock-upsell-heading" className="text-base font-bold text-[#1B2559]">
-          Get my personalized SEO Roadmap
+          {useConversionB ? "Unlock your full 7-day SEO roadmap" : "Start my SEO improvement plan"}
         </h2>
         <p className="mt-1 text-sm text-gray-600">{supportingCopy}</p>
         <ul className="mt-2.5 space-y-2" aria-label="What you unlock">
@@ -213,30 +273,46 @@ export function UnlockUpsellSection({
           })}
         </ul>
 
-        {/* 7-day SEO Roadmap preview */}
+        {/* Roadmap timeline – step-by-step plan, not a list */}
         {roadmapDays.length > 0 && (
-          <div className="mt-3 rounded-lg border border-gray-200/80 bg-white/80 p-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-              7-day SEO Roadmap (preview)
+          <div className="mt-4 rounded-xl border-2 border-[#4318ff]/15 bg-white/90 p-4 shadow-sm">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-[#1B2559]">
+              Your improvement roadmap
             </h3>
-            <div className="mt-2 space-y-1.5">
-              {roadmapDays.map((issue, i) => (
-                <div key={issue.id} className="flex items-center gap-2 text-sm text-gray-700">
-                  <span className="w-12 shrink-0 font-medium text-[#4318ff]">Day {i + 1}:</span>
-                  <span className="line-clamp-1">{issue.title}</span>
-                </div>
-              ))}
-              <div className="relative overflow-hidden rounded-md border border-gray-100 bg-gray-50/70 py-2 pl-14 pr-2 pb-8">
-                <div className="space-y-1.5 blur-[3px] select-none">
-                  <div className="h-3.5 w-full max-w-[85%] rounded bg-gray-200" />
-                  <div className="h-3.5 w-full max-w-[70%] rounded bg-gray-200" />
-                  <div className="h-3.5 w-full max-w-[90%] rounded bg-gray-200" />
-                  <div className="h-3.5 w-full max-w-[60%] rounded bg-gray-200" />
-                </div>
-                <p className="absolute inset-x-0 bottom-2 text-center text-xs font-semibold text-[#4318ff]">
-                  Unlock to see the full 7-day roadmap
-                </p>
-              </div>
+            <div className="mt-3 border-l-2 border-[#4318ff]/25 pl-5">
+              {roadmapDays.map((issue, i) => {
+                const Icon = getStepIcon(issue);
+                const impact = issue.impactLabel ?? "improves SEO";
+                return (
+                  <div key={issue.id} className="relative -ml-[22px] mb-4 last:mb-0">
+                    <div className="absolute left-0 top-0 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border-2 border-[#4318ff]/30 bg-white shadow-sm text-[#4318ff]">
+                      <Icon className="h-4 w-4" aria-hidden />
+                    </div>
+                    <div className="pl-4">
+                      <div className="flex items-center gap-2">
+                        <span className="shrink-0 font-bold text-[#4318ff]">Day {i + 1}</span>
+                        <span
+                          className="inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-medium text-gray-600"
+                          style={{
+                            backgroundColor: "rgba(67,24,255,0.06)",
+                            borderColor: "rgba(67,24,255,0.2)",
+                          }}
+                        >
+                          {issue.severity}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-sm font-semibold text-[#1B2559]">{issue.title}</p>
+                      <p className="mt-0.5 text-xs text-gray-600">→ {impact}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-3 flex items-center gap-2 rounded-lg bg-[#4318ff]/5 px-3 py-2">
+              <ArrowUpRight className="h-4 w-4 shrink-0 text-[#4318ff]" aria-hidden />
+              <p className="text-xs font-medium text-[#4318ff]">
+                Expected: Improved visibility within 3–7 days
+              </p>
             </div>
           </div>
         )}
@@ -247,11 +323,16 @@ export function UnlockUpsellSection({
         <a
           href="/pricing?source=audit"
           onClick={handleCtaClick}
-          className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#4318ff] text-sm font-semibold text-white hover:bg-[#3311db]"
+          className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#4318ff] to-[#6d4cff] text-sm font-semibold text-white shadow-md hover:from-[#3311db] hover:to-[#5a3dd9]"
         >
-          Get my personalized SEO Roadmap
+          {useConversionB ? "Unlock full roadmap in < 1 minute" : "Start my SEO improvement plan"}
         </a>
-        <p className="mt-1.5 text-center text-xs text-gray-500">{ctaMicrocopy}</p>
+        <p className="mt-2 text-center text-xs text-gray-600">
+          {useConversionB ? "Cancel anytime · Used by 1,200+ sites" : "This creates your step-by-step plan to increase visibility."}
+        </p>
+        {!useConversionB && (
+          <p className="mt-0.5 text-center text-[10px] text-gray-400">{ctaMicrocopy}</p>
+        )}
       </div>
 
       {showPreviewModal && !onOpenRoadmapModal && (
@@ -259,6 +340,9 @@ export function UnlockUpsellSection({
           onClose={() => setShowPreviewModal(false)}
           additionalIssuesCount={additionalIssuesCount}
           yourScore={yourScore}
+          analyticsUrl={analyticsUrl}
+          analyticsIssueCount={analyticsIssueCount}
+          analyticsTopFixId={analyticsTopFixId}
         />
       )}
     </>
