@@ -34,6 +34,12 @@ export function Footer() {
               Run free audit
             </Link>
             <Link
+              href="/contact"
+              className="text-sm text-gray-600 transition-colors hover:text-[#4318ff]"
+            >
+              Contact
+            </Link>
+            <Link
               href="/auth/signin"
               className="text-sm text-gray-600 transition-colors hover:text-[#4318ff]"
             >
@@ -43,6 +49,15 @@ export function Footer() {
         </div>
         <p className="mt-6 text-center text-sm text-gray-500 md:text-left">
           Built for founders, marketers, and agencies who want actionable SEO — not just scores.
+        </p>
+        <p className="mt-4 text-center text-sm text-gray-500 md:text-left">
+          Need help?{" "}
+          <a
+            href="mailto:support@rankypulse.com"
+            className="text-gray-600 transition-colors hover:text-[#4318ff]"
+          >
+            support@rankypulse.com
+          </a>
         </p>
         <p className="mt-4 text-center text-sm text-gray-400 md:text-left">
           © {new Date().getFullYear()} RankyPulse. All rights reserved.

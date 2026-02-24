@@ -72,7 +72,7 @@ export default function DiscoverabilityClientPage() {
             </Button>
           </div>
         </div>
-        <LockedOverlay onUpgrade={goToPricing} blur />
+        <LockedOverlay onUpgrade={goToPricing} blur placement="discoverability" />
       </Card>
 
       {/* What improved / What to fix next */}

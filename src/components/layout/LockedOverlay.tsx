@@ -2,19 +2,25 @@
 
 import Link from "next/link";
 import { Lock } from "lucide-react";
+import { track } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 
 interface LockedOverlayProps {
   onUpgrade?: () => void;
   blur?: boolean;
   message?: string;
+  placement?: string;
 }
 
 export function LockedOverlay({
   onUpgrade,
   blur = true,
   message = "Upgrade to Pro to unlock this feature",
+  placement = "locked_overlay",
 }: LockedOverlayProps) {
+  const handleUpgradeClick = () => {
+    track("upgrade_click", { plan: "Pro", placement });
+  };
   return (
     <div
       className={
@@ -34,13 +40,20 @@ export function LockedOverlay({
       </p>
       <div className="mt-6">
         {onUpgrade ? (
-          <Button onClick={onUpgrade} size="lg">
+          <Button
+            onClick={() => {
+              handleUpgradeClick();
+              onUpgrade();
+            }}
+            size="lg"
+          >
             Upgrade to Pro
           </Button>
         ) : (
           <Link
             href="https://rankypulse.com/pricing"
             className="inline-flex h-12 items-center justify-center rounded-xl bg-[#4318ff] px-8 text-base font-semibold text-white shadow-md transition-all hover:bg-[#3311db] hover:shadow-lg"
+            onClick={handleUpgradeClick}
           >
             Upgrade to Pro
           </Link>

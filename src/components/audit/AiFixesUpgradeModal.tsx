@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { track } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Check, X, Sparkles } from "lucide-react";
 
@@ -82,7 +83,10 @@ export function AiFixesUpgradeModal({ onClose, onContinueWithout }: AiFixesUpgra
           <Link
             href="https://rankypulse.com/pricing"
             className="block"
-            onClick={onClose}
+            onClick={() => {
+              track("upgrade_click", { plan: "Pro", placement: "ai_fixes_modal" });
+              onClose();
+            }}
           >
             <Button
               size="lg"

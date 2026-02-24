@@ -43,7 +43,7 @@ export default function GrowthClientPage() {
           </p>
           <Button onClick={() => router.push("/pricing")}>Upgrade to Pro</Button>
         </div>
-        <LockedOverlay onUpgrade={() => window.location.href = "/pricing"} blur />
+        <LockedOverlay onUpgrade={() => window.location.href = "/pricing"} blur placement="growth" />
       </Card>
 
       {/* Timeline cards */}

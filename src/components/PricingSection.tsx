@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { track } from "@/lib/analytics";
 import { Card } from "@/components/horizon";
 import { Button } from "@/components/ui/button";
 import { PricingModal } from "@/components/PricingModal";
@@ -110,7 +111,14 @@ export function PricingSection() {
                 )}
               </div>
               <p className="mb-6 text-gray-600">{plan.audits}</p>
-              <Link href={plan.href}>
+              <Link
+                href={plan.href}
+                onClick={() => {
+                  if (plan.name !== "Free") {
+                    track("upgrade_click", { plan: plan.name, placement: "pricing_section" });
+                  }
+                }}
+              >
                 <Button
                   className="w-full"
                   variant={plan.popular ? "primary" : "secondary"}

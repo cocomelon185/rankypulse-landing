@@ -6,6 +6,7 @@ import { Card } from "@/components/horizon";
 import { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { Footer } from "@/components/Footer";
 import { RazorpayCheckoutButton } from "@/components/RazorpayCheckoutButton";
 import { RazorpayComingSoonModal } from "@/components/RazorpayComingSoonModal";
 import { Check, ChevronDown, Sparkles, CreditCard } from "lucide-react";
@@ -71,6 +72,19 @@ const faqs = [
   },
 ];
 
+function getPricingViewSource(): "audit" | "direct" {
+  if (typeof window === "undefined") return "direct";
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("source") === "audit") return "audit";
+  try {
+    const ref = document.referrer || "";
+    if (ref.includes("/audit/results")) return "audit";
+  } catch {
+    // ignore
+  }
+  return "direct";
+}
+
 export default function PricingClientPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [currency, setCurrency] = useState<"USD" | "INR">("INR");
@@ -78,11 +92,13 @@ export default function PricingClientPage() {
   const [razorpayModalPlan, setRazorpayModalPlan] = useState<string>("Starter");
 
   useEffect(() => {
-    track("pricing_view");
+    const source = getPricingViewSource();
+    track("pricing_view", { source });
   }, []);
 
   return (
-    <PageLayout>
+    <>
+      <PageLayout>
       <PageHeader
         icon={<CreditCard className="h-7 w-7" />}
         title="Pricing"
@@ -163,7 +179,10 @@ export default function PricingClientPage() {
                   currency="INR"
                   variant={plan.popular ? "primary" : "secondary"}
                   className="w-full"
-                  onClick={() => track("pricing_cta_click", { plan: plan.name })}
+                  onClick={() => {
+                    track("upgrade_click", { plan: plan.name, placement: "pricing" });
+                    track("checkout_start", { planId: plan.name, billingCycle: "monthly" });
+                  }}
                 >
                   {plan.cta}
                 </RazorpayCheckoutButton>
@@ -173,7 +192,8 @@ export default function PricingClientPage() {
                   variant={plan.popular ? "primary" : "secondary"}
                   size="lg"
                   onClick={() => {
-                    track("pricing_cta_click", { plan: plan.name });
+                    track("upgrade_click", { plan: plan.name, placement: "pricing" });
+                    track("checkout_start", { planId: plan.name, billingCycle: "monthly" });
                     setRazorpayModalPlan(plan.name);
                     setShowRazorpayModal(true);
                   }}
@@ -185,7 +205,6 @@ export default function PricingClientPage() {
               <Link
                 href={plan.href}
                 className="inline-flex h-12 w-full items-center justify-center rounded-xl px-8 text-base font-semibold transition-all bg-gray-100 text-gray-800 hover:bg-gray-200 md:h-12"
-                onClick={() => track("pricing_cta_click", { plan: plan.name })}
               >
                 {plan.cta}
               </Link>
@@ -258,6 +277,8 @@ export default function PricingClientPage() {
           paymentType={currency === "USD" ? "stripe" : "razorpay"}
         />
       )}
-    </PageLayout>
+      </PageLayout>
+      <Footer />
+    </>
   );
 }

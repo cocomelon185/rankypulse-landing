@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { track, toSafeDomain } from "@/lib/analytics";
+import { track } from "@/lib/analytics";
 
 function isValidHttpUrl(s: string) {
   try {
@@ -26,7 +26,7 @@ export default function AuditClientPage() {
       return;
     }
 
-    track("audit_started", { url_domain: toSafeDomain(trimmed) });
+    track("run_audit", { url_host: new URL(trimmed).host });
     try {
       localStorage.setItem("rankypulse_last_url", trimmed);
       localStorage.setItem("rankypulse_autorun_audit", "1");

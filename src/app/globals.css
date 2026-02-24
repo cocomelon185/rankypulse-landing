@@ -1,3 +1,6 @@
+/* Display font for audit headings – Inter Tight */
+@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&display=swap");
+
 @import "tailwindcss";
 
 :root {
@@ -55,6 +58,8 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Premium design system utilities */
@@ -82,7 +87,8 @@ body {
   border: 1px solid rgba(112, 144, 176, 0.08);
   border-radius: var(--radius-card);
   box-shadow: var(--card-shadow);
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  /* Only box-shadow — no transform to prevent "breathing" on scroll */
+  transition: box-shadow 0.2s ease;
 }
 
 .card-surface:hover {
@@ -136,4 +142,35 @@ body {
 }
 .animate-shimmer {
   animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* Audit results page: stable layout, no "breathing" on scroll */
+.audit-results-page {
+  contain: layout;
+}
+
+/* Audit results: premium tokens (spacing, surfaces, contrast) – scope to .audit-results-page only */
+.audit-results-page {
+  --audit-bg-tint: #f1f5f9;
+  --audit-card-border: rgba(148, 163, 184, 0.25);
+  --audit-card-shadow: 0 4px 12px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --audit-section-gap: 1rem;
+  /* Hero Summary: slightly whiter, stronger border & shadow */
+  --audit-hero-bg: #ffffff;
+  --audit-hero-border: rgba(148, 163, 184, 0.4);
+  --audit-hero-shadow: 0 6px 20px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.03);
+  /* Primary CTA card: slightly stronger emphasis */
+  --audit-primary-card-shadow: 0 6px 16px rgba(67, 24, 255, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+/* Audit-only background: subtle radial gradient (no blur, no transform) */
+.audit-bg {
+  background-color: var(--audit-bg-tint, #f1f5f9);
+  background-image: radial-gradient(ellipse 120% 80% at 50% 0%, rgba(67, 24, 255, 0.04) 0%, transparent 50%);
+  background-attachment: scroll;
+}
+
+/* Audit headings: display font for titles, cards, labels */
+.audit-heading {
+  font-family: "Inter Tight", var(--font-sans), system-ui, sans-serif;
 }

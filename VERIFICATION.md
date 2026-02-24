@@ -4,8 +4,9 @@
 
 ### Local Verification
 - **Development**: Open browser console. Events appear as `[analytics] <eventName> { props }`.
-- **PostHog**: Set `NEXT_PUBLIC_POSTHOG_KEY` in `.env.local`. Add PostHog snippet to layout/head for initialization. Events will appear in PostHog dashboard.
-- **Google Analytics**: Set `NEXT_PUBLIC_GA_ID`. Load gtag script. Events will appear in GA4 DebugView.
+- **PostHog** (local only): Set `NEXT_PUBLIC_POSTHOG_KEY` in `.env.local`. Add PostHog snippet to layout/head for initialization. Events will appear in PostHog dashboard.
+- **Google Analytics** (local only): Set `NEXT_PUBLIC_GA_ID` in `.env.local`. Load gtag script. Events will appear in GA4 DebugView.
+- **Production**: Configure `NEXT_PUBLIC_GA_ID` and `NEXT_PUBLIC_POSTHOG_KEY` in Vercel Project Settings → Environment Variables. `.env.local` is not used in production.
 
 ### Event Names
 - `landing_hero_submit` – hero form submit (props: url_domain, source)

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -70,6 +71,7 @@ function SidebarNavContent() {
         <Link
           href="https://rankypulse.com/pricing"
           className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-[#4318ff]/10 to-[#7551ff]/10 px-4 py-3 text-sm font-semibold text-[#4318ff] transition-all hover:from-[#4318ff]/20 hover:to-[#7551ff]/20"
+          onClick={() => track("upgrade_click", { plan: "Pro", placement: "app_shell" })}
         >
           <Zap className="h-5 w-5" />
           Upgrade to Pro

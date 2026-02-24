@@ -3,6 +3,7 @@
 "use client";
 
 import Link from "next/link";
+import { track } from "@/lib/analytics";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,11 @@ export default function BillingClientPage() {
             Next reset: <strong>{new Date(nextResetDate).toLocaleDateString()}</strong>
           </p>
           {plan === "free" && (
-            <Link href="https://rankypulse.com/pricing" className="mt-4 block">
+            <Link
+              href="https://rankypulse.com/pricing"
+              className="mt-4 block"
+              onClick={() => track("upgrade_click", { plan: "upgrade", placement: "billing" })}
+            >
               <Button size="lg" className="w-full">
                 <Zap className="mr-2 h-5 w-5" />
                 Upgrade to Starter or Pro
@@ -50,6 +55,7 @@ export default function BillingClientPage() {
         <Link
           href="https://rankypulse.com/pricing"
           className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50"
+          onClick={() => track("upgrade_click", { plan: "upgrade", placement: "billing" })}
         >
           <span className="font-medium text-[#1B2559]">View all plans</span>
           <ChevronRight className="h-5 w-5 text-gray-400" />

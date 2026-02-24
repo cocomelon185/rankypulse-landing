@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { track } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { SectionCard } from "@/components/layout/SectionCard";
 import {
@@ -75,7 +76,10 @@ export function QuickWinCard({ win, isPro, onMarkFixed }: QuickWinCardProps) {
             Apply AI Fix
           </Button>
         ) : (
-          <Link href="/pricing">
+          <Link
+            href="/pricing"
+            onClick={() => track("upgrade_click", { plan: "Pro", placement: "quick_win_card" })}
+          >
             <Button
               size="md"
               className="bg-gradient-to-r from-[#4318ff] to-[#7551ff]"
@@ -116,6 +120,7 @@ export function QuickWinCard({ win, isPro, onMarkFixed }: QuickWinCardProps) {
               <Link
                 href="/pricing"
                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#4318ff] transition-colors hover:underline"
+                onClick={() => track("upgrade_click", { plan: "Pro", placement: "quick_win_card" })}
               >
                 Upgrade to copy full fix
                 <ExternalLink className="h-4 w-4" />

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { track } from "@/lib/analytics";
 import { Card } from "@/components/horizon";
 import { Check } from "lucide-react";
 
@@ -29,6 +30,7 @@ export function PricingTeaserSection() {
             href="/pricing"
             className="inline-flex h-12 items-center justify-center rounded-xl bg-[#4318ff] px-8 text-base font-semibold text-white transition-all hover:bg-[#3311db]"
             aria-label="View pricing plans"
+            onClick={() => track("upgrade_click", { plan: "upgrade", placement: "pricing_teaser" })}
           >
             Compare plans
           </Link>

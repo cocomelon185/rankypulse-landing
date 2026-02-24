@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { track } from "@/lib/analytics";
 import { Card } from "@/components/horizon";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Check, X } from "lucide-react";
@@ -142,7 +143,15 @@ export function PricingModal({ onClose }: PricingModalProps) {
                   </li>
                 ))}
               </ul>
-              <Link href={plan.href} onClick={onClose}>
+              <Link
+                href={plan.href}
+                onClick={() => {
+                  if (plan.name !== "Free") {
+                    track("upgrade_click", { plan: plan.name, placement: "pricing_modal" });
+                  }
+                  onClose();
+                }}
+              >
                 <Button
                   className="w-full"
                   variant={plan.popular ? "primary" : "secondary"}

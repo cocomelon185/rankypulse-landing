@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { track } from "@/lib/analytics";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Card } from "@/components/horizon";
@@ -25,7 +26,11 @@ export default function SignInClientPage() {
             </div>
 
             <Link href="/" className="block">
-              <Button className="w-full" size="lg">
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={() => track("auth_click", { method: "google", intent: "login" })}
+              >
                 <Chrome className="mr-2 h-5 w-5" />
                 Sign in with Google
               </Button>

@@ -89,7 +89,7 @@ export default function CompetitorsClientPage() {
           </p>
           <Button onClick={() => router.push("/pricing")}>Upgrade to Pro</Button>
         </div>
-        <LockedOverlay onUpgrade={() => window.location.href = "/pricing"} blur />
+        <LockedOverlay onUpgrade={() => window.location.href = "/pricing"} blur placement="competitors" />
       </Card>
 
       <div className="grid gap-8 lg:grid-cols-2">
