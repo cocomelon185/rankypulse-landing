@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Search, Zap } from "lucide-react";
+import { extractAuditDomain } from "@/lib/url-validation";
 
 export function FinalCTA() {
   const [domain, setDomain] = useState("");
@@ -16,10 +17,7 @@ export function FinalCTA() {
     // Read directly from form input to avoid stale state or autofill bypassing onChange
     const input = e.currentTarget.elements.namedItem("domain") as HTMLInputElement | null;
     const rawValue = (input?.value ?? domain).trim();
-    const cleaned = rawValue
-      .replace(/^https?:\/\//, "")
-      .replace(/^www\./, "")
-      .replace(/\/.*$/, "");
+    const cleaned = extractAuditDomain(rawValue);
 
     if (!cleaned || !cleaned.includes(".")) {
       setError("Enter a valid domain — e.g. yoursite.com");

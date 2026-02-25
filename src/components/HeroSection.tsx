@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Card, CircularProgress } from "@/components/horizon";
-import { isValidAuditUrl, normalizeUrl } from "@/lib/url-validation";
+import { isValidAuditUrl, normalizeUrl, extractAuditDomain } from "@/lib/url-validation";
 import { track } from "@/lib/analytics";
 
 function AuditPreviewCard() {
@@ -54,7 +54,7 @@ export function HeroSection() {
       setUrlError("Enter a valid URL (e.g. https://example.com)");
       return;
     }
-    const host = new URL(url).hostname.replace(/^www\./, "");
+    const host = extractAuditDomain(url);
     track("run_audit", { url_host: host });
     router.push(`/report/${host}`);
   };

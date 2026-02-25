@@ -24,3 +24,23 @@ export function normalizeUrl(value: string): string {
   }
   return trimmed;
 }
+
+/**
+ * Extracts the audit target domain from user input.
+ * Handles plain domains, full URLs, and /report/[domain] URLs
+ * (e.g. https://rankypulse.com/report/github.com → "github.com").
+ */
+export function extractAuditDomain(value: string): string {
+  const trimmed = value.trim();
+  try {
+    const u = new URL(trimmed);
+    const reportMatch = u.pathname.match(/^\/report\/([^/?#]+)/);
+    if (reportMatch) return reportMatch[1].toLowerCase();
+    return u.hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    const withoutProtocol = trimmed.replace(/^https?:\/\//, "").replace(/^www\./, "");
+    const reportMatch = withoutProtocol.match(/^[^/]+\/report\/([^/?#]+)/);
+    if (reportMatch) return reportMatch[1].toLowerCase();
+    return withoutProtocol.replace(/\/.*$/, "").toLowerCase();
+  }
+}

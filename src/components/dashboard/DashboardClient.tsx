@@ -22,6 +22,7 @@ import {
   Clock,
 } from "lucide-react";
 import CountUp from "react-countup";
+import { extractAuditDomain } from "@/lib/url-validation";
 
 // ── Data types ─────────────────────────────────────────────────────────────────
 
@@ -176,7 +177,7 @@ export function DashboardClient({
     e.preventDefault();
     const input = e.currentTarget.elements.namedItem("domain") as HTMLInputElement | null;
     const rawValue = (input?.value ?? domain).trim();
-    const cleaned = rawValue.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+    const cleaned = extractAuditDomain(rawValue);
     if (cleaned && cleaned.includes(".")) {
       router.push(`/report/${cleaned}`);
     }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { isValidAuditUrl, normalizeUrl } from "@/lib/url-validation";
+import { isValidAuditUrl, normalizeUrl, extractAuditDomain } from "@/lib/url-validation";
 import { track } from "@/lib/analytics";
 
 export function AuditCtaForm() {
@@ -22,7 +22,7 @@ export function AuditCtaForm() {
       setError("Enter a valid URL (e.g. https://example.com)");
       return;
     }
-    const host = new URL(normalized).hostname.replace(/^www\./, "");
+    const host = extractAuditDomain(normalized);
     track("run_audit", { source: "pseo_cta", url_host: host });
     router.push(`/report/${host}`);
   };
