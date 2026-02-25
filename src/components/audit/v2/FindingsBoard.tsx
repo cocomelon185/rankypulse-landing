@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, PartyPopper } from "lucide-react";
 import { useAuditStore } from "@/lib/use-audit";
 import { IssueCard } from "./IssueCard";
 import { SectionHeading } from "./SectionHeading";
+import { FixQuotaModal } from "../FixQuotaModal";
+import { useFixGate } from "@/hooks/useFixGate";
 import type { AuditIssueData } from "@/lib/audit-data";
 
 interface ColumnProps {
@@ -98,6 +100,18 @@ export function FindingsBoard({ highlightedId }: { highlightedId: string | null 
   const expandedIssueId = useAuditStore((s) => s.expandedIssueId);
   const setExpandedIssue = useAuditStore((s) => s.setExpandedIssue);
   const markFixed = useAuditStore((s) => s.markFixed);
+  const { handleFixAction } = useFixGate();
+  const [showQuotaModal, setShowQuotaModal] = useState(false);
+
+  const handleToggleExpand = (id: string) => {
+    if (expandedIssueId === id) {
+      setExpandedIssue(null);
+    } else {
+      void handleFixAction(id, () => setExpandedIssue(id)).then((result) => {
+        if (result === "quota_exceeded") setShowQuotaModal(true);
+      });
+    }
+  };
 
   const columns = useMemo(() => {
     const critical = data.issues.filter(
@@ -139,7 +153,7 @@ export function FindingsBoard({ highlightedId }: { highlightedId: string | null 
           issues={columns.critical}
           expandedIssueId={expandedIssueId}
           highlightedId={highlightedId}
-          onToggleExpand={setExpandedIssue}
+          onToggleExpand={handleToggleExpand}
           onMarkFixed={markFixed}
         />
         <Column
@@ -150,7 +164,7 @@ export function FindingsBoard({ highlightedId }: { highlightedId: string | null 
           issues={columns.high}
           expandedIssueId={expandedIssueId}
           highlightedId={highlightedId}
-          onToggleExpand={setExpandedIssue}
+          onToggleExpand={handleToggleExpand}
           onMarkFixed={markFixed}
         />
         <Column
@@ -161,7 +175,7 @@ export function FindingsBoard({ highlightedId }: { highlightedId: string | null 
           issues={columns.medium}
           expandedIssueId={expandedIssueId}
           highlightedId={highlightedId}
-          onToggleExpand={setExpandedIssue}
+          onToggleExpand={handleToggleExpand}
           onMarkFixed={markFixed}
         />
         <Column
@@ -172,7 +186,7 @@ export function FindingsBoard({ highlightedId }: { highlightedId: string | null 
           issues={columns.fixed}
           expandedIssueId={expandedIssueId}
           highlightedId={highlightedId}
-          onToggleExpand={setExpandedIssue}
+          onToggleExpand={handleToggleExpand}
           onMarkFixed={markFixed}
         />
       </div>
@@ -191,13 +205,15 @@ export function FindingsBoard({ highlightedId }: { highlightedId: string | null 
                 issue={issue}
                 isExpanded={expandedIssueId === issue.id}
                 isHighlighted={highlightedId === issue.id}
-                onToggleExpand={() => setExpandedIssue(issue.id)}
+                onToggleExpand={() => handleToggleExpand(issue.id)}
                 onMarkFixed={() => markFixed(issue.id)}
               />
             </motion.div>
           )
         )}
       </div>
+
+      {showQuotaModal && <FixQuotaModal onClose={() => setShowQuotaModal(false)} />}
     </motion.section>
   );
 }

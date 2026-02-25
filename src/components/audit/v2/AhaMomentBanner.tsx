@@ -1,10 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useAuditStore } from "@/lib/use-audit";
+import { useFixGate } from "@/hooks/useFixGate";
+import { FixQuotaModal } from "../FixQuotaModal";
 
 export function AhaMomentBanner() {
   const data = useAuditStore((s) => s.data);
+  const setExpandedIssue = useAuditStore((s) => s.setExpandedIssue);
+  const { handleFixAction } = useFixGate();
+  const [showQuotaModal, setShowQuotaModal] = useState(false);
 
   const topIssue = data.issues.find(
     (i) => i.status === "open" || i.status === "in-progress"
@@ -12,8 +18,14 @@ export function AhaMomentBanner() {
 
   const { min: trafficMin, max: trafficMax } = data.estimatedTrafficLoss;
 
-  const scrollToRoadmap = () => {
-    document.getElementById("fix-roadmap")?.scrollIntoView({ behavior: "smooth" });
+  const handleFixItNow = () => {
+    if (!topIssue) return;
+    void handleFixAction(topIssue.id, () => {
+      document.getElementById("fix-roadmap")?.scrollIntoView({ behavior: "smooth" });
+      setExpandedIssue(topIssue.id);
+    }).then((result) => {
+      if (result === "quota_exceeded") setShowQuotaModal(true);
+    });
   };
 
   if (!topIssue) return null;
@@ -65,7 +77,7 @@ export function AhaMomentBanner() {
 
           <button
             type="button"
-            onClick={scrollToRoadmap}
+            onClick={handleFixItNow}
             className="shrink-0 self-start rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_20px_rgba(99,102,241,0.4)] active:translate-y-0"
             style={{ background: "#6366f1" }}
             onMouseEnter={(e) =>
@@ -79,6 +91,8 @@ export function AhaMomentBanner() {
           </button>
         </div>
       </div>
+
+      {showQuotaModal && <FixQuotaModal onClose={() => setShowQuotaModal(false)} />}
     </motion.div>
   );
 }

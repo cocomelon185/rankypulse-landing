@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Check,
@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuditStore } from "@/lib/use-audit";
+import { useFixGate } from "@/hooks/useFixGate";
+import { FixQuotaModal } from "../FixQuotaModal";
 import { SectionHeading } from "./SectionHeading";
 import type { AuditIssueData } from "@/lib/audit-data";
 
@@ -245,6 +247,8 @@ export function ActionRoadmap({ onScrollToIssue }: { onScrollToIssue: (id: strin
   const data = useAuditStore((s) => s.data);
   const completedFixIds = useAuditStore((s) => s.completedFixIds);
   const setExpandedIssue = useAuditStore((s) => s.setExpandedIssue);
+  const { handleFixAction } = useFixGate();
+  const [showQuotaModal, setShowQuotaModal] = useState(false);
 
   const completedCount = completedFixIds.length;
 
@@ -341,8 +345,12 @@ export function ActionRoadmap({ onScrollToIssue }: { onScrollToIssue: (id: strin
                   status={status}
                   isLast={idx === sortedRoadmap.length - 1}
                   onOpenFix={() => {
-                    onScrollToIssue(issue.id);
-                    setExpandedIssue(issue.id);
+                    void handleFixAction(issue.id, () => {
+                      onScrollToIssue(issue.id);
+                      setExpandedIssue(issue.id);
+                    }).then((result) => {
+                      if (result === "quota_exceeded") setShowQuotaModal(true);
+                    });
                   }}
                   onSkip={() => {}}
                 />
@@ -351,6 +359,8 @@ export function ActionRoadmap({ onScrollToIssue }: { onScrollToIssue: (id: strin
           });
         })()}
       </div>
+
+      {showQuotaModal && <FixQuotaModal onClose={() => setShowQuotaModal(false)} />}
     </motion.section>
   );
 }

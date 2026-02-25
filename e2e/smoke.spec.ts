@@ -55,3 +55,23 @@ test.describe("Smoke: Key routes load", () => {
     await expect(page.getByRole("heading", { name: /Billing/i })).toBeVisible();
   });
 });
+
+test.describe("Anonymous audit flow", () => {
+  test("anonymous user can run audit and reach report page", async ({ page }) => {
+    await page.goto("/");
+    const input = page.getByPlaceholder(/yoursite\.com/).first();
+    await input.fill("stripe.com");
+    await page.getByRole("button", { name: /Run Free Audit|Scanning/i }).click();
+    await expect(page).toHaveURL(/\/report\/stripe\.com/, { timeout: 15_000 });
+  });
+
+  test("anonymous Fix it now redirects to signin with callbackUrl", async ({ page }) => {
+    await page.goto("/report/stripe.com", { waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => {});
+    const fixBtn = page.getByRole("button", { name: /Fix it now/i }).first();
+    await fixBtn.waitFor({ state: "visible", timeout: 60_000 });
+    await fixBtn.click();
+    await expect(page).toHaveURL(/\/auth\/signin/, { timeout: 10_000 });
+    expect(page.url()).toContain("callbackUrl=");
+  });
+});

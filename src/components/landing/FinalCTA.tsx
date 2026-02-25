@@ -5,12 +5,14 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Search, Zap } from "lucide-react";
 import { extractAuditDomain, isValidExtractedDomain } from "@/lib/url-validation";
+import { useAuth } from "@/hooks/useAuth";
 
 export function FinalCTA() {
   const [domain, setDomain] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,7 +28,25 @@ export function FinalCTA() {
 
     setIsLoading(true);
     setError("");
-    await new Promise((r) => setTimeout(r, 700));
+
+    if (isAuthenticated) {
+      try {
+        const res = await fetch("/api/usage/audit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ domain: cleaned }),
+        });
+        const data = await res.json() as { allowed?: boolean };
+        if (!data.allowed) {
+          setError("You've used all audits this month. Upgrade to continue.");
+          setIsLoading(false);
+          return;
+        }
+      } catch {
+        // Fail open on network error
+      }
+    }
+
     router.push(`/report/${cleaned}`);
   };
 

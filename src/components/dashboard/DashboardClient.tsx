@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import CountUp from "react-countup";
 import { extractAuditDomain, isValidExtractedDomain } from "@/lib/url-validation";
+import { useAuth } from "@/hooks/useAuth";
 
 // ── Data types ─────────────────────────────────────────────────────────────────
 
@@ -127,6 +128,7 @@ export function DashboardClient({
   scoreTrend = DEFAULT_TREND,
 }: DashboardClientProps) {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const statsRef = useRef<HTMLDivElement>(null);
   const statsInView = useInView(statsRef, { once: true });
   const [domain, setDomain] = useState("");
@@ -173,14 +175,36 @@ export function DashboardClient({
     },
   ] as const;
 
-  const handleNewAudit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleNewAudit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const input = e.currentTarget.elements.namedItem("domain") as HTMLInputElement | null;
     const rawValue = (input?.value ?? domain).trim();
     const cleaned = extractAuditDomain(rawValue);
-    if (isValidExtractedDomain(cleaned)) {
-      router.push(`/report/${cleaned}`);
+    if (!isValidExtractedDomain(cleaned)) return;
+
+    if (isAuthenticated) {
+      try {
+        const res = await fetch("/api/usage/audit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ domain: cleaned }),
+        });
+        const data = await res.json() as { allowed?: boolean };
+        if (!data.allowed) {
+          // Show error in domain input field via browser validation
+          const inputEl = e.currentTarget?.elements?.namedItem("domain") as HTMLInputElement | null;
+          if (inputEl) {
+            inputEl.setCustomValidity("Audit limit reached. Upgrade to continue.");
+            inputEl.reportValidity();
+          }
+          return;
+        }
+      } catch {
+        // Fail open on network error
+      }
     }
+
+    router.push(`/report/${cleaned}`);
   };
 
   const dateLabel = new Date()

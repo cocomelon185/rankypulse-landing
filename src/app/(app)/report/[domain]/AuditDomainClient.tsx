@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useScrollToIssue } from "@/hooks/useScrollToIssue";
 import { AuditHero } from "@/components/audit/v2/AuditHero";
 import { IssueRadar } from "@/components/audit/v2/IssueRadar";
@@ -20,11 +21,14 @@ import {
   GenericErrorState,
 } from "@/components/audit/ErrorStates";
 import { useAuditStore } from "@/lib/use-audit";
+import { useAuth } from "@/hooks/useAuth";
+import { incrementAuditsUsed } from "@/lib/billing-store";
 import { MOCK_AUDIT } from "@/lib/audit-data";
 
 type ErrorKind = "unreachable" | "rate_limited" | "timeout" | "failed";
 
 export function AuditDomainClient({ domain: rawDomain }: { domain: string }) {
+  const searchParams = useSearchParams();
   const domain = rawDomain
     .replace(/^https?:\/\//, '')
     .replace(/^www\./, '')
@@ -48,6 +52,22 @@ export function AuditDomainClient({ domain: rawDomain }: { domain: string }) {
   currentDomainRef.current = domain;
 
   const setData = useAuditStore((s) => s.setData);
+  const setExpandedIssue = useAuditStore((s) => s.setExpandedIssue);
+  const { isAuthenticated } = useAuth();
+  const isAuthenticatedRef = useRef(isAuthenticated);
+  isAuthenticatedRef.current = isAuthenticated;
+
+  // After sign-in return: auto-open the fix that user intended
+  const processedCallbackRef = useRef(false);
+  useEffect(() => {
+    const action = searchParams?.get("action");
+    const issueId = searchParams?.get("issueId");
+    if (action === "fix" && issueId && !isLoading && !processedCallbackRef.current) {
+      processedCallbackRef.current = true;
+      setExpandedIssue(issueId);
+      scrollToIssue(issueId);
+    }
+  }, [searchParams, isLoading, setExpandedIssue, scrollToIssue]);
 
   // Delays a callback so the loading screen always shows for at least `minMs`
   const withMinTime = (minMs: number, fn: () => void) => {
@@ -68,11 +88,7 @@ export function AuditDomainClient({ domain: rawDomain }: { domain: string }) {
     // 45s hard timeout — PSI can be slow on cold starts
     const timeoutId = setTimeout(() => controller.abort(), 45_000);
 
-    const crawlUrl = `/api/crawl?domain=${encodeURIComponent(targetDomain)}`;
-    if (typeof window !== "undefined") {
-      console.log("[audit] Fetching crawl for domain:", targetDomain);
-    }
-    fetch(crawlUrl, {
+    fetch(`/api/crawl?domain=${encodeURIComponent(targetDomain)}`, {
       signal: controller.signal,
     })
       .then(async (res) => {
@@ -110,6 +126,7 @@ export function AuditDomainClient({ domain: rawDomain }: { domain: string }) {
         if (stillRelevant) {
           withMinTime(4_000, () => {
             setData(data);
+            if (isAuthenticatedRef.current) incrementAuditsUsed();
             setIsLoading(false);
           });
         }

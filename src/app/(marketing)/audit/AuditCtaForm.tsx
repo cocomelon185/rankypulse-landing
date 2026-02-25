@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { isValidAuditUrl, normalizeUrl, extractAuditDomain } from "@/lib/url-validation";
 import { track } from "@/lib/analytics";
+import { useAuth } from "@/hooks/useAuth";
 
 export function AuditCtaForm() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     // Read directly from form input to avoid stale state or autofill bypassing onChange
@@ -23,6 +25,24 @@ export function AuditCtaForm() {
       return;
     }
     const host = extractAuditDomain(normalized);
+
+    if (isAuthenticated) {
+      try {
+        const res = await fetch("/api/usage/audit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ domain: host }),
+        });
+        const data = await res.json() as { allowed?: boolean };
+        if (!data.allowed) {
+          setError("You've used all audits this month. Upgrade to continue.");
+          return;
+        }
+      } catch {
+        // Fail open on network error
+      }
+    }
+
     track("run_audit", { source: "pseo_cta", url_host: host });
     router.push(`/report/${host}`);
   };

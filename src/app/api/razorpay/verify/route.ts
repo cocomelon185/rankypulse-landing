@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { rateLimit, getRateLimitKey } from "@/lib/rate-limit";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase";
 
 const TEST_MODE = !process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET;
 
@@ -30,9 +33,18 @@ export async function POST(request: NextRequest) {
         razorpay_payment_id &&
         razorpay_signature === "test_signature_ok";
       if (isValidTest) {
+        const planName = (plan || razorpay_order_id.replace("order_test_", "").split("_")[0] || "starter") as string;
+        const session = await getServerSession(authOptions);
+        if (session?.user?.id) {
+          await supabaseAdmin.from("user_plans").upsert({
+            user_id: session.user.id,
+            plan: planName,
+            updated_at: new Date().toISOString(),
+          });
+        }
         return NextResponse.json({
           success: true,
-          plan: plan || razorpay_order_id.replace("order_test_", "").split("_")[0] || "starter",
+          plan: planName,
           test_mode: true,
         });
       }
@@ -55,9 +67,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const planName = (plan || "starter") as string;
+    const session = await getServerSession(authOptions);
+    if (session?.user?.id) {
+      await supabaseAdmin.from("user_plans").upsert({
+        user_id: session.user.id,
+        plan: planName,
+        updated_at: new Date().toISOString(),
+      });
+    }
+
     return NextResponse.json({
       success: true,
-      plan: plan || "starter",
+      plan: planName,
     });
   } catch (e) {
     console.error("[razorpay/verify]", e);

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { AuditDomainClient } from "./AuditDomainClient";
 
 type Props = {
@@ -17,5 +18,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function AuditDomainPage({ params }: Props) {
   const { domain } = await params;
-  return <AuditDomainClient domain={domain} />;
+  return (
+    <Suspense fallback={null}>
+      <AuditDomainClient domain={domain} />
+    </Suspense>
+  );
 }

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Card, CircularProgress } from "@/components/horizon";
 import { isValidAuditUrl, normalizeUrl, extractAuditDomain } from "@/lib/url-validation";
 import { track } from "@/lib/analytics";
+import { useAuth } from "@/hooks/useAuth";
 
 function AuditPreviewCard() {
   return (
@@ -42,9 +43,10 @@ function AuditPreviewCard() {
 
 export function HeroSection() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [urlError, setUrlError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setUrlError(null);
     const input = e.currentTarget.elements.namedItem("url") as HTMLInputElement;
@@ -55,6 +57,24 @@ export function HeroSection() {
       return;
     }
     const host = extractAuditDomain(url);
+
+    if (isAuthenticated) {
+      try {
+        const res = await fetch("/api/usage/audit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ domain: host }),
+        });
+        const data = await res.json() as { allowed?: boolean };
+        if (!data.allowed) {
+          setUrlError("You've used all audits this month. Upgrade to continue.");
+          return;
+        }
+      } catch {
+        // Fail open on network error
+      }
+    }
+
     track("run_audit", { url_host: host });
     router.push(`/report/${host}`);
   };

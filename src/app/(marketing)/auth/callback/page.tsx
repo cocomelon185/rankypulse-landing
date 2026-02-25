@@ -18,11 +18,12 @@ function AuthCallbackClient() {
     const success = searchParams.get("success");
     const intent = searchParams.get("intent");
     const method = searchParams.get("method") ?? "google";
+    const callbackUrl = searchParams.get("callbackUrl") ?? "/";
 
     if (success === "1" && (intent === "login" || intent === "sign_up")) {
       track(intent, { method });
     }
-    router.replace("/");
+    router.replace(callbackUrl);
   }, [searchParams, router]);
 
   return null;

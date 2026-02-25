@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { Fraunces, DM_Sans, DM_Mono, Inter_Tight } from "next/font/google";
+import { SessionProvider } from "@/components/providers/SessionProvider";
 import "./globals.css";
 import { AnalyticsClient } from "@/components/AnalyticsClient";
 
@@ -100,11 +101,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ) : null}
       </head>
       <body>
-        {children}
-        <Toaster position="bottom-center" richColors closeButton />
-        <Suspense fallback={null}>
-          <AnalyticsClient />
-        </Suspense>
+        <SessionProvider>
+          {children}
+          <Toaster position="bottom-center" richColors closeButton />
+          <Suspense fallback={null}>
+            <AnalyticsClient />
+          </Suspense>
+        </SessionProvider>
       </body>
     </html>
   );

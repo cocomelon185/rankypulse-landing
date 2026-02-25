@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { useFixGate } from "@/hooks/useFixGate";
+import { FixQuotaModal } from "../FixQuotaModal";
 import {
   Play,
   Share2,
@@ -29,6 +31,8 @@ export function AuditSidebar({
 
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
+  const [showQuotaModal, setShowQuotaModal] = useState(false);
+  const { handleFixAction } = useFixGate();
 
   const currentTask = useMemo(() => {
     const sorted = [...data.roadmap].sort((a, b) => a.order - b.order);
@@ -65,10 +69,13 @@ export function AuditSidebar({
   );
 
   const handleContinueFix = () => {
-    if (currentTask) {
-      onScrollToIssue(currentTask.id);
-      setExpandedIssue(currentTask.id);
-    }
+    if (!currentTask) return;
+    void handleFixAction(currentTask.id, () => {
+      onScrollToIssue(currentTask!.id);
+      setExpandedIssue(currentTask!.id);
+    }).then((result) => {
+      if (result === "quota_exceeded") setShowQuotaModal(true);
+    });
   };
 
   const handleEmailSubmit = async () => {
@@ -246,6 +253,8 @@ export function AuditSidebar({
           </div>
         )}
       </div>
+
+      {showQuotaModal && <FixQuotaModal onClose={() => setShowQuotaModal(false)} />}
 
       {/* Action buttons */}
       <div className="audit-card p-5">

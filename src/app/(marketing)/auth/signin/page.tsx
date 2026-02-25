@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import SignInClientPage from "./SignInClientPage";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -31,5 +32,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function SignInPage() {
-  return <SignInClientPage />;
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0d0f14]" />}>
+      <SignInClientPage />
+    </Suspense>
+  );
 }

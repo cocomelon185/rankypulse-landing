@@ -1,20 +1,24 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { motion } from "framer-motion";
 import { Zap, Mail, ArrowRight } from "lucide-react";
 import { track } from "@/lib/analytics";
 
 export default function SignInClientPage() {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams?.get("callbackUrl") ?? "/dashboard";
+
   const handleGoogleSignIn = () => {
     track("signin_attempt", { provider: "google" });
-    // Wire to your auth provider (NextAuth, Supabase Auth, etc.)
-    window.location.href = "/api/auth/signin?provider=google";
+    signIn("google", { callbackUrl });
   };
 
   const handleEmailSignIn = () => {
     track("signin_attempt", { provider: "email" });
-    window.location.href = "/auth/forgot-password";
+    window.location.href = `/auth/signin/email?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   };
 
   return (
@@ -91,8 +95,18 @@ export default function SignInClientPage() {
             <ArrowRight size={13} className="ml-auto text-gray-600" />
           </button>
 
+          {/* Forgot password */}
+          <p className="mt-4 text-center font-['DM_Sans'] text-xs text-gray-600">
+            <Link
+              href={`/auth/forgot-password${callbackUrl !== "/dashboard" ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`}
+              className="text-indigo-400 transition-colors hover:text-indigo-300"
+            >
+              Forgot password?
+            </Link>
+          </p>
+
           {/* No-account note */}
-          <p className="mt-5 text-center font-['DM_Sans'] text-xs text-gray-700">
+          <p className="mt-3 text-center font-['DM_Sans'] text-xs text-gray-700">
             Don&apos;t have an account?{" "}
             <Link
               href="/auth/signup"

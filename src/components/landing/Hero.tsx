@@ -5,6 +5,7 @@ import { motion, useInView } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Zap, Search, TrendingUp, Clock, Eye } from "lucide-react";
 import { extractAuditDomain, isValidExtractedDomain } from "@/lib/url-validation";
+import { useAuth } from "@/hooks/useAuth";
 import CountUp from "react-countup";
 
 const STATS = [
@@ -111,11 +112,13 @@ export function Hero() {
   const [domain, setDomain] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [auditLimitError, setAuditLimitError] = useState("");
   const statsRef = useRef<HTMLDivElement>(null);
   const statsInView = useInView(statsRef, { once: true, margin: "-50px" });
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
 
-  const runAudit = (rawDomain: string) => {
+  const runAudit = async (rawDomain: string) => {
     const cleaned = extractAuditDomain(rawDomain);
 
     if (!isValidExtractedDomain(cleaned)) {
@@ -123,14 +126,31 @@ export function Hero() {
       return;
     }
 
+    setAuditLimitError("");
     setIsLoading(true);
     setError("");
-    // Navigate immediately — AuditLoadingScreen handles the wait experience
-    const reportPath = `/report/${cleaned}`;
-    if (typeof window !== "undefined") {
-      console.log("[audit] Redirecting to:", reportPath, "(domain:", cleaned, ")");
+
+    // For authenticated users, check server-side quota
+    if (isAuthenticated) {
+      try {
+        const res = await fetch("/api/usage/audit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ domain: cleaned }),
+        });
+        const data = await res.json() as { allowed?: boolean; reason?: string };
+        if (!data.allowed) {
+          setAuditLimitError("You've used all audits this month. Upgrade to continue.");
+          setIsLoading(false);
+          return;
+        }
+      } catch {
+        // Fail open — proceed with audit on network error
+      }
     }
-    router.push(reportPath);
+
+    // Navigate immediately — AuditLoadingScreen handles the wait experience
+    router.push(`/report/${cleaned}`);
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -138,13 +158,13 @@ export function Hero() {
     // Read directly from form input to avoid stale state or autofill bypassing onChange
     const input = e.currentTarget.elements.namedItem("domain") as HTMLInputElement | null;
     const rawValue = (input?.value ?? domain).trim();
-    runAudit(rawValue);
+    void runAudit(rawValue);
   };
 
   const handleQuickLink = (demo: string) => {
     setDomain(demo);
     // Brief delay so user sees the domain populate before navigating
-    setTimeout(() => runAudit(demo), 350);
+    setTimeout(() => void runAudit(demo), 350);
   };
 
   return (
@@ -251,6 +271,16 @@ export function Hero() {
               className="mt-2 pl-1 text-left font-['DM_Sans'] text-sm text-red-400"
             >
               {error}
+            </motion.p>
+          )}
+          {auditLimitError && (
+            <motion.p
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-2 pl-1 text-left font-['DM_Sans'] text-sm text-amber-400"
+            >
+              {auditLimitError}{" "}
+              <a href="/pricing" className="underline">Upgrade</a>
             </motion.p>
           )}
         </motion.div>
