@@ -1,3 +1,5 @@
+export type IssueCategory = "CTR" | "Indexing" | "Performance" | "Content";
+
 export type AuditIssue = {
   id: string;
   code: string;
@@ -6,6 +8,19 @@ export type AuditIssue = {
   effortMinutes?: number;
   category?: string;
   suggestedFix?: string;
+};
+
+export type SnippetSuggestion = {
+  type: "title" | "meta_description";
+  current: string | null;
+  suggested: string;
+};
+
+export type PageType = "Home" | "Pricing" | "Product" | "Blog" | "Contact" | "Other";
+
+export type AffectedPage = {
+  url: string;
+  pageType: PageType;
 };
 
 export type PresentedIssue = AuditIssue & {
@@ -18,7 +33,12 @@ export type PresentedIssue = AuditIssue & {
   difficulty: "Easy" | "Medium";
   affectedUrlsCount: number;
   sampleUrls: string[];
+  affectedPages: AffectedPage[];
   steps: string[];
+  categoryTag: IssueCategory;
+  snippetSuggestion: SnippetSuggestion | null;
+  priorityReasons: string[];
+  expectedLift: string;
 };
 
 function normalizeSeverity(severity: string): "HIGH" | "MEDIUM" | "LOW" {
@@ -40,6 +60,10 @@ type PresentationPreset = {
   whyItMatters: string;
   impactSummary: string;
   steps: string[];
+  categoryTag: IssueCategory;
+  snippetSuggestion: SnippetSuggestion | null;
+  priorityReasons: string[];
+  expectedLift: string;
 };
 
 const PRESET_BY_CODE_KEYWORD: Array<{ keyword: string; preset: PresentationPreset }> = [
@@ -55,6 +79,14 @@ const PRESET_BY_CODE_KEYWORD: Array<{ keyword: string; preset: PresentationPrese
         "Include the primary intent and a concrete benefit.",
         "Save and re-publish the page.",
       ],
+      categoryTag: "CTR",
+      snippetSuggestion: {
+        type: "meta_description",
+        current: null,
+        suggested: "Discover how [Your Brand] helps you [primary benefit]. Get started in minutes \u2014 trusted by thousands.",
+      },
+      priorityReasons: ["Missing snippet text reduces click-through rate", "High-impression pages affected", "Quick fix with measurable CTR impact"],
+      expectedLift: "CTR +15\u201330%",
     },
   },
   {
@@ -69,6 +101,14 @@ const PRESET_BY_CODE_KEYWORD: Array<{ keyword: string; preset: PresentationPrese
         "Keep the primary keyword near the front.",
         "Save and re-crawl the page.",
       ],
+      categoryTag: "CTR",
+      snippetSuggestion: {
+        type: "title",
+        current: null,
+        suggested: "[Primary Keyword] \u2014 [Brand] | [Value Prop]",
+      },
+      priorityReasons: ["Truncated titles lose context in SERPs", "Keyword dilution reduces relevance signals"],
+      expectedLift: "CTR +5\u201315%",
     },
   },
   {
@@ -83,6 +123,10 @@ const PRESET_BY_CODE_KEYWORD: Array<{ keyword: string; preset: PresentationPrese
         "Ensure internal links use the same preferred version.",
         "Re-run the audit to verify.",
       ],
+      categoryTag: "Indexing",
+      snippetSuggestion: null,
+      priorityReasons: ["Duplicate indexing risk", "Canonical mismatch splits authority", "High-impact pages affected"],
+      expectedLift: "Indexing + rankings",
     },
   },
   {
@@ -96,6 +140,10 @@ const PRESET_BY_CODE_KEYWORD: Array<{ keyword: string; preset: PresentationPrese
         "Use H2/H3 in logical order.",
         "Remove skipped heading levels where possible.",
       ],
+      categoryTag: "Content",
+      snippetSuggestion: null,
+      priorityReasons: ["Crawlers rely on heading hierarchy for topic signals", "Inconsistent headings reduce content clarity"],
+      expectedLift: "Topical relevance",
     },
   },
   {
@@ -109,6 +157,10 @@ const PRESET_BY_CODE_KEYWORD: Array<{ keyword: string; preset: PresentationPrese
         "Compress large assets and use modern formats.",
         "Set width/height attributes to reduce layout shift.",
       ],
+      categoryTag: "Performance",
+      snippetSuggestion: null,
+      priorityReasons: ["Missing dimensions cause layout shift (CLS penalty)", "Alt text improves image search visibility"],
+      expectedLift: "Performance + CLS",
     },
   },
   {
@@ -122,9 +174,21 @@ const PRESET_BY_CODE_KEYWORD: Array<{ keyword: string; preset: PresentationPrese
         "Add relevant in-content links using descriptive anchor text.",
         "Fix broken or redirected internal targets.",
       ],
+      categoryTag: "Indexing",
+      snippetSuggestion: null,
+      priorityReasons: ["Orphan pages miss crawl budget", "Authority isn\u2019t flowing to important pages"],
+      expectedLift: "Crawl depth + authority",
     },
   },
 ];
+
+function deriveCategoryTag(issue: AuditIssue): IssueCategory {
+  const s = `${issue.code} ${issue.category ?? ""} ${issue.title}`.toLowerCase();
+  if (s.includes("canonical") || s.includes("index") || s.includes("robots") || s.includes("sitemap") || s.includes("link")) return "Indexing";
+  if (s.includes("title") || s.includes("meta") || s.includes("snippet") || s.includes("ctr")) return "CTR";
+  if (s.includes("image") || s.includes("speed") || s.includes("perf") || s.includes("cls") || s.includes("lcp")) return "Performance";
+  return "Content";
+}
 
 function getPreset(issue: AuditIssue): PresentationPreset {
   const source = `${issue.code} ${issue.category ?? ""}`.toLowerCase();
@@ -140,12 +204,35 @@ function getPreset(issue: AuditIssue): PresentationPreset {
       "Apply the recommended SEO correction.",
       "Publish and verify the change in a fresh audit.",
     ],
+    categoryTag: deriveCategoryTag(issue),
+    snippetSuggestion: null,
+    priorityReasons: ["Affects organic visibility", "Can be resolved with standard SEO best practices"],
+    expectedLift: "Organic performance",
   };
 }
 
-function buildSampleUrls(hostname: string, n: number): string[] {
+function inferPageType(path: string): PageType {
+  const p = path.toLowerCase();
+  if (p === "/" || p === "") return "Home";
+  if (p.includes("pricing") || p.includes("plans")) return "Pricing";
+  if (p.includes("blog") || p.includes("article") || p.includes("post")) return "Blog";
+  if (p.includes("contact") || p.includes("support")) return "Contact";
+  if (p.includes("product") || p.includes("feature") || p.includes("solution")) return "Product";
+  return "Other";
+}
+
+function buildAffectedPages(hostname: string, n: number): AffectedPage[] {
   const paths = ["/", "/pricing", "/blog/seo-audit-checklist", "/features", "/contact"];
-  return paths.slice(0, Math.max(2, Math.min(3, n))).map((path) => `https://${hostname}${path}`);
+  return paths.slice(0, Math.max(2, Math.min(5, n))).map((path) => ({
+    url: `https://${hostname}${path}`,
+    pageType: inferPageType(path),
+  }));
+}
+
+export function getIssueKeyword(issue: { code: string; category?: string }): string {
+  const source = `${issue.code} ${issue.category ?? ""}`.toLowerCase();
+  const keywords = ["meta_description", "title", "canonical", "heading", "image", "link"];
+  return keywords.find((k) => source.includes(k)) ?? "";
 }
 
 export function enrichIssues(issues: AuditIssue[], hostname: string): PresentedIssue[] {
@@ -157,6 +244,7 @@ export function enrichIssues(issues: AuditIssue[], hostname: string): PresentedI
     const confidenceLabel = sevScore === 3 ? "High" : "Medium";
     const impactLabel = sevScore === 3 ? "High" : sevScore === 2 ? "Medium" : "Low";
     const difficulty = effortMinutes <= 12 ? "Easy" : "Medium";
+    const affectedPages = buildAffectedPages(hostname, impacted);
 
     return {
       ...issue,
@@ -168,8 +256,13 @@ export function enrichIssues(issues: AuditIssue[], hostname: string): PresentedI
       confidenceLabel,
       difficulty,
       affectedUrlsCount: impacted,
-      sampleUrls: buildSampleUrls(hostname, impacted),
+      sampleUrls: affectedPages.slice(0, 3).map((p) => p.url),
+      affectedPages,
       steps: preset.steps,
+      categoryTag: preset.categoryTag,
+      snippetSuggestion: preset.snippetSuggestion,
+      priorityReasons: preset.priorityReasons,
+      expectedLift: preset.expectedLift,
     };
   });
 }
