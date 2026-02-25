@@ -76,6 +76,7 @@ export function HeroSection() {
                 <input
                   name="url"
                   type="url"
+                  autoComplete="off"
                   placeholder="https://example.com"
                   aria-invalid={!!urlError}
                   aria-describedby={urlError ? "hero-url-error" : undefined}

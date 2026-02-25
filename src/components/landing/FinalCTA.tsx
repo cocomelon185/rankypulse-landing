@@ -11,10 +11,12 @@ export function FinalCTA() {
   const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const cleaned = domain
-      .trim()
+    // Read directly from form input to avoid stale state or autofill bypassing onChange
+    const input = e.currentTarget.elements.namedItem("domain") as HTMLInputElement | null;
+    const rawValue = (input?.value ?? domain).trim();
+    const cleaned = rawValue
       .replace(/^https?:\/\//, "")
       .replace(/^www\./, "")
       .replace(/\/.*$/, "");
@@ -87,7 +89,9 @@ export function FinalCTA() {
               className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 transition-colors duration-200 group-focus-within:text-indigo-400"
             />
             <input
+              name="domain"
               type="text"
+              autoComplete="off"
               value={domain}
               onChange={(e) => { setDomain(e.target.value); setError(""); }}
               placeholder="yoursite.com"

@@ -14,7 +14,9 @@ export function AuditCtaForm() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
-    const raw = url.trim();
+    // Read directly from form input to avoid stale state or autofill bypassing onChange
+    const input = e.currentTarget.elements.namedItem("url") as HTMLInputElement | null;
+    const raw = (input?.value ?? url).trim();
     const normalized = normalizeUrl(raw);
     if (!isValidAuditUrl(normalized)) {
       setError("Enter a valid URL (e.g. https://example.com)");
@@ -28,7 +30,9 @@ export function AuditCtaForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:gap-3">
       <input
+        name="url"
         type="url"
+        autoComplete="off"
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="https://example.com"

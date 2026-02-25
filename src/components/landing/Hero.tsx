@@ -129,12 +129,19 @@ export function Hero() {
     setIsLoading(true);
     setError("");
     // Navigate immediately — AuditLoadingScreen handles the wait experience
-    router.push(`/report/${cleaned}`);
+    const reportPath = `/report/${cleaned}`;
+    if (typeof window !== "undefined") {
+      console.log("[audit] Redirecting to:", reportPath, "(domain:", cleaned, ")");
+    }
+    router.push(reportPath);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    runAudit(domain);
+    // Read directly from form input to avoid stale state or autofill bypassing onChange
+    const input = e.currentTarget.elements.namedItem("domain") as HTMLInputElement | null;
+    const rawValue = (input?.value ?? domain).trim();
+    runAudit(rawValue);
   };
 
   const handleQuickLink = (demo: string) => {
@@ -219,7 +226,9 @@ export function Hero() {
               <input
                 // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
+                name="domain"
                 type="text"
+                autoComplete="off"
                 value={domain}
                 onChange={(e) => { setDomain(e.target.value); setError(""); }}
                 placeholder="yoursite.com"

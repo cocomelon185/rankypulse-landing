@@ -172,9 +172,11 @@ export function DashboardClient({
     },
   ] as const;
 
-  const handleNewAudit = (e: React.FormEvent) => {
+  const handleNewAudit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const cleaned = domain.trim().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+    const input = e.currentTarget.elements.namedItem("domain") as HTMLInputElement | null;
+    const rawValue = (input?.value ?? domain).trim();
+    const cleaned = rawValue.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
     if (cleaned && cleaned.includes(".")) {
       router.push(`/report/${cleaned}`);
     }
@@ -224,7 +226,9 @@ export function DashboardClient({
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600"
                 />
                 <input
+                  name="domain"
                   type="text"
+                  autoComplete="off"
                   value={domain}
                   onChange={(e) => setDomain(e.target.value)}
                   placeholder="audit a new domain..."
