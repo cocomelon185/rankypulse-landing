@@ -1,503 +1,429 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 
-export const runtime = "edge";
+export const runtime = 'edge';
 
-const HTML_TIMEOUT = 8_000;   // 8s per HTML fetch attempt
-const PSI_TIMEOUT  = 30_000;  // 30s for PageSpeed API (can be slow on cold starts)
-const MAX_HTML_BYTES = 200 * 1024; // 200 KB cap — enough for <head>
+// ── Rate limiting ────────────────────────────────────────────────
+const rateMap = new Map<string, { count: number; resetAt: number }>();
 
-// Converts raw PSI score (0–1 float) → 0–100 integer
-function psiScore(raw: unknown): number {
-  return Math.round((typeof raw === "number" ? raw : 0.5) * 100);
-}
-
-// Safely extracts a numeric audit value from PSI audits map
-function auditNum(audits: Record<string, unknown>, key: string): number {
-  const a = audits[key] as Record<string, unknown> | undefined;
-  return typeof a?.numericValue === "number" ? a.numericValue : 0;
-}
-
-// Stream-read at most MAX_HTML_BYTES from a response body
-async function readBodyCapped(res: Response): Promise<string> {
-  const reader = res.body?.getReader();
-  if (!reader) return res.text();
-
-  const chunks: Uint8Array[] = [];
-  let totalBytes = 0;
-  const decoder = new TextDecoder();
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done || !value) break;
-    chunks.push(value);
-    totalBytes += value.byteLength;
-    if (totalBytes >= MAX_HTML_BYTES) {
-      await reader.cancel().catch(() => {});
-      break;
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateMap.get(ip);
+  if (entry && now < entry.resetAt) {
+    if (entry.count >= 10) return false;
+    entry.count++;
+  } else {
+    rateMap.set(ip, { count: 1, resetAt: now + 60_000 });
+  }
+  if (rateMap.size > 5000) {
+    for (const [k, v] of rateMap) {
+      if (Date.now() > v.resetAt) rateMap.delete(k);
     }
   }
-
-  return chunks.map((c) => decoder.decode(c, { stream: true })).join("");
+  return true;
 }
 
-// Attempt to fetch HTML from a domain, trying https / https://www. / http: in order
-async function fetchHtml(cleanDomain: string): Promise<{ html: string; ok: boolean }> {
-  const candidates = [
-    `https://${cleanDomain}`,
-    `https://www.${cleanDomain}`,
-    `http://${cleanDomain}`,
+// ── THE KEY FIX: timeout via Promise.race ────────────────────────
+// AbortSignal.timeout() does NOT work reliably in Vercel Edge.
+// This approach works everywhere.
+function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  fallback: T
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>(resolve => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
+// ── Fetch raw HTML (8s max) ──────────────────────────────────────
+async function fetchHTML(domain: string): Promise<string> {
+  const urls = [
+    `https://${domain}`,
+    `https://www.${domain}`,
   ];
 
-  for (const url of candidates) {
+  for (const url of urls) {
     try {
-      const res = await fetch(url, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (compatible; RankyPulse-Bot/1.0; +https://rankypulse.com/bot)",
-          Accept: "text/html,application/xhtml+xml",
-          "Accept-Language": "en-US,en;q=0.9",
-        },
-        signal: AbortSignal.timeout(HTML_TIMEOUT),
-        redirect: "follow",
-      });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 7000);
 
-      if (res.ok && (res.headers.get("content-type") ?? "").includes("text/html")) {
-        return { html: await readBodyCapped(res), ok: true };
+      const res = await Promise.race([
+        fetch(url, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; RankyPulse/1.0)',
+            'Accept': 'text/html',
+          },
+          redirect: 'follow',
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('timeout')), 7000)
+        ),
+      ]).finally(() => clearTimeout(timer)) as Response;
+
+      if (!res.ok) continue;
+      if (!(res.headers.get('content-type') ?? '').includes('text/html')) continue;
+
+      // Read max 150KB
+      const reader = res.body?.getReader();
+      if (!reader) continue;
+
+      const chunks: Uint8Array[] = [];
+      let bytes = 0;
+
+      while (bytes < 150_000) {
+        const readResult = await Promise.race([
+          reader.read(),
+          new Promise<{ done: true; value: undefined }>(resolve =>
+            setTimeout(() => resolve({ done: true, value: undefined }), 5000)
+          ),
+        ]);
+
+        if (readResult.done || !readResult.value) break;
+        chunks.push(readResult.value);
+        bytes += readResult.value.byteLength;
       }
+
+      try { reader.cancel(); } catch {}
+
+      const decoder = new TextDecoder();
+      return chunks.map(c => decoder.decode(c, { stream: true })).join('') +
+             decoder.decode();
+
     } catch {
-      // Try next URL variant
+      continue;
     }
   }
-
-  return { html: "", ok: false };
+  return '';
 }
 
-// Follow redirects manually to count hops
-async function detectRedirects(
-  cleanDomain: string
-): Promise<{ count: number; finalUrl: string }> {
-  let count = 0;
-  let current = `https://${cleanDomain}`;
+// ── Fetch PSI (20s max, returns null on failure) ─────────────────
+async function fetchPSI(domain: string): Promise<Record<string, unknown> | null> {
+  const key = process.env.GOOGLE_PSI_KEY ?? '';
+  const url = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed` +
+    `?url=https://${domain}&strategy=mobile${key ? `&key=${key}` : ''}`;
 
   try {
-    for (let i = 0; i < 5; i++) {
-      const res = await fetch(current, {
-        redirect: "manual",
-        signal: AbortSignal.timeout(3_000),
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; RankyPulse-Bot/1.0)" },
-      });
-      if (res.status >= 300 && res.status < 400) {
-        count++;
-        const loc = res.headers.get("location");
-        if (!loc) break;
-        current = loc.startsWith("http") ? loc : `https://${cleanDomain}${loc}`;
-      } else {
-        break;
-      }
-    }
-  } catch {
-    // Best-effort
-  }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 19000);
 
-  return { count, finalUrl: current };
-}
-
-// Fetch PSI data — returns null on any failure so it never blocks the route
-async function fetchPSI(
-  cleanDomain: string,
-  apiKey: string | undefined
-): Promise<{ performanceScore: number; lcpMs: number; cls: number } | null> {
-  const psiUrl =
-    `https://www.googleapis.com/pagespeedonline/v5/runPagespeed` +
-    `?url=https://${cleanDomain}&strategy=mobile` +
-    (apiKey ? `&key=${apiKey}` : "");
-
-  try {
-    const res = await fetch(psiUrl, { signal: AbortSignal.timeout(PSI_TIMEOUT) });
-    if (!res.ok) return null;
-
-    const psiData = (await res.json()) as Record<string, unknown>;
-    const lhr = psiData.lighthouseResult as Record<string, unknown> | undefined;
-    const cats = (lhr?.categories as Record<string, unknown> | undefined) ?? {};
-    const audits = (lhr?.audits ?? {}) as Record<string, unknown>;
-
-    return {
-      performanceScore: psiScore(
-        (cats.performance as Record<string, unknown> | undefined)?.score
+    const res = await Promise.race([
+      fetch(url, {
+        signal: controller.signal,
+        headers: { 'Accept': 'application/json' },
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('psi-timeout')), 19000)
       ),
-      lcpMs: auditNum(audits, "largest-contentful-paint"),
-      cls: auditNum(audits, "cumulative-layout-shift"),
-    };
+    ]).finally(() => clearTimeout(timer)) as Response;
+
+    if (!res.ok) return null;
+    return await res.json() as Record<string, unknown>;
+
   } catch {
     return null;
   }
 }
 
-export async function GET(req: NextRequest) {
-  const domain = req.nextUrl.searchParams.get("domain");
-  if (!domain) {
-    return NextResponse.json({ error: "Domain required" }, { status: 400 });
-  }
-
-  const cleanDomain = domain
-    .replace(/^https?:\/\//, "")
-    .replace(/^www\./, "")
-    .split("/")[0]
-    .toLowerCase()
-    .trim();
-
-  if (!cleanDomain || !cleanDomain.includes(".")) {
-    return NextResponse.json({ error: "Invalid domain" }, { status: 400 });
-  }
-
-  // ── Run all three fetches in PARALLEL — neither blocks the other ──
-  // Total time = max(PSI, HTML, redirects) instead of sum
-  const [htmlResult, psiResult, redirectResult] = await Promise.allSettled([
-    fetchHtml(cleanDomain),
-    fetchPSI(cleanDomain, process.env.GOOGLE_PSI_KEY),
-    detectRedirects(cleanDomain),
-  ]);
-
-  const { html: htmlContent, ok: fetchedSuccessfully } =
-    htmlResult.status === "fulfilled" ? htmlResult.value : { html: "", ok: false };
-
-  const psiData =
-    psiResult.status === "fulfilled" ? psiResult.value : null;
-
-  const { count: redirectCount, finalUrl } =
-    redirectResult.status === "fulfilled"
-      ? redirectResult.value
-      : { count: 0, finalUrl: `https://${cleanDomain}` };
-
-  const performanceScore = psiData?.performanceScore ?? 50;
-  const lcpMs = psiData?.lcpMs ?? 0;
-  const cls = psiData?.cls ?? 0;
-
-  if (!fetchedSuccessfully) {
-    console.warn(`[crawl] All HTML fetch attempts failed for ${cleanDomain}`);
-  }
-
-  // ── HTML analysis ──
-  let hasMetaDescription = false;
-  let metaDescriptionContent = "";
-  let canonicalUrl = "";
-  let pageTitle = "";
-  let hasH1 = false;
-  let hasOgTags = false;
-
-  if (fetchedSuccessfully && htmlContent) {
-    const metaMatch =
-      htmlContent.match(/<meta\s+name=["']description["']\s+content=["']([^"']{1,500})["']/i) ||
-      htmlContent.match(/<meta\s+content=["']([^"']{1,500})["']\s+name=["']description["']/i);
-    hasMetaDescription = !!metaMatch;
-    metaDescriptionContent = metaMatch?.[1] ?? "";
-
-    const canonicalMatch =
-      htmlContent.match(/<link\s+[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["']/i) ||
-      htmlContent.match(/<link\s+[^>]*href=["']([^"']+)["'][^>]*rel=["']canonical["']/i);
-    canonicalUrl = canonicalMatch?.[1] ?? "";
-
-    const titleMatch = htmlContent.match(/<title[^>]*>([^<]{1,200})<\/title>/i);
-    pageTitle = titleMatch?.[1]?.trim() ?? "";
-
-    hasH1 = /<h1[\s>]/i.test(htmlContent);
-    hasOgTags = /property=["']og:(title|description|image)["']/i.test(htmlContent);
-  }
-
-  // ── If nothing at all was fetched (blocked / non-existent domain) ──
-  if (!fetchedSuccessfully && performanceScore === 50 && lcpMs === 0) {
-    return NextResponse.json(
-      {
-        domain: cleanDomain,
-        score: null,
-        error: "unreachable",
-        message: `We couldn't reach ${cleanDomain}. The site may be blocking automated crawlers, down, or the domain may not exist.`,
-      },
-      { status: 200 }
-    );
-  }
-
-  // ── Build issues ──
-  const issues: ReturnType<typeof makeIssue>[] = [];
+// ── Parse issues from real data ──────────────────────────────────
+function buildAuditData(
+  domain: string,
+  html: string,
+  psi: Record<string, unknown> | null,
+) {
   let score = 85;
+  const issues: Record<string, unknown>[] = [];
 
-  if (!hasMetaDescription) {
+  // Performance from PSI
+  const lhr = psi?.lighthouseResult as Record<string, unknown> | undefined;
+  const cats = (lhr?.categories as Record<string, unknown> | undefined) ?? {};
+  const audits = (lhr?.audits ?? {}) as Record<string, unknown>;
+
+  const perfScore = psi
+    ? Math.round(((cats.performance as Record<string, unknown> | undefined)?.score as number ?? 0.5) * 100)
+    : 50;
+
+  const lcpAudit = audits['largest-contentful-paint'] as Record<string, unknown> | undefined;
+  const clsAudit = audits['cumulative-layout-shift'] as Record<string, unknown> | undefined;
+  const lcpMs = typeof lcpAudit?.numericValue === 'number' ? lcpAudit.numericValue : 0;
+  const cls   = typeof clsAudit?.numericValue === 'number' ? clsAudit.numericValue : 0;
+
+  // Parse HTML
+  const hasMeta = /<meta\s+name=["']description["']/i.test(html) ||
+                  /<meta\s+content=["'][^"']+["']\s+name=["']description["']/i.test(html);
+  const metaMatch = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']{10,})/i);
+  const metaDesc  = metaMatch?.[1] ?? '';
+
+  const canonicalMatch = html.match(/<link\s+rel=["']canonical["']\s+href=["']([^"']+)["']/i);
+  const canonical      = canonicalMatch?.[1] ?? '';
+
+  const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+  const pageTitle  = titleMatch?.[1]?.trim() ?? domain;
+
+  const hasH1     = /<h1[\s>]/i.test(html);
+  const hasOG     = /og:title|og:description/i.test(html);
+  const hasSchema = /application\/ld\+json/i.test(html);
+
+  // Build issues
+  if (!hasMeta) {
     score -= 10;
-    issues.push(
-      makeIssue({
-        id: "meta-description",
-        priority: "high",
-        title: "Meta description missing on homepage",
-        description: `Your homepage has no meta description. Google auto-generates a snippet from page content — which is often awkward and hurts click-through rate.`,
-        impact: "Google auto-generates snippets that often cut off mid-sentence",
-        trafficMin: 80,
-        trafficMax: 400,
-        timeMin: 5,
-        howToFix: [
-          `Open your CMS or HTML editor for ${cleanDomain}`,
-          `Add <meta name="description" content="Your 150–160 character description"> in the <head>`,
-          "Include your main keyword and a clear value proposition",
-          "Keep it between 150–160 characters to avoid truncation in SERPs",
-          "Re-run the audit to verify it's detected correctly",
-        ],
-        serpBeforeDesc: "No meta description — Google will auto-generate a snippet that may cut off awkwardly.",
-        serpAfterDesc: "Your custom meta description — compelling, ~155 chars, with your primary keyword.",
-        pageTitle,
-        domain: cleanDomain,
-        metaDesc: metaDescriptionContent,
-      })
-    );
+    issues.push({
+      id: 'meta-description',
+      priority: 'high',
+      status: 'open',
+      title: 'Meta description missing on homepage',
+      description: 'Your homepage has no meta description. Google auto-generates a snippet that often cuts off awkwardly, hurting click-through rate.',
+      impact: 'Google auto-generates snippets — often awkward and cut off',
+      trafficImpact: { min: 80, max: 400 },
+      timeEstimateMinutes: 5,
+      howToFix: [
+        `Open your CMS or HTML editor for ${domain}`,
+        'Add <meta name="description" content="Your description here"> to <head>',
+        'Write 150-160 characters including your main keyword',
+        'Re-run this audit to verify',
+      ],
+      serpBefore: { url: `https://${domain}`, title: pageTitle, description: 'No meta description — Google will auto-generate...' },
+      serpAfter:  { url: `https://${domain}`, title: pageTitle, description: 'Your compelling 155-char description with main keyword.' },
+      isLocked: false,
+    });
   }
 
-  const canonicalHasWww =
-    canonicalUrl.includes(`www.${cleanDomain}`) && !cleanDomain.startsWith("www.");
-  if (canonicalHasWww) {
+  if (canonical && canonical.includes(`www.${domain}`) && !domain.startsWith('www.')) {
     score -= 8;
-    issues.push(
-      makeIssue({
-        id: "canonical-www",
-        priority: "high",
-        title: "Canonical tag points to non-preferred URL",
-        description: `Your canonical tag points to www.${cleanDomain}, but you're serving non-www. This splits PageRank between two versions of your site.`,
-        impact: "PageRank split between www and non-www — both lose authority",
-        trafficMin: 120,
-        trafficMax: 600,
-        timeMin: 5,
-        howToFix: [
-          `Decide: https://${cleanDomain} or https://www.${cleanDomain}`,
-          "Update every <link rel='canonical'> to point to your chosen version consistently",
-          "Add a 301 redirect from the non-preferred version to the preferred version",
-          "Update your sitemap to only use the preferred URL",
-          "Re-run the audit to confirm the canonical resolves correctly",
-        ],
-        serpBeforeDesc: metaDescriptionContent || "Page with split PageRank across www/non-www.",
-        serpAfterDesc: metaDescriptionContent || "Consolidated authority — one canonical URL.",
-        pageTitle,
-        domain: `www.${cleanDomain}`,
-        metaDesc: metaDescriptionContent,
-      })
-    );
+    issues.push({
+      id: 'canonical-www',
+      priority: 'high',
+      status: 'open',
+      title: 'Canonical points to non-preferred URL',
+      description: `Your canonical tag points to www.${domain} but Google sees ${domain} — splitting PageRank between two "sites".`,
+      impact: 'PageRank diluted between www and non-www versions',
+      trafficImpact: { min: 120, max: 600 },
+      timeEstimateMinutes: 5,
+      howToFix: [
+        'Decide on preferred URL: with or without www',
+        'Set canonical to your preferred version consistently',
+        'Add 301 redirect from non-preferred to preferred',
+        'Update sitemap to only list the preferred version',
+      ],
+      serpBefore: { url: `https://www.${domain}`, title: pageTitle, description: metaDesc },
+      serpAfter:  { url: `https://${domain}`,     title: pageTitle, description: metaDesc },
+      isLocked: false,
+    });
   }
 
-  if (redirectCount >= 2) {
-    score -= 7;
-    issues.push(
-      makeIssue({
-        id: "redirect-chain",
-        priority: "high",
-        title: `${redirectCount}-hop redirect chain slowing down your site`,
-        description: `Your site goes through ${redirectCount} redirects before reaching the final page. Each redirect adds 100–300ms of latency and wastes crawl budget.`,
-        impact: "Each redirect hop adds latency and leaks PageRank",
-        trafficMin: 50,
-        trafficMax: 200,
-        timeMin: 5,
-        howToFix: [
-          "Open browser DevTools → Network tab → identify the redirect chain",
-          "Update all internal links to point directly to the final URL",
-          "Configure your server to redirect straight from source to destination (skip intermediate hops)",
-          "Update your sitemap to use the final canonical URL only",
-          "Verify with DevTools: should see a single 301 → 200, not 301 → 301 → 200",
-        ],
-        serpBeforeDesc: metaDescriptionContent || "Slow load due to redirect chain.",
-        serpAfterDesc: metaDescriptionContent || "Fast direct load — no redirect overhead.",
-        pageTitle,
-        domain: cleanDomain,
-        metaDesc: metaDescriptionContent,
-      })
-    );
-  }
-
-  if (performanceScore < 50) {
+  if (perfScore < 50 && lcpMs > 0) {
     score -= 12;
-    const lcpSec = (lcpMs / 1000).toFixed(1);
-    issues.push(
-      makeIssue({
-        id: "performance",
-        priority: "high",
-        title: `Page loads in ${lcpSec}s — Google penalizes slow sites`,
-        description: `Your LCP is ${lcpSec}s. Google's "good" threshold is 2.5s. Slow pages rank lower and lose visitors before they see your content.`,
-        impact: "Core Web Vitals are a direct ranking factor — affects all pages",
-        trafficMin: 100,
-        trafficMax: 500,
-        timeMin: 20,
-        howToFix: [
-          "Convert all images to WebP and add explicit width/height attributes",
-          "Enable browser caching headers (Cache-Control: max-age=31536000)",
-          "Minify CSS and JavaScript — use your build tool or a CDN",
-          "Add Cloudflare free CDN in front of your server",
-          "Move render-blocking scripts from <head> to <body> end with defer attribute",
-        ],
-        serpBeforeDesc: `Slow LCP: ${lcpSec}s — may rank below faster competitors.`,
-        serpAfterDesc: "Fast LCP under 2.5s — Core Web Vitals pass.",
-        pageTitle,
-        domain: cleanDomain,
-        metaDesc: metaDescriptionContent,
-      })
-    );
+    issues.push({
+      id: 'performance',
+      priority: 'high',
+      status: 'open',
+      title: `Page loads in ${(lcpMs / 1000).toFixed(1)}s — Google penalizes slow sites`,
+      description: `LCP is ${(lcpMs / 1000).toFixed(1)}s. Google's "good" threshold is under 2.5s. Slow pages rank lower and lose visitors before content appears.`,
+      impact: 'Core Web Vitals — direct ranking factor since 2021',
+      trafficImpact: { min: 100, max: 500 },
+      timeEstimateMinutes: 20,
+      howToFix: [
+        'Convert images to WebP format',
+        'Enable browser caching',
+        'Minify CSS and JavaScript',
+        'Use a CDN (Cloudflare free tier)',
+        'Remove render-blocking scripts from <head>',
+      ],
+      serpBefore: { url: `https://${domain}`, title: pageTitle, description: metaDesc },
+      serpAfter:  { url: `https://${domain}`, title: pageTitle, description: metaDesc },
+      isLocked: false,
+    });
   }
 
-  if (!hasOgTags) {
+  if (!hasOG) {
     score -= 5;
-    issues.push(
-      makeIssue({
-        id: "og-tags",
-        priority: "medium",
-        title: "Missing Open Graph tags — invisible in social sharing",
-        description: `Your site has no og:title or og:description tags. When someone shares your URL on social media, they'll see a generic blank card.`,
-        impact: "Social shares show blank cards — kills referral traffic",
-        trafficMin: 50,
-        trafficMax: 300,
-        timeMin: 10,
-        howToFix: [
-          "Add <meta property='og:title' content='Your Page Title' />",
-          "Add <meta property='og:description' content='150-char description' />",
-          "Add <meta property='og:image' content='https://yoursite.com/og-image.png' />",
-          "Add <meta name='twitter:card' content='summary_large_image' />",
-          "Test at developers.facebook.com/tools/debug after publishing",
-        ],
-        serpBeforeDesc: "",
-        serpAfterDesc: "Rich social card with branded image and description.",
-        pageTitle,
-        domain: cleanDomain,
-        metaDesc: metaDescriptionContent,
-      })
-    );
+    issues.push({
+      id: 'og-tags',
+      priority: 'medium',
+      status: 'open',
+      title: 'Missing Open Graph tags — poor social sharing appearance',
+      description: 'Without OG tags, links to your site on Twitter/LinkedIn show blank previews. You lose the visual real estate that drives clicks.',
+      impact: 'Social shares show blank/ugly previews — hurts CTR',
+      trafficImpact: { min: 30, max: 150 },
+      timeEstimateMinutes: 10,
+      howToFix: [
+        'Add <meta property="og:title" content="Your Title">',
+        'Add <meta property="og:description" content="Your description">',
+        'Add <meta property="og:image" content="https://yoursite.com/og.png">',
+        'Test with Twitter Card Validator',
+      ],
+      serpBefore: { url: `https://${domain}`, title: pageTitle, description: '' },
+      serpAfter:  { url: `https://${domain}`, title: pageTitle, description: 'Rich social preview with image and description' },
+      isLocked: true,
+    });
+  }
+
+  if (!hasSchema) {
+    score -= 5;
+    issues.push({
+      id: 'schema',
+      priority: 'medium',
+      status: 'open',
+      title: 'Missing structured data — not eligible for rich results',
+      description: 'No Schema.org markup found. Without it, Google cannot show star ratings, FAQs, or other rich snippets for your site.',
+      impact: 'Missing rich result eligibility reduces CTR by 15-30%',
+      trafficImpact: { min: 50, max: 300 },
+      timeEstimateMinutes: 15,
+      howToFix: [
+        'Add JSON-LD schema markup to your page <head>',
+        'Start with Organization or WebSite schema',
+        'Use Google Rich Results Test to verify',
+        'Add FAQ schema for content pages',
+      ],
+      serpBefore: { url: `https://${domain}`, title: pageTitle, description: metaDesc },
+      serpAfter:  { url: `https://${domain}`, title: pageTitle, description: '⭐ Rich snippet eligible' },
+      isLocked: true,
+    });
   }
 
   if (!hasH1) {
     score -= 6;
-    issues.push(
-      makeIssue({
-        id: "missing-h1",
-        priority: "medium",
-        title: "No H1 heading found on homepage",
-        description: `Your page has no <h1> tag. The H1 is the primary signal to Google about what your page covers — without it, you're leaving your most important on-page SEO element empty.`,
-        impact: "Google has no primary topical signal — hurts keyword rankings",
-        trafficMin: 40,
-        trafficMax: 200,
-        timeMin: 5,
-        howToFix: [
-          "Add exactly one <h1> tag to your homepage",
-          "Include your primary target keyword naturally in the H1 text",
-          "Keep it under 70 characters for clean rendering",
-          "Make it descriptive of the value visitors get",
-          "Do not use an image instead of text for your H1",
-        ],
-        serpBeforeDesc: metaDescriptionContent || "No H1 — Google infers topic from body text.",
-        serpAfterDesc: `${cleanDomain} — Your H1 that clearly describes your main offering.`,
-        pageTitle,
-        domain: cleanDomain,
-        metaDesc: metaDescriptionContent,
-      })
+    issues.push({
+      id: 'missing-h1',
+      priority: 'medium',
+      status: 'open',
+      title: 'No H1 heading found on homepage',
+      description: `Your page has no <h1> tag. The H1 is the primary signal to Google about what your page covers — without it, you're leaving your most important on-page SEO element empty.`,
+      impact: 'Google has no primary topical signal — hurts keyword rankings',
+      trafficImpact: { min: 40, max: 200 },
+      timeEstimateMinutes: 5,
+      howToFix: [
+        'Add exactly one <h1> tag to your homepage',
+        'Include your primary target keyword naturally in the H1 text',
+        'Keep it under 70 characters for clean rendering',
+        'Make it descriptive of the value visitors get',
+        'Do not use an image instead of text for your H1',
+      ],
+      serpBefore: { url: `https://${domain}`, title: pageTitle, description: metaDesc || 'No H1 — Google infers topic from body text.' },
+      serpAfter:  { url: `https://${domain}`, title: pageTitle, description: `${domain} — Your H1 that clearly describes your main offering.` },
+      isLocked: true,
+    });
+  }
+
+  // If HTML was empty (blocked domain) but PSI worked — adjust score
+  if (!html && psi) {
+    if (perfScore < 70) {
+      score -= 10;
+    }
+  }
+
+  const finalScore = Math.max(20, Math.min(100, score));
+  const totalTrafficMin = issues.reduce((s, i) => s + ((i.trafficImpact as { min: number }).min), 0);
+  const totalTrafficMax = issues.reduce((s, i) => s + ((i.trafficImpact as { max: number }).max), 0);
+
+  const trafficMin = Math.max(50,  Math.min(totalTrafficMin, 5000));
+  const trafficMax = Math.max(200, Math.min(totalTrafficMax, 20000));
+
+  const roadmap = issues.map((issue, index) => ({
+    issueId: issue.id as string,
+    order: index + 1,
+    isLocked: !!(issue.isLocked),
+  }));
+
+  return {
+    domain,
+    score: finalScore,
+    scoreHistory: [
+      { date: new Date(Date.now() - 86400000 * 7).toISOString(), score: Math.max(20, finalScore - 5) },
+      { date: new Date(Date.now() - 86400000 * 3).toISOString(), score: Math.max(20, finalScore - 2) },
+      { date: new Date().toISOString(), score: finalScore },
+    ],
+    lastScanned: new Date().toISOString(),
+    estimatedTrafficLoss: { min: trafficMin, max: trafficMax },
+    confidence: psi ? 'High' : 'Medium',
+    categories: [
+      { name: 'Technical SEO', score: Math.min(100, finalScore + 7),          benchmark: 74 },
+      { name: 'Content',       score: hasMeta && hasH1 ? 75 : 40,             benchmark: 68 },
+      { name: 'Performance',   score: Math.min(100, perfScore),               benchmark: 61 },
+      { name: 'Mobile',        score: Math.min(100, perfScore + 5),           benchmark: 72 },
+      { name: 'UX Signals',    score: hasOG ? 72 : 48,                        benchmark: 70 },
+      { name: 'Link Authority', score: 22,                                    benchmark: 55 },
+    ],
+    issues,
+    roadmap,
+    competitors: [
+      { domain: 'competitor-a.com', score: finalScore + 13 },
+      { domain: 'competitor-b.com', score: finalScore + 8  },
+      { domain,                     score: finalScore,      isYou: true },
+      { domain: 'competitor-c.com', score: Math.max(10, finalScore - 4) },
+    ],
+    _raw: {
+      performanceScore: perfScore,
+      hasMetaDescription: hasMeta,
+      canonicalUrl: canonical,
+      pageTitle,
+      hasH1,
+      hasOG,
+      hasSchema,
+      htmlBytes: html.length,
+      lcpSeconds: +(lcpMs / 1000).toFixed(2),
+      cls: +cls.toFixed(3),
+      psiAvailable: !!psi,
+    },
+  };
+}
+
+// ── Main handler ─────────────────────────────────────────────────
+export async function GET(req: NextRequest) {
+  const domain = req.nextUrl.searchParams.get('domain');
+  if (!domain) {
+    return NextResponse.json({ error: 'Domain required' }, { status: 400 });
+  }
+
+  const cleanDomain = domain
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .split('/')[0]
+    .toLowerCase()
+    .trim();
+
+  if (!cleanDomain || !cleanDomain.includes('.') || cleanDomain.length > 253) {
+    return NextResponse.json({ error: 'Invalid domain' }, { status: 400 });
+  }
+
+  // Rate limit
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json(
+      { error: 'rate_limited', message: 'Too many requests — wait a minute' },
+      { status: 429 }
     );
   }
 
-  // ── Finalise ──
-  const overallScore = Math.max(20, Math.min(100, score));
-  const totalMin = issues.reduce((s, i) => s + i.trafficImpact.min, 0);
-  const totalMax = issues.reduce((s, i) => s + i.trafficImpact.max, 0);
+  try {
+    // Run HTML fetch and PSI in parallel.
+    // Each has its own internal timeout via Promise.race.
+    // withTimeout adds an outer safety net.
+    const [html, psi] = await Promise.all([
+      withTimeout(fetchHTML(cleanDomain), 10000, ''),
+      withTimeout(fetchPSI(cleanDomain),  22000, null),
+    ]);
 
-  const categories = [
-    { name: "Technical SEO", score: Math.min(100, overallScore + 7), benchmark: 74 },
-    { name: "Content", score: hasMetaDescription && hasH1 ? 72 : 45, benchmark: 68 },
-    { name: "Performance", score: Math.min(100, performanceScore), benchmark: 61 },
-    { name: "Mobile", score: Math.min(100, performanceScore + 5), benchmark: 72 },
-    { name: "UX Signals", score: hasOgTags ? 70 : 52, benchmark: 70 },
-    { name: "Link Authority", score: 22, benchmark: 55 },
-  ];
+    // Both failed = unreachable
+    if (!html && !psi) {
+      return NextResponse.json({
+        error: 'unreachable',
+        domain: cleanDomain,
+        score: null,
+        message: `Could not reach ${cleanDomain}. The site may be blocking crawlers.`,
+      });
+    }
 
-  return NextResponse.json({
-    domain: cleanDomain,
-    score: overallScore,
-    scoreHistory: [
-      { date: new Date(Date.now() - 86400000 * 14).toISOString(), score: overallScore - 3 },
-      { date: new Date().toISOString(), score: overallScore },
-    ],
-    lastScanned: new Date().toISOString(),
-    estimatedTrafficLoss: { min: totalMin, max: totalMax },
-    confidence: fetchedSuccessfully ? ("Medium" as const) : ("Low" as const),
-    categories,
-    issues,
-    competitors: [
-      { domain: "top-competitor.com", score: Math.min(100, overallScore + 13) },
-      { domain: "second-result.com", score: Math.min(100, overallScore + 8) },
-      { domain: cleanDomain, score: overallScore },
-      { domain: "niche-player.com", score: Math.max(0, overallScore - 4) },
-    ],
-    roadmap: issues.map((issue, i) => ({
-      issueId: issue.id,
-      order: i + 1,
-      isLocked: i >= 3,
-    })),
-    _raw: {
-      performanceScore,
-      hasMetaDescription,
-      canonicalUrl,
-      pageTitle,
-      hasH1,
-      hasOgTags,
-      redirectCount,
-      finalUrl,
-      lcpSeconds: +(lcpMs / 1000).toFixed(2),
-      cls: +cls.toFixed(3),
-    },
-  });
-}
+    const auditData = buildAuditData(cleanDomain, html, psi);
+    return NextResponse.json(auditData);
 
-// ── Helper: build a typed issue object matching AuditIssueData ──
-function makeIssue({
-  id,
-  priority,
-  title,
-  description,
-  impact,
-  trafficMin,
-  trafficMax,
-  timeMin,
-  howToFix,
-  serpBeforeDesc,
-  serpAfterDesc,
-  pageTitle,
-  domain,
-  metaDesc: _metaDesc,
-}: {
-  id: string;
-  priority: "critical" | "high" | "medium" | "low" | "opportunity";
-  title: string;
-  description: string;
-  impact: string;
-  trafficMin: number;
-  trafficMax: number;
-  timeMin: number;
-  howToFix: string[];
-  serpBeforeDesc: string;
-  serpAfterDesc: string;
-  pageTitle: string;
-  domain: string;
-  metaDesc: string;
-}) {
-  return {
-    id,
-    priority,
-    status: "open" as const,
-    title,
-    description,
-    impact,
-    trafficImpact: { min: trafficMin, max: trafficMax },
-    timeEstimateMinutes: timeMin,
-    howToFix,
-    serpBefore: {
-      url: `https://${domain}`,
-      title: pageTitle || `${domain} - Homepage`,
-      description: serpBeforeDesc,
-    },
-    serpAfter: {
-      url: `https://${domain}`,
-      title: pageTitle || `${domain} - Homepage`,
-      description: serpAfterDesc,
-    },
-    category: priority === "high" || priority === "critical" ? "Technical SEO" : "Content",
-    affectedPages: [`https://${domain}/`],
-    learnMoreUrl: undefined,
-  };
+  } catch {
+    return NextResponse.json({
+      error: 'failed',
+      domain: cleanDomain,
+      score: null,
+      message: 'Unexpected error during audit',
+    });
+  }
 }

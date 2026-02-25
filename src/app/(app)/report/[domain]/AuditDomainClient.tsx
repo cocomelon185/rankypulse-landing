@@ -20,10 +20,17 @@ import {
   GenericErrorState,
 } from "@/components/audit/ErrorStates";
 import { useAuditStore } from "@/lib/use-audit";
+import { MOCK_AUDIT } from "@/lib/audit-data";
 
 type ErrorKind = "unreachable" | "rate_limited" | "timeout" | "failed";
 
-export function AuditDomainClient({ domain }: { domain: string }) {
+export function AuditDomainClient({ domain: rawDomain }: { domain: string }) {
+  const domain = rawDomain
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .split('/')[0]
+    .toLowerCase()
+    .trim();
   const { highlightedId, scrollToIssue } = useScrollToIssue();
 
   // ── Local loading state — decoupled from Zustand ──
@@ -34,6 +41,11 @@ export function AuditDomainClient({ domain }: { domain: string }) {
   const fetchedDomain = useRef<string | null>(null);
   // Track start time so we can enforce minimum display times
   const crawlStartTime = useRef(0);
+  // Abort in-flight fetch when domain changes or on unmount
+  const controllerRef = useRef<AbortController | null>(null);
+  // Current domain we're displaying — guard against stale fetch overwriting store
+  const currentDomainRef = useRef(domain);
+  currentDomainRef.current = domain;
 
   const setData = useAuditStore((s) => s.setData);
 
@@ -44,62 +56,86 @@ export function AuditDomainClient({ domain }: { domain: string }) {
     setTimeout(fn, remaining);
   };
 
-  const runCrawl = () => {
+  const runCrawl = (targetDomain: string) => {
     crawlStartTime.current = Date.now();
     setIsLoading(true);
     setLoadError(null);
 
+    // Abort any previous in-flight fetch
+    controllerRef.current?.abort();
     const controller = new AbortController();
+    controllerRef.current = controller;
     // 45s hard timeout — PSI can be slow on cold starts
     const timeoutId = setTimeout(() => controller.abort(), 45_000);
 
-    fetch(`/api/crawl?domain=${encodeURIComponent(domain)}`, {
+    const crawlUrl = `/api/crawl?domain=${encodeURIComponent(targetDomain)}`;
+    if (typeof window !== "undefined") {
+      console.log("[audit] Fetching crawl for domain:", targetDomain);
+    }
+    fetch(crawlUrl, {
       signal: controller.signal,
     })
       .then(async (res) => {
         clearTimeout(timeoutId);
+        controllerRef.current = null;
 
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
 
+        // Only apply result if we're still showing this domain (prevents stale fetch overwriting)
+        const stillRelevant = data.domain === currentDomainRef.current;
+
         if (data.error === "unreachable") {
-          // 2s minimum so the loading screen doesn't flash and vanish
-          withMinTime(2_000, () => {
-            setLoadError("unreachable");
-            setIsLoading(false);
-          });
+          if (stillRelevant) {
+            withMinTime(2_000, () => {
+              setLoadError("unreachable");
+              setIsLoading(false);
+            });
+          }
           return;
         }
 
         if (data.error === "rate_limited") {
-          withMinTime(2_000, () => {
-            setLoadError("rate_limited");
-            setIsLoading(false);
-          });
+          if (stillRelevant) {
+            withMinTime(2_000, () => {
+              setLoadError("rate_limited");
+              setIsLoading(false);
+            });
+          }
           return;
         }
 
-        // ✅ Success — 4s minimum so the staged animation always feels intentional
-        withMinTime(4_000, () => {
-          setData(data);
-          setIsLoading(false);
-        });
+        // Success — only update store if user hasn't navigated away
+        if (stillRelevant) {
+          withMinTime(4_000, () => {
+            setData(data);
+            setIsLoading(false);
+          });
+        }
       })
       .catch((err: unknown) => {
         clearTimeout(timeoutId);
+        controllerRef.current = null;
         const isAbort = err instanceof DOMException && err.name === "AbortError";
-        withMinTime(2_000, () => {
-          setLoadError(isAbort ? "timeout" : "failed");
-          setIsLoading(false);
-        });
+        // Only update state if we're still on this domain
+        if (targetDomain === currentDomainRef.current) {
+          withMinTime(2_000, () => {
+            setLoadError(isAbort ? "timeout" : "failed");
+            setIsLoading(false);
+          });
+        }
       });
   };
 
   useEffect(() => {
     if (fetchedDomain.current === domain) return;
     fetchedDomain.current = domain;
-    runCrawl();
+    setData({ ...MOCK_AUDIT, domain });
+    runCrawl(domain);
+    return () => {
+      controllerRef.current?.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [domain]);
 
@@ -132,7 +168,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
         domain={domain}
         onRetry={() => {
           fetchedDomain.current = null;
-          runCrawl();
+          runCrawl(domain);
         }}
       />
     );
@@ -144,7 +180,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
         domain={domain}
         onRetry={() => {
           fetchedDomain.current = null;
-          runCrawl();
+          runCrawl(domain);
         }}
       />
     );
