@@ -30,8 +30,8 @@ export function AuditDomainClient({ domain }: { domain: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<ErrorKind | null>(null);
 
-  // Prevent double-fetch in React StrictMode
-  const hasFetched = useRef(false);
+  // Prevent double-fetch in React StrictMode, but allow re-fetch when domain changes
+  const fetchedDomain = useRef<string | null>(null);
   // Track start time so we can enforce minimum display times
   const crawlStartTime = useRef(0);
 
@@ -45,7 +45,6 @@ export function AuditDomainClient({ domain }: { domain: string }) {
   };
 
   const runCrawl = () => {
-    hasFetched.current = true;
     crawlStartTime.current = Date.now();
     setIsLoading(true);
     setLoadError(null);
@@ -98,7 +97,8 @@ export function AuditDomainClient({ domain }: { domain: string }) {
   };
 
   useEffect(() => {
-    if (hasFetched.current) return;
+    if (fetchedDomain.current === domain) return;
+    fetchedDomain.current = domain;
     runCrawl();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [domain]);
@@ -131,7 +131,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
       <TimeoutErrorState
         domain={domain}
         onRetry={() => {
-          hasFetched.current = false;
+          fetchedDomain.current = null;
           runCrawl();
         }}
       />
@@ -143,7 +143,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
       <GenericErrorState
         domain={domain}
         onRetry={() => {
-          hasFetched.current = false;
+          fetchedDomain.current = null;
           runCrawl();
         }}
       />
