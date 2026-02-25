@@ -54,8 +54,9 @@ export function HeroSection() {
       setUrlError("Enter a valid URL (e.g. https://example.com)");
       return;
     }
-    track("run_audit", { url_host: new URL(url).host });
-    router.push(`/audit/results?url=${encodeURIComponent(url)}`);
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    track("run_audit", { url_host: host });
+    router.push(`/report/${host}`);
   };
 
   return (

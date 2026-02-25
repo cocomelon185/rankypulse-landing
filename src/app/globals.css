@@ -1,5 +1,4 @@
-/* Display font for audit headings – Inter Tight */
-@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&display=swap");
+/* Fonts are loaded via next/font/google in app/layout.tsx (preloaded, self-hosted, no CLS) */
 
 @import "tailwindcss";
 
@@ -174,3 +173,90 @@ body {
 .audit-heading {
   font-family: "Inter Tight", var(--font-sans), system-ui, sans-serif;
 }
+
+/* ─── Mission-Control Dark Audit Theme ─── */
+.audit-dark {
+  --bg-base: #0d0f14;
+  --bg-surface: #13161f;
+  --bg-elevated: #1a1e2e;
+  --accent-primary: #6366f1;
+  --accent-secondary: #f97316;
+  --accent-success: #10b981;
+  --accent-danger: #ef4444;
+  --accent-warn: #f59e0b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --glow-primary: rgba(99, 102, 241, 0.15);
+
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+
+.audit-dark .font-display {
+  font-family: "Fraunces", serif;
+}
+
+.audit-dark .font-mono-data {
+  font-family: "DM Mono", monospace;
+}
+
+/* Dark surface card */
+.audit-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1rem;
+}
+
+.audit-card-elevated {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1rem;
+}
+
+/* Glow ring for gauge */
+@keyframes gaugeGlow {
+  0%, 100% { box-shadow: 0 0 20px 4px var(--glow-primary); }
+  50% { box-shadow: 0 0 40px 8px var(--glow-primary); }
+}
+.gauge-glow {
+  animation: gaugeGlow 3s ease-in-out infinite;
+}
+
+/* Priority badges */
+.priority-critical { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
+.priority-high { background: rgba(249, 115, 22, 0.15); color: #fdba74; border: 1px solid rgba(249, 115, 22, 0.3); }
+.priority-medium { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); }
+.priority-low { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.3); }
+.priority-opportunity { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+.priority-fixed { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+/* Locked blur teaser */
+.locked-teaser {
+  filter: blur(4px);
+  transition: filter 0.3s ease;
+}
+.locked-teaser:hover {
+  filter: blur(2px);
+}
+
+/* Scrollbar styling for dark mode */
+.audit-dark ::-webkit-scrollbar { width: 6px; }
+.audit-dark ::-webkit-scrollbar-track { background: var(--bg-base); }
+.audit-dark ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+.audit-dark ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+/* Horizontal marquee animation for landing page strips */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* Hide scrollbar on demo strip */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar { display: none; }

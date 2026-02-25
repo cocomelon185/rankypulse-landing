@@ -1,27 +1,32 @@
-import { Navbar } from "@/components/Navbar";
-import { HeroSection } from "@/components/HeroSection";
-import { TrustStrip } from "@/components/TrustStrip";
-import { ReportPreviewSection } from "@/components/ReportPreviewSection";
-import { FeaturesSection } from "@/components/FeaturesSection";
-import { ProblemSection } from "@/components/ProblemSection";
-import { PricingTeaserSection } from "@/components/PricingTeaserSection";
-import { FinalCTASection } from "@/components/FinalCTASection";
-import { Footer } from "@/components/Footer";
+import { AppNavbar } from "@/components/layout/Navbar";
+import { Hero } from "@/components/landing/Hero";
+import { LiveDemo } from "@/components/landing/LiveDemo";
+import { ProofBar } from "@/components/landing/ProofBar";
+import { FeatureGrid } from "@/components/landing/FeatureGrid";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { ComparisonTable } from "@/components/landing/ComparisonTable";
+import { Testimonials } from "@/components/landing/Testimonials";
+import { PricingTeaser } from "@/components/landing/PricingTeaser";
+import { FinalCTA } from "@/components/landing/FinalCTA";
+import { LandingFooter } from "@/components/landing/LandingFooter";
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="page-shell">
-      <Navbar />
-      <main>
-        <HeroSection />
-        <TrustStrip />
-        <ReportPreviewSection />
-        <FeaturesSection />
-        <ProblemSection />
-        <PricingTeaserSection />
-        <FinalCTASection />
-      </main>
-      <Footer />
+    <div style={{ background: "#0d0f14", minHeight: "100vh" }}>
+      <AppNavbar />
+      {/* pt-16 accounts for the fixed 64px navbar */}
+      <div className="pt-16">
+        <Hero />
+        <LiveDemo />
+        <ProofBar />
+        <FeatureGrid />
+        <HowItWorks />
+        <ComparisonTable />
+        <Testimonials />
+        <PricingTeaser />
+        <FinalCTA />
+        <LandingFooter />
+      </div>
     </div>
   );
 }

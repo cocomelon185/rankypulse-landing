@@ -20,8 +20,9 @@ export function AuditCtaForm() {
       setError("Enter a valid URL (e.g. https://example.com)");
       return;
     }
-    track("run_audit", { source: "pseo_cta", url_host: new URL(normalized).host });
-    router.push(`/audit/results?url=${encodeURIComponent(normalized)}`);
+    const host = new URL(normalized).hostname.replace(/^www\./, "");
+    track("run_audit", { source: "pseo_cta", url_host: host });
+    router.push(`/report/${host}`);
   };
 
   return (

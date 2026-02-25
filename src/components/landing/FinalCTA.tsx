@@ -1,0 +1,132 @@
+"use client";
+
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { Search, Zap } from "lucide-react";
+
+export function FinalCTA() {
+  const [domain, setDomain] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleaned = domain
+      .trim()
+      .replace(/^https?:\/\//, "")
+      .replace(/^www\./, "")
+      .replace(/\/.*$/, "");
+
+    if (!cleaned || !cleaned.includes(".")) {
+      setError("Enter a valid domain — e.g. yoursite.com");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+    await new Promise((r) => setTimeout(r, 700));
+    router.push(`/report/${cleaned}`);
+  };
+
+  return (
+    <section className="relative overflow-hidden py-32" style={{ background: "#0d0f14" }}>
+      {/* Background glow */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-1/2 top-1/2 h-[400px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/15 blur-[120px]" />
+      </div>
+
+      <div className="relative mx-auto max-w-3xl px-6 text-center">
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="mb-4 font-['DM_Mono'] text-xs uppercase tracking-widest text-gray-600"
+        >
+          Free · No credit card · 30 seconds
+        </motion.p>
+
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="mb-6 font-['Fraunces'] font-bold leading-tight tracking-tight text-white"
+          style={{ fontSize: "clamp(32px, 5vw, 64px)" }}
+        >
+          Find out what Google sees
+          <br />
+          <span className="italic text-indigo-400">when it looks at your site.</span>
+        </motion.h2>
+
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mx-auto mb-10 max-w-xl font-['DM_Sans'] text-lg text-gray-400"
+        >
+          Free audit. No account needed. Takes 30 seconds.
+          Most users find their first fix within 2 minutes.
+        </motion.p>
+
+        {/* Input form */}
+        <motion.form
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          onSubmit={handleSubmit}
+          className="mx-auto mb-4 flex max-w-xl flex-col gap-3 sm:flex-row"
+        >
+          <div className="group relative flex-1">
+            <Search
+              size={15}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 transition-colors duration-200 group-focus-within:text-indigo-400"
+            />
+            <input
+              type="text"
+              value={domain}
+              onChange={(e) => { setDomain(e.target.value); setError(""); }}
+              placeholder="yoursite.com"
+              className="w-full rounded-xl border border-white/10 bg-white/5 py-4 pl-10 pr-4 font-['DM_Sans'] text-sm text-white placeholder-gray-600 transition-all duration-200 focus:border-indigo-500/60 focus:bg-indigo-500/4 focus:outline-none"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="flex items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-indigo-500 px-7 py-4 font-['DM_Sans'] text-sm font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-indigo-400 hover:shadow-xl hover:shadow-indigo-500/30 active:translate-y-0 disabled:cursor-wait disabled:opacity-60"
+          >
+            {isLoading ? (
+              <><Zap size={15} className="animate-pulse" />Scanning...</>
+            ) : (
+              <><Zap size={15} />Run Free Audit</>
+            )}
+          </button>
+        </motion.form>
+
+        {error && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mb-4 font-['DM_Sans'] text-sm text-red-400"
+          >
+            {error}
+          </motion.p>
+        )}
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.5 }}
+          className="font-['DM_Mono'] text-xs uppercase tracking-widest text-gray-700"
+        >
+          12,400+ sites audited · 4.8★ rating · free forever
+        </motion.p>
+      </div>
+    </section>
+  );
+}

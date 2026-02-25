@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AppNavbar } from "@/components/layout/Navbar";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://rankypulse.com"),
@@ -22,5 +23,10 @@ export const metadata: Metadata = {
 };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <>
+      <AppNavbar />
+      <div className="pt-16">{children}</div>
+    </>
+  );
 }
