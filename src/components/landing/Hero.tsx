@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Zap, Search, TrendingUp, Clock, Eye } from "lucide-react";
-import { extractAuditDomain } from "@/lib/url-validation";
+import { extractAuditDomain, isValidExtractedDomain } from "@/lib/url-validation";
 import CountUp from "react-countup";
 
 const STATS = [
@@ -118,7 +118,7 @@ export function Hero() {
   const runAudit = (rawDomain: string) => {
     const cleaned = extractAuditDomain(rawDomain);
 
-    if (!cleaned || !cleaned.includes(".")) {
+    if (!isValidExtractedDomain(cleaned)) {
       setError("Enter a valid domain — e.g. yoursite.com");
       return;
     }

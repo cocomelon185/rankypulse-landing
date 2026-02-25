@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Search, Zap } from "lucide-react";
-import { extractAuditDomain } from "@/lib/url-validation";
+import { extractAuditDomain, isValidExtractedDomain } from "@/lib/url-validation";
 
 export function FinalCTA() {
   const [domain, setDomain] = useState("");
@@ -19,7 +19,7 @@ export function FinalCTA() {
     const rawValue = (input?.value ?? domain).trim();
     const cleaned = extractAuditDomain(rawValue);
 
-    if (!cleaned || !cleaned.includes(".")) {
+    if (!isValidExtractedDomain(cleaned)) {
       setError("Enter a valid domain — e.g. yoursite.com");
       return;
     }
