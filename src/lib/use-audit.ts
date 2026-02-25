@@ -37,7 +37,7 @@ export const useAuditStore = create<AuditState>((set, get) => ({
   isLoading: false,
   loadError: null,
 
-  setData: (data) => set({ data, completedFixIds: [], loadError: null }),
+  setData: (data) => set({ data, completedFixIds: [], loadError: null, isLoading: false }),
   setLoading: (loading) => set({ isLoading: loading }),
   setLoadError: (err) => set({ loadError: err, isLoading: false }),
 

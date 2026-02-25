@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { WifiOff } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { useScrollToIssue } from "@/hooks/useScrollToIssue";
 import { AuditHero } from "@/components/audit/v2/AuditHero";
 import { IssueRadar } from "@/components/audit/v2/IssueRadar";
@@ -15,114 +13,148 @@ import { AhaMomentBanner } from "@/components/audit/v2/AhaMomentBanner";
 import { SocialProofStrip } from "@/components/audit/v2/SocialProofStrip";
 import { StickyUpgradeBar } from "@/components/audit/v2/StickyUpgradeBar";
 import { AuditLoadingScreen } from "@/components/audit/AuditLoadingScreen";
+import {
+  UnreachableErrorState,
+  TimeoutErrorState,
+  RateLimitedState,
+  GenericErrorState,
+} from "@/components/audit/ErrorStates";
 import { useAuditStore } from "@/lib/use-audit";
-import type { AuditData } from "@/lib/audit-data";
 
-// Crawl API response can include an 'unreachable' error field
-interface CrawlResponse extends Partial<AuditData> {
-  error?: string;
-  message?: string;
-}
+type ErrorKind = "unreachable" | "rate_limited" | "timeout" | "failed";
 
 export function AuditDomainClient({ domain }: { domain: string }) {
   const { highlightedId, scrollToIssue } = useScrollToIssue();
-  const router = useRouter();
+
+  // ── Local loading state — decoupled from Zustand ──
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<ErrorKind | null>(null);
+
+  // Prevent double-fetch in React StrictMode
+  const hasFetched = useRef(false);
+  // Track start time so we can enforce minimum display times
+  const crawlStartTime = useRef(0);
 
   const setData = useAuditStore((s) => s.setData);
-  const setLoading = useAuditStore((s) => s.setLoading);
-  const setLoadError = useAuditStore((s) => s.setLoadError);
-  const isLoading = useAuditStore((s) => s.isLoading);
-  const loadError = useAuditStore((s) => s.loadError);
 
-  useEffect(() => {
-    if (!domain) return;
-    let cancelled = false;
+  // Delays a callback so the loading screen always shows for at least `minMs`
+  const withMinTime = (minMs: number, fn: () => void) => {
+    const elapsed = Date.now() - crawlStartTime.current;
+    const remaining = Math.max(0, minMs - elapsed);
+    setTimeout(fn, remaining);
+  };
 
-    async function fetchAudit() {
-      setLoading(true);
-      try {
-        const base = window.location.origin;
-        const res = await fetch(`${base}/api/crawl?domain=${encodeURIComponent(domain)}`);
+  const runCrawl = () => {
+    hasFetched.current = true;
+    crawlStartTime.current = Date.now();
+    setIsLoading(true);
+    setLoadError(null);
+
+    const controller = new AbortController();
+    // 45s hard timeout — PSI can be slow on cold starts
+    const timeoutId = setTimeout(() => controller.abort(), 45_000);
+
+    fetch(`/api/crawl?domain=${encodeURIComponent(domain)}`, {
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        clearTimeout(timeoutId);
+
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = (await res.json()) as CrawlResponse;
 
-        if (cancelled) return;
+        const data = await res.json();
 
-        if (json.error === "unreachable") {
-          setLoadError("unreachable");
+        if (data.error === "unreachable") {
+          // 2s minimum so the loading screen doesn't flash and vanish
+          withMinTime(2_000, () => {
+            setLoadError("unreachable");
+            setIsLoading(false);
+          });
           return;
         }
 
-        // Cast to AuditData — the API shape matches if error is not 'unreachable'
-        setData(json as AuditData);
-      } catch (err) {
-        if (!cancelled) {
-          setLoadError(err instanceof Error ? err.message : "Crawl failed");
+        if (data.error === "rate_limited") {
+          withMinTime(2_000, () => {
+            setLoadError("rate_limited");
+            setIsLoading(false);
+          });
+          return;
         }
-      }
-    }
 
-    fetchAudit();
-    return () => {
-      cancelled = true;
-    };
+        // ✅ Success — 4s minimum so the staged animation always feels intentional
+        withMinTime(4_000, () => {
+          setData(data);
+          setIsLoading(false);
+        });
+      })
+      .catch((err: unknown) => {
+        clearTimeout(timeoutId);
+        const isAbort = err instanceof DOMException && err.name === "AbortError";
+        withMinTime(2_000, () => {
+          setLoadError(isAbort ? "timeout" : "failed");
+          setIsLoading(false);
+        });
+      });
+  };
+
+  useEffect(() => {
+    if (hasFetched.current) return;
+    runCrawl();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [domain]);
 
-  // ── Full-screen loading sequence ──
+  // ── Loading ──
   if (isLoading) {
-    return <AuditLoadingScreen domain={domain} />;
-  }
-
-  // ── Unreachable domain error state ──
-  if (loadError === "unreachable") {
     return (
-      <div
-        className="flex min-h-screen items-center justify-center px-6"
-        style={{ background: "#0d0f14" }}
-      >
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-1/2 top-1/2 h-[400px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500/5 blur-[100px]" />
-        </div>
-        <div className="relative max-w-md text-center">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10">
-            <WifiOff size={28} className="text-red-400" />
-          </div>
-          <h1 className="mb-3 font-['Fraunces'] text-2xl font-bold text-white">
-            Couldn&apos;t reach {domain}
-          </h1>
-          <p className="mb-8 font-['DM_Sans'] text-sm leading-relaxed text-gray-400">
-            This domain may be blocking automated crawlers, or it may not exist.
-            Try a different domain, or check that the URL is correct.
-          </p>
-          <button
-            onClick={() => router.push("/")}
-            className="rounded-xl bg-indigo-500 px-6 py-3 font-['DM_Sans'] text-sm font-semibold text-white transition-colors hover:bg-indigo-400"
-          >
-            Try another domain →
-          </button>
-        </div>
-      </div>
+      <AuditLoadingScreen
+        domain={domain}
+        maxWaitMs={45_000}
+        onTimeout={() => {
+          setLoadError("timeout");
+          setIsLoading(false);
+        }}
+      />
     );
   }
 
-  // ── Partial crawl warning (non-critical errors) ──
-  const partialWarning =
-    loadError && loadError !== "unreachable" ? (
-      <div className="mx-auto mb-2 max-w-xl px-4 pt-2 text-center">
-        <p className="font-['DM_Sans'] text-xs text-amber-400">
-          ⚠️ Showing estimated results — live crawl encountered an issue.
-        </p>
-      </div>
-    ) : null;
+  // ── Error states ──
+  if (loadError === "unreachable") {
+    return <UnreachableErrorState domain={domain} />;
+  }
 
+  if (loadError === "rate_limited") {
+    return <RateLimitedState />;
+  }
+
+  if (loadError === "timeout") {
+    return (
+      <TimeoutErrorState
+        domain={domain}
+        onRetry={() => {
+          hasFetched.current = false;
+          runCrawl();
+        }}
+      />
+    );
+  }
+
+  if (loadError) {
+    return (
+      <GenericErrorState
+        domain={domain}
+        onRetry={() => {
+          hasFetched.current = false;
+          runCrawl();
+        }}
+      />
+    );
+  }
+
+  // ── Success: render full audit page ──
   return (
     <div className="audit-dark min-h-screen">
-      {partialWarning}
-
       <main className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 md:px-8">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          {/* Main content */}
           <div className="space-y-6">
             <AuditHero />
             <AhaMomentBanner />
@@ -134,7 +166,6 @@ export function AuditDomainClient({ domain }: { domain: string }) {
             <CompetitorBenchmark />
           </div>
 
-          {/* Sticky sidebar */}
           <div className="hidden lg:block">
             <AuditSidebar onScrollToIssue={scrollToIssue} />
           </div>

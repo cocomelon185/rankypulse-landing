@@ -42,9 +42,20 @@ const interTight = Inter_Tight({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://rankypulse.com"),
-  title: "RankyPulse — SEO Audit & Fix Tool",
+  title: {
+    default: "RankyPulse — SEO Audit & Fix Tool",
+    template: "%s | RankyPulse",
+  },
   description:
     "Get a complete SEO audit with step-by-step fix guides. See exactly how many visits you could be gaining — fix in minutes, not months.",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
   openGraph: {
     title: "RankyPulse SEO Audit",
     description:

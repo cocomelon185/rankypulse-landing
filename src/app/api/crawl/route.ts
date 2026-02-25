@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
 
-const FETCH_TIMEOUT = 8000;
-const MAX_HTML_BYTES = 200 * 1024; // 200 KB — enough for <head>, avoids memory blow-up
+const HTML_TIMEOUT = 8_000;   // 8s per HTML fetch attempt
+const PSI_TIMEOUT  = 30_000;  // 30s for PageSpeed API (can be slow on cold starts)
+const MAX_HTML_BYTES = 200 * 1024; // 200 KB cap — enough for <head>
 
 // Converts raw PSI score (0–1 float) → 0–100 integer
 function psiScore(raw: unknown): number {
@@ -19,7 +20,7 @@ function auditNum(audits: Record<string, unknown>, key: string): number {
 // Stream-read at most MAX_HTML_BYTES from a response body
 async function readBodyCapped(res: Response): Promise<string> {
   const reader = res.body?.getReader();
-  if (!reader) return await res.text();
+  if (!reader) return res.text();
 
   const chunks: Uint8Array[] = [];
   let totalBytes = 0;
@@ -39,6 +40,99 @@ async function readBodyCapped(res: Response): Promise<string> {
   return chunks.map((c) => decoder.decode(c, { stream: true })).join("");
 }
 
+// Attempt to fetch HTML from a domain, trying https / https://www. / http: in order
+async function fetchHtml(cleanDomain: string): Promise<{ html: string; ok: boolean }> {
+  const candidates = [
+    `https://${cleanDomain}`,
+    `https://www.${cleanDomain}`,
+    `http://${cleanDomain}`,
+  ];
+
+  for (const url of candidates) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (compatible; RankyPulse-Bot/1.0; +https://rankypulse.com/bot)",
+          Accept: "text/html,application/xhtml+xml",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+        signal: AbortSignal.timeout(HTML_TIMEOUT),
+        redirect: "follow",
+      });
+
+      if (res.ok && (res.headers.get("content-type") ?? "").includes("text/html")) {
+        return { html: await readBodyCapped(res), ok: true };
+      }
+    } catch {
+      // Try next URL variant
+    }
+  }
+
+  return { html: "", ok: false };
+}
+
+// Follow redirects manually to count hops
+async function detectRedirects(
+  cleanDomain: string
+): Promise<{ count: number; finalUrl: string }> {
+  let count = 0;
+  let current = `https://${cleanDomain}`;
+
+  try {
+    for (let i = 0; i < 5; i++) {
+      const res = await fetch(current, {
+        redirect: "manual",
+        signal: AbortSignal.timeout(3_000),
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; RankyPulse-Bot/1.0)" },
+      });
+      if (res.status >= 300 && res.status < 400) {
+        count++;
+        const loc = res.headers.get("location");
+        if (!loc) break;
+        current = loc.startsWith("http") ? loc : `https://${cleanDomain}${loc}`;
+      } else {
+        break;
+      }
+    }
+  } catch {
+    // Best-effort
+  }
+
+  return { count, finalUrl: current };
+}
+
+// Fetch PSI data — returns null on any failure so it never blocks the route
+async function fetchPSI(
+  cleanDomain: string,
+  apiKey: string | undefined
+): Promise<{ performanceScore: number; lcpMs: number; cls: number } | null> {
+  const psiUrl =
+    `https://www.googleapis.com/pagespeedonline/v5/runPagespeed` +
+    `?url=https://${cleanDomain}&strategy=mobile` +
+    (apiKey ? `&key=${apiKey}` : "");
+
+  try {
+    const res = await fetch(psiUrl, { signal: AbortSignal.timeout(PSI_TIMEOUT) });
+    if (!res.ok) return null;
+
+    const psiData = (await res.json()) as Record<string, unknown>;
+    const lhr = psiData.lighthouseResult as Record<string, unknown> | undefined;
+    const cats = (lhr?.categories as Record<string, unknown> | undefined) ?? {};
+    const audits = (lhr?.audits ?? {}) as Record<string, unknown>;
+
+    return {
+      performanceScore: psiScore(
+        (cats.performance as Record<string, unknown> | undefined)?.score
+      ),
+      lcpMs: auditNum(audits, "largest-contentful-paint"),
+      cls: auditNum(audits, "cumulative-layout-shift"),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(req: NextRequest) {
   const domain = req.nextUrl.searchParams.get("domain");
   if (!domain) {
@@ -56,95 +150,31 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid domain" }, { status: 400 });
   }
 
-  // ── Hardened HTML fetch: try https, https://www., then http ──
-  const HTML_CANDIDATES = [
-    `https://${cleanDomain}`,
-    `https://www.${cleanDomain}`,
-    `http://${cleanDomain}`,
-  ];
+  // ── Run all three fetches in PARALLEL — neither blocks the other ──
+  // Total time = max(PSI, HTML, redirects) instead of sum
+  const [htmlResult, psiResult, redirectResult] = await Promise.allSettled([
+    fetchHtml(cleanDomain),
+    fetchPSI(cleanDomain, process.env.GOOGLE_PSI_KEY),
+    detectRedirects(cleanDomain),
+  ]);
 
-  let htmlContent = "";
-  let fetchedSuccessfully = false;
+  const { html: htmlContent, ok: fetchedSuccessfully } =
+    htmlResult.status === "fulfilled" ? htmlResult.value : { html: "", ok: false };
 
-  for (const candidate of HTML_CANDIDATES) {
-    try {
-      const res = await fetch(candidate, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (compatible; RankyPulse-Bot/1.0; +https://rankypulse.com/bot)",
-          Accept: "text/html,application/xhtml+xml",
-          "Accept-Language": "en-US,en;q=0.9",
-        },
-        signal: AbortSignal.timeout(FETCH_TIMEOUT),
-        redirect: "follow",
-      });
+  const psiData =
+    psiResult.status === "fulfilled" ? psiResult.value : null;
 
-      if (res.ok && (res.headers.get("content-type") ?? "").includes("text/html")) {
-        htmlContent = await readBodyCapped(res);
-        fetchedSuccessfully = true;
-        break;
-      }
-    } catch {
-      // Try next variant
-    }
-  }
+  const { count: redirectCount, finalUrl } =
+    redirectResult.status === "fulfilled"
+      ? redirectResult.value
+      : { count: 0, finalUrl: `https://${cleanDomain}` };
+
+  const performanceScore = psiData?.performanceScore ?? 50;
+  const lcpMs = psiData?.lcpMs ?? 0;
+  const cls = psiData?.cls ?? 0;
 
   if (!fetchedSuccessfully) {
     console.warn(`[crawl] All HTML fetch attempts failed for ${cleanDomain}`);
-  }
-
-  // ── Redirect chain detection ──
-  let redirectCount = 0;
-  let finalUrl = `https://${cleanDomain}`;
-
-  try {
-    let checkUrl = `https://${cleanDomain}`;
-    for (let i = 0; i < 5; i++) {
-      const res = await fetch(checkUrl, {
-        redirect: "manual",
-        signal: AbortSignal.timeout(3000),
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; RankyPulse-Bot/1.0)" },
-      });
-      if (res.status >= 300 && res.status < 400) {
-        redirectCount++;
-        const loc = res.headers.get("location");
-        if (!loc) break;
-        checkUrl = loc.startsWith("http") ? loc : `https://${cleanDomain}${loc}`;
-        finalUrl = checkUrl;
-      } else {
-        break;
-      }
-    }
-  } catch {
-    // Redirect detection is best-effort
-  }
-
-  // ── PageSpeed Insights (fire in parallel with HTML fetch above) ──
-  const psiKey = process.env.GOOGLE_PSI_KEY;
-  const psiUrl =
-    `https://www.googleapis.com/pagespeedonline/v5/runPagespeed` +
-    `?url=https://${cleanDomain}&strategy=mobile` +
-    (psiKey ? `&key=${psiKey}` : "");
-
-  let performanceScore = 50;
-  let lcpMs = 0;
-  let cls = 0;
-
-  try {
-    const psiRes = await fetch(psiUrl, { signal: AbortSignal.timeout(15000) });
-    if (psiRes.ok) {
-      const psiData = (await psiRes.json()) as Record<string, unknown>;
-      const lhr = psiData.lighthouseResult as Record<string, unknown> | undefined;
-      const cats = (lhr?.categories as Record<string, unknown> | undefined) ?? {};
-      performanceScore = psiScore(
-        (cats.performance as Record<string, unknown> | undefined)?.score
-      );
-      const audits = (lhr?.audits ?? {}) as Record<string, unknown>;
-      lcpMs = auditNum(audits, "largest-contentful-paint");
-      cls = auditNum(audits, "cumulative-layout-shift");
-    }
-  } catch {
-    // PSI unavailable — use defaults
   }
 
   // ── HTML analysis ──

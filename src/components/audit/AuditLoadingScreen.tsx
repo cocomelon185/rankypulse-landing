@@ -17,9 +17,17 @@ const STAGES = [
 
 interface AuditLoadingScreenProps {
   domain: string;
+  /** Called if the parent never clears the loading state within maxWaitMs */
+  onTimeout?: () => void;
+  /** Absolute maximum display time in ms before calling onTimeout (default 50s) */
+  maxWaitMs?: number;
 }
 
-export function AuditLoadingScreen({ domain }: AuditLoadingScreenProps) {
+export function AuditLoadingScreen({
+  domain,
+  onTimeout,
+  maxWaitMs = 50_000,
+}: AuditLoadingScreenProps) {
   const [currentStage, setCurrentStage] = useState(0);
   const [completedStages, setCompletedStages] = useState<number[]>([]);
 
@@ -38,13 +46,21 @@ export function AuditLoadingScreen({ domain }: AuditLoadingScreenProps) {
       elapsed += stage.duration;
     });
 
-    // Mark the last stage as complete slightly after it starts
+    // Mark ALL stages complete after the last one ends — stays on this state
+    // until the parent (AuditDomainClient) transitions away via isLoading=false
     const finalT = setTimeout(() => {
-      setCompletedStages((prev) => [...prev, STAGES.length - 1]);
+      setCompletedStages(STAGES.map((_, i) => i));
     }, elapsed + 400);
     timers.push(finalT);
 
+    // Absolute safety valve: if parent never sets isLoading=false, fire onTimeout
+    if (onTimeout) {
+      const safetyT = setTimeout(onTimeout, maxWaitMs);
+      timers.push(safetyT);
+    }
+
     return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const progress = Math.round((completedStages.length / STAGES.length) * 100);
