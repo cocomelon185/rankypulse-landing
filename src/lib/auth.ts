@@ -11,6 +11,10 @@ import {
 } from "./db-users";
 import { supabaseAdmin } from "./supabase";
 
+/** True when Google OAuth env vars are set; used to conditionally enable provider and UI */
+export const isGoogleAuthConfigured =
+  !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+
 async function getRoleForUserId(userId: string): Promise<string> {
   const { data } = await supabaseAdmin
     .from("users")
@@ -131,17 +135,21 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
-      authorization: {
-        params: {
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code",
-        },
-      },
-    }),
+    ...(isGoogleAuthConfigured
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+            authorization: {
+              params: {
+                prompt: "consent",
+                access_type: "offline",
+                response_type: "code",
+              },
+            },
+          }),
+        ]
+      : []),
   ],
   pages: {
     signIn: "/auth/signin",
