@@ -5,9 +5,6 @@ import { ImageResponse } from "next/og";
  * Used when social bots request /og or as generic fallback.
  */
 export const runtime = "edge";
-export const alt = "RankyPulse — Instant SEO Audit";
-export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
 
 export async function GET() {
   return new ImageResponse(
