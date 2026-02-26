@@ -80,7 +80,28 @@ export default function SignInClientPage() {
     window.location.href = `/auth/signin/email?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   };
 
-  const displayError = errorMsg || (errorParam === "CredentialsSignin" ? "Invalid email/username or password" : null);
+  // Map NextAuth error codes to user-friendly messages
+  function resolveErrorParam(code: string | null): { target: "google" | "form"; msg: string } | null {
+    if (!code) return null;
+    switch (code) {
+      case "CredentialsSignin":
+        return { target: "form", msg: "Invalid email/username or password" };
+      case "OAuthAccountNotLinked":
+        return { target: "google", msg: "This Google email is already linked to a password account. Please sign in with your password." };
+      case "OAuthSignin":
+      case "OAuthCallback":
+      case "OAuthCreateAccount":
+        return { target: "google", msg: "Google sign-in failed. Please try again." };
+      case "Configuration":
+        return { target: "google", msg: "Google sign-in is not configured yet. Use email/password or magic link instead." };
+      default:
+        return { target: "form", msg: "Sign in failed — please try again." };
+    }
+  }
+
+  const resolvedError = resolveErrorParam(errorParam);
+  const googleError = resolvedError?.target === "google" ? resolvedError.msg : null;
+  const displayError = errorMsg || (resolvedError?.target === "form" ? resolvedError.msg : null);
 
   return (
     <main
@@ -131,6 +152,9 @@ export default function SignInClientPage() {
             </svg>
             Continue with Google
           </button>
+          {googleError && (
+            <p className="mt-2 text-center font-['DM_Sans'] text-sm text-red-400">{googleError}</p>
+          )}
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
