@@ -33,7 +33,7 @@ const plans = [
     name: "Starter",
     priceUsd: "$9",
     priceInr: "₹999",
-    audits: "20 audits / month",
+    audits: "25 audits / month",
     tagline: "For founders tracking their site",
     features: [
       "Everything in Free",
@@ -49,9 +49,9 @@ const plans = [
   },
   {
     name: "Pro",
-    priceUsd: "$19",
-    priceInr: "₹1,699",
-    audits: "75 audits / month",
+    priceUsd: "$29",
+    priceInr: "₹2,600",
+    audits: "Unlimited audits",
     tagline: "For agencies and power users",
     features: [
       "Everything in Starter",
@@ -123,7 +123,7 @@ function getPricingViewSource(): "audit" | "direct" {
 export default function PricingClientPage() {
   const router = useRouter();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [currency, setCurrency] = useState<"USD" | "INR">("INR");
+  const [currency, setCurrency] = useState<"USD" | "INR">("USD");
   const [showRazorpayModal, setShowRazorpayModal] = useState(false);
   const [razorpayModalPlan, setRazorpayModalPlan] = useState<string>("Starter");
 

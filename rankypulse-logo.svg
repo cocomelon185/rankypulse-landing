@@ -1,0 +1,7 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="110" fill="#6366f1"/>
+  <polyline points="120,320 200,250 270,290 350,180" 
+            fill="none" stroke="white" stroke-width="28" 
+            stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="350" cy="180" r="18" fill="#10b981"/>
+</svg>
