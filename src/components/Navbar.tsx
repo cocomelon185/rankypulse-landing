@@ -16,15 +16,8 @@ export function Navbar() {
   return (
     <nav className="sticky top-0 z-50 border-b border-gray-200/80 bg-white/95 shadow-[0_1px_3px_rgba(0,0,0,0.04)] backdrop-blur-lg" aria-label="Main navigation">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 md:px-8">
-        <Link
-          href="/"
-          className="flex items-center gap-2 text-xl font-bold text-[#1B2559] shrink-0"
-          aria-label="RankyPulse home"
-        >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#4318ff] text-white shadow-md">
-            <Zap className="h-5 w-5" />
-          </div>
-          RankyPulse
+        <Link href="/" className="shrink-0" aria-label="RankyPulse home">
+          <img src="/rankypulse-logo.svg" alt="RankyPulse" height="36" className="h-9 w-auto" />
         </Link>
         <div className="flex items-center gap-1 md:gap-2">
           {navLinks.map((link) => (
