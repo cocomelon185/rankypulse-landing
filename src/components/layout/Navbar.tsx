@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Menu, X } from "lucide-react";
+import { Zap, Menu, X, LogOut } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 const NAV_LINKS = [
   { label: "Dashboard", href: "/dashboard" },
@@ -16,6 +18,7 @@ const NAV_LINKS = [
 
 export function AppNavbar() {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -117,12 +120,23 @@ export function AppNavbar() {
 
           {/* Desktop auth buttons */}
           <div className="hidden items-center gap-3 md:flex">
-            <Link
-              href="/auth/signin"
-              className="rounded-lg px-4 py-2 text-[13px] font-medium text-gray-300 transition-all hover:text-white hover:bg-white/[0.06]"
-            >
-              Sign In
-            </Link>
+            {status === "authenticated" ? (
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="flex items-center gap-2 rounded-lg px-4 py-2 text-[13px] font-medium text-gray-300 transition-all hover:text-white hover:bg-white/[0.06]"
+              >
+                <LogOut size={14} />
+                Sign out
+              </button>
+            ) : (
+              <Link
+                href="/auth/signin"
+                className="rounded-lg px-4 py-2 text-[13px] font-medium text-gray-300 transition-all hover:text-white hover:bg-white/[0.06]"
+              >
+                Sign In
+              </Link>
+            )}
             <Link
               href="/audit"
               className="inline-flex items-center gap-1.5 rounded-lg px-5 py-2 text-[13px] font-semibold text-white transition-all duration-200 hover:-translate-y-px active:translate-y-0"
@@ -241,14 +255,29 @@ export function AppNavbar() {
                 />
 
                 <div className="space-y-3">
-                  <Link
-                    href="/auth/signin"
-                    onClick={() => setMobileOpen(false)}
-                    className="block w-full rounded-xl border px-4 py-3 text-center text-[14px] font-medium text-gray-300 transition hover:bg-white/[0.06]"
-                    style={{ borderColor: "rgba(255,255,255,0.12)" }}
-                  >
-                    Sign In
-                  </Link>
+                  {status === "authenticated" ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileOpen(false);
+                        signOut({ callbackUrl: "/" });
+                      }}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-center text-[14px] font-medium text-gray-300 transition hover:bg-white/[0.06]"
+                      style={{ borderColor: "rgba(255,255,255,0.12)" }}
+                    >
+                      <LogOut size={16} />
+                      Sign out
+                    </button>
+                  ) : (
+                    <Link
+                      href="/auth/signin"
+                      onClick={() => setMobileOpen(false)}
+                      className="block w-full rounded-xl border px-4 py-3 text-center text-[14px] font-medium text-gray-300 transition hover:bg-white/[0.06]"
+                      style={{ borderColor: "rgba(255,255,255,0.12)" }}
+                    >
+                      Sign In
+                    </Link>
+                  )}
                   <Link
                     href="/audit"
                     onClick={() => setMobileOpen(false)}

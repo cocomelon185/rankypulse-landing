@@ -3,20 +3,17 @@
 import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
-import { Card } from "@/components/horizon";
-import { Button } from "@/components/ui/button";
-import { PageLayout } from "@/components/layout/PageLayout";
-import { ArrowLeft, Lock } from "lucide-react";
+import { motion } from "framer-motion";
+import { Zap, Lock, ArrowLeft } from "lucide-react";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams?.get("token");
-  const email = searchParams?.get("email") ?? "";
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -35,12 +32,14 @@ function ResetPasswordForm() {
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, email, password }),
+        body: JSON.stringify({ token, password }),
       });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) {
         setStatus("error");
-        setErrorMsg(data?.error ?? "Reset failed — the link may have expired.");
+        setErrorMsg(
+          data?.error ?? "Reset failed — the link may have expired."
+        );
         return;
       }
       setStatus("success");
@@ -53,8 +52,13 @@ function ResetPasswordForm() {
   if (!token) {
     return (
       <div className="text-center">
-        <p className="text-gray-600">Invalid or expired reset link.</p>
-        <Link href="/auth/forgot-password" className="mt-4 inline-block font-semibold text-[#4318ff] hover:underline">
+        <p className="font-['DM_Sans'] text-gray-400">
+          Invalid or expired reset link.
+        </p>
+        <Link
+          href="/auth/forgot-password"
+          className="mt-4 inline-block font-['DM_Sans'] text-sm font-semibold text-indigo-400 hover:text-indigo-300"
+        >
           Request a new link
         </Link>
       </div>
@@ -64,10 +68,17 @@ function ResetPasswordForm() {
   if (status === "success") {
     return (
       <div className="space-y-4 text-center">
-        <p className="font-medium text-gray-800">Password updated</p>
-        <p className="text-sm text-gray-600">You can now sign in with your new password.</p>
-        <Link href="/auth/signin">
-          <Button>Sign in</Button>
+        <p className="font-['DM_Sans'] font-medium text-white">
+          Password updated
+        </p>
+        <p className="font-['DM_Sans'] text-sm text-gray-400">
+          You can now sign in with your new password.
+        </p>
+        <Link
+          href="/auth/signin"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 px-6 py-3 font-['DM_Sans'] text-sm font-semibold text-white transition hover:bg-indigo-400"
+        >
+          Sign in
         </Link>
       </div>
     );
@@ -75,8 +86,10 @@ function ResetPasswordForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <input type="hidden" name="email" value={email} />
-      <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
+      <label
+        htmlFor="password"
+        className="block font-['DM_Sans'] text-sm font-medium text-gray-400"
+      >
         New password
       </label>
       <input
@@ -88,9 +101,12 @@ function ResetPasswordForm() {
         onChange={(e) => setPassword(e.target.value)}
         disabled={status === "loading"}
         placeholder="At least 8 characters"
-        className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-[#4318ff] focus:outline-none focus:ring-4 focus:ring-[#4318ff]/20 disabled:opacity-60"
+        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-['DM_Sans'] text-sm text-white placeholder-gray-500 outline-none transition focus:border-indigo-500/50 disabled:opacity-60"
       />
-      <label htmlFor="confirm" className="block text-sm font-semibold text-gray-700">
+      <label
+        htmlFor="confirm"
+        className="block font-['DM_Sans'] text-sm font-medium text-gray-400"
+      >
         Confirm password
       </label>
       <input
@@ -102,48 +118,68 @@ function ResetPasswordForm() {
         onChange={(e) => setConfirm(e.target.value)}
         disabled={status === "loading"}
         placeholder="Same as above"
-        className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-[#4318ff] focus:outline-none focus:ring-4 focus:ring-[#4318ff]/20 disabled:opacity-60"
+        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-['DM_Sans'] text-sm text-white placeholder-gray-500 outline-none transition focus:border-indigo-500/50 disabled:opacity-60"
       />
-      {errorMsg && <p className="text-sm text-red-600">{errorMsg}</p>}
-      <Button type="submit" className="w-full" size="lg" disabled={status === "loading"}>
-        <Lock className="mr-2 h-5 w-5" />
+      {errorMsg && (
+        <p className="font-['DM_Sans'] text-sm text-red-400">{errorMsg}</p>
+      )}
+      <button
+        type="submit"
+        disabled={status === "loading"}
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-500 py-3 font-['DM_Sans'] text-sm font-semibold text-white transition hover:bg-indigo-400 disabled:opacity-60"
+      >
+        <Lock size={16} />
         {status === "loading" ? "Updating…" : "Update password"}
-      </Button>
+      </button>
     </form>
   );
 }
 
 export function ResetPasswordClientPage() {
   return (
-    <div className="page-shell">
-      <Navbar />
-      <PageLayout>
-        <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center">
-          <Card extra="p-8 md:p-10 w-full overflow-hidden" default={true}>
-            <div className="mb-6 text-center">
-              <h1 className="text-2xl font-bold text-[#1B2559] md:text-3xl">
-                Set new password
-              </h1>
-              <p className="mt-2 text-gray-600">
-                Enter your new password below.
-              </p>
+    <main
+      className="flex min-h-screen items-center justify-center px-6"
+      style={{ background: "#0d0f14" }}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative w-full max-w-sm"
+      >
+        <div className="mb-8 text-center">
+          <Link href="/" className="mb-4 inline-flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600">
+              <Zap size={16} className="text-white" />
             </div>
-
-            <Suspense fallback={<p className="text-gray-600">Loading…</p>}>
-              <ResetPasswordForm />
-            </Suspense>
-
-            <Link
-              href="/auth/signin"
-              className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-500 transition-colors hover:text-[#4318ff]"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to sign in
-            </Link>
-          </Card>
+            <span className="font-['Fraunces'] text-xl font-bold text-white">
+              RankyPulse
+            </span>
+          </Link>
+          <h1 className="font-['Fraunces'] text-3xl font-bold text-white">
+            Set new password
+          </h1>
+          <p className="mt-2 font-['DM_Sans'] text-sm text-gray-500">
+            Enter your new password below.
+          </p>
         </div>
-      </PageLayout>
-      <Footer />
-    </div>
+
+        <div
+          className="rounded-2xl border border-white/8 p-8"
+          style={{ background: "#13161f" }}
+        >
+          <Suspense fallback={<p className="text-gray-400">Loading…</p>}>
+            <ResetPasswordForm />
+          </Suspense>
+
+          <Link
+            href="/auth/signin"
+            className="mt-6 flex items-center justify-center gap-2 font-['DM_Sans'] text-xs text-gray-500 transition hover:text-white"
+          >
+            <ArrowLeft size={14} />
+            Back to sign in
+          </Link>
+        </div>
+      </motion.div>
+    </main>
   );
 }

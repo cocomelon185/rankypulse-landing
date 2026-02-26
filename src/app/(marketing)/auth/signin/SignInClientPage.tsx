@@ -1,32 +1,92 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { motion } from "framer-motion";
-import { Zap, Mail, ArrowRight } from "lucide-react";
+import { Zap, Mail, ArrowRight, Lock } from "lucide-react";
 import { track } from "@/lib/analytics";
 
 export default function SignInClientPage() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams?.get("callbackUrl") ?? "/dashboard";
+  const callbackUrl =
+    searchParams?.get("callbackUrl") ?? searchParams?.get("next") ?? "/dashboard";
+  const errorParam = searchParams?.get("error");
+
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const handleGoogleSignIn = () => {
     track("signin_attempt", { provider: "google" });
     signIn("google", { callbackUrl });
   };
 
-  const handleEmailSignIn = () => {
-    track("signin_attempt", { provider: "email" });
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus("loading");
+    setErrorMsg("");
+    try {
+      const res = await signIn("credentials", {
+        identifier: identifier.trim(),
+        password,
+        redirect: false,
+        callbackUrl,
+      });
+      if (res?.error) {
+        if (res.error === "CredentialsSignin") {
+          // Check if this is a Google-only account so we can show a helpful message
+          try {
+            const check = await fetch(
+              `/api/auth/check-login-method?identifier=${encodeURIComponent(identifier.trim())}`
+            );
+            const data = (await check.json()) as {
+              exists: boolean;
+              hasPassword: boolean;
+              hasGoogle: boolean;
+            };
+            if (data.exists && data.hasGoogle && !data.hasPassword) {
+              setErrorMsg(
+                'This account uses Google sign-in. Please click "Continue with Google" above.'
+              );
+            } else {
+              setErrorMsg("Invalid email/username or password");
+            }
+          } catch {
+            setErrorMsg("Invalid email/username or password");
+          }
+        } else {
+          setErrorMsg(res.error);
+        }
+        setStatus("error");
+        return;
+      }
+      if (res?.url) {
+        window.location.href = res.url;
+        return;
+      }
+      setStatus("error");
+      setErrorMsg("Sign in failed — try again.");
+    } catch {
+      setStatus("error");
+      setErrorMsg("Something went wrong — try again.");
+    }
+  };
+
+  const handleMagicLink = () => {
+    track("signin_attempt", { provider: "magic_link" });
     window.location.href = `/auth/signin/email?callbackUrl=${encodeURIComponent(callbackUrl)}`;
   };
+
+  const displayError = errorMsg || (errorParam === "CredentialsSignin" ? "Invalid email/username or password" : null);
 
   return (
     <main
       className="flex min-h-screen items-center justify-center px-6"
       style={{ background: "#0d0f14" }}
     >
-      {/* Background glow */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-1/2 h-[400px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/8 blur-[100px]" />
       </div>
@@ -37,27 +97,29 @@ export default function SignInClientPage() {
         transition={{ duration: 0.5 }}
         className="relative w-full max-w-sm"
       >
-        {/* Logo */}
         <div className="mb-8 text-center">
           <Link href="/" className="mb-4 inline-flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600">
               <Zap size={16} className="text-white" />
             </div>
-            <span className="font-['Fraunces'] text-xl font-bold text-white">RankyPulse</span>
+            <span className="font-['Fraunces'] text-xl font-bold text-white">
+              RankyPulse
+            </span>
           </Link>
-          <h1 className="font-['Fraunces'] text-3xl font-bold text-white">Welcome back</h1>
+          <h1 className="font-['Fraunces'] text-3xl font-bold text-white">
+            Welcome back
+          </h1>
           <p className="mt-2 font-['DM_Sans'] text-sm text-gray-500">
             Sign in to see your audit history
           </p>
         </div>
 
-        {/* Card */}
         <div
           className="rounded-2xl border border-white/8 p-8"
           style={{ background: "#13161f" }}
         >
-          {/* Google sign-in */}
           <button
+            type="button"
             onClick={handleGoogleSignIn}
             className="flex w-full items-center justify-center gap-3 rounded-xl bg-white py-3.5 font-['DM_Sans'] text-sm font-semibold text-gray-800 transition-colors duration-200 hover:bg-gray-100"
           >
@@ -70,7 +132,6 @@ export default function SignInClientPage() {
             Continue with Google
           </button>
 
-          {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-white/5" />
@@ -85,31 +146,72 @@ export default function SignInClientPage() {
             </div>
           </div>
 
-          {/* Magic link / email */}
-          <button
-            onClick={handleEmailSignIn}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/8 py-3 font-['DM_Sans'] text-sm text-gray-400 transition-all duration-200 hover:border-white/15 hover:bg-white/4 hover:text-white"
-          >
-            <Mail size={15} />
-            Continue with Email
-            <ArrowRight size={13} className="ml-auto text-gray-600" />
-          </button>
-
-          {/* Forgot password */}
-          <p className="mt-4 text-center font-['DM_Sans'] text-xs text-gray-600">
-            <Link
-              href={`/auth/forgot-password${callbackUrl !== "/dashboard" ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`}
-              className="text-indigo-400 transition-colors hover:text-indigo-300"
+          <form onSubmit={handleCredentialsSubmit} className="space-y-4">
+            <input
+              type="text"
+              autoComplete="username"
+              placeholder="Email or username"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              disabled={status === "loading"}
+              required
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-['DM_Sans'] text-sm text-white placeholder-gray-500 outline-none transition focus:border-indigo-500/50 disabled:opacity-60"
+            />
+            <input
+              type="password"
+              autoComplete="current-password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={status === "loading"}
+              required
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-['DM_Sans'] text-sm text-white placeholder-gray-500 outline-none transition focus:border-indigo-500/50 disabled:opacity-60"
+            />
+            {displayError && (
+              <p className="text-sm text-red-400">{displayError}</p>
+            )}
+            <button
+              type="submit"
+              disabled={status === "loading"}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-500 py-3 font-['DM_Sans'] text-sm font-semibold text-white transition hover:bg-indigo-400 disabled:opacity-60"
             >
-              Forgot password?
-            </Link>
-          </p>
+              <Lock size={16} />
+              {status === "loading" ? "Signing in…" : "Sign in with password"}
+            </button>
+          </form>
 
-          {/* No-account note */}
+          <div className="mt-4 space-y-1 text-center font-['DM_Sans'] text-xs text-gray-600">
+            <p>
+              <Link
+                href={`/auth/forgot-password${callbackUrl !== "/dashboard" ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`}
+                className="text-indigo-400 transition-colors hover:text-indigo-300"
+              >
+                Forgot password?
+              </Link>
+              {" · "}
+              <Link
+                href={`/auth/forgot-username${callbackUrl !== "/dashboard" ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`}
+                className="text-indigo-400 transition-colors hover:text-indigo-300"
+              >
+                Forgot username?
+              </Link>
+            </p>
+            <p>
+              <button
+                type="button"
+                onClick={handleMagicLink}
+                className="text-indigo-400 transition-colors hover:text-indigo-300"
+              >
+                <Mail size={12} className="mr-1 inline" />
+                Email me a sign-in link
+              </button>
+            </p>
+          </div>
+
           <p className="mt-3 text-center font-['DM_Sans'] text-xs text-gray-700">
             Don&apos;t have an account?{" "}
             <Link
-              href="/auth/signup"
+              href={`/auth/signup${callbackUrl !== "/dashboard" ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`}
               className="text-indigo-400 transition-colors hover:text-indigo-300"
             >
               Sign up free

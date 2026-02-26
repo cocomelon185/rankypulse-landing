@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Zap, Mail, ArrowLeft } from "lucide-react";
 
-export default function ForgotPasswordClientPage() {
+export default function ForgotUsernameClientPage() {
   const searchParams = useSearchParams();
   const callbackUrl =
     searchParams?.get("callbackUrl") ?? searchParams?.get("next") ?? "/dashboard";
@@ -22,7 +22,7 @@ export default function ForgotPasswordClientPage() {
     setStatus("loading");
     setErrorMsg("");
     try {
-      const res = await fetch("/api/auth/forgot-password", {
+      const res = await fetch("/api/auth/forgot-username", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -60,10 +60,10 @@ export default function ForgotPasswordClientPage() {
             </span>
           </Link>
           <h1 className="font-['Fraunces'] text-3xl font-bold text-white">
-            Forgot password?
+            Forgot username?
           </h1>
           <p className="mt-2 font-['DM_Sans'] text-sm text-gray-500">
-            Enter your email and we&apos;ll send you a reset link
+            Enter your email and we&apos;ll send you a reminder
           </p>
         </div>
 
@@ -73,8 +73,8 @@ export default function ForgotPasswordClientPage() {
         >
           {status === "success" ? (
             <p className="text-center font-['DM_Sans'] text-sm text-gray-400">
-              If an account exists with that email, we&apos;ve sent a password
-              reset link. Check your inbox.
+              If an account exists with that email, we&apos;ve sent you your
+              username. Check your inbox.
             </p>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -96,7 +96,7 @@ export default function ForgotPasswordClientPage() {
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-500 py-3 font-['DM_Sans'] text-sm font-semibold text-white transition hover:bg-indigo-400 disabled:opacity-60"
               >
                 <Mail size={16} />
-                {status === "loading" ? "Sending…" : "Send reset link"}
+                {status === "loading" ? "Sending…" : "Email my username"}
               </button>
             </form>
           )}
