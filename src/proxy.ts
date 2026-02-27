@@ -56,7 +56,7 @@ function isProtectedPath(pathname: string): boolean {
   );
 }
 
-export async function middleware(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
   // Never run on API or NextAuth internal routes
