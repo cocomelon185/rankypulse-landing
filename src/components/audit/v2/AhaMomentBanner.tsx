@@ -21,8 +21,10 @@ export function AhaMomentBanner() {
   const handleFixItNow = () => {
     if (!topIssue) return;
     void handleFixAction(topIssue.id, () => {
-      document.getElementById("fix-roadmap")?.scrollIntoView({ behavior: "smooth" });
       setExpandedIssue(topIssue.id);
+      setTimeout(() => {
+        document.getElementById(`issue-${topIssue.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 50);
     }).then((result) => {
       if (result === "quota_exceeded") setShowQuotaModal(true);
     });
