@@ -101,6 +101,52 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ) : null}
       </head>
       <body>
+        {/* JSON-LD Schema */}
+        <Script
+          id="schema-org"
+          type="application/ld+json"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "WebSite",
+                  "@id": "https://rankypulse.com/#website",
+                  "url": "https://rankypulse.com/",
+                  "name": "RankyPulse",
+                  "description": "Get a complete SEO audit with step-by-step fix guides.",
+                  "potentialAction": [
+                    {
+                      "@type": "SearchAction",
+                      "target": "https://rankypulse.com/audit/results?url={search_term_string}",
+                      "query-input": "required name=search_term_string"
+                    }
+                  ]
+                },
+                {
+                  "@type": "Organization",
+                  "@id": "https://rankypulse.com/#organization",
+                  "name": "RankyPulse",
+                  "url": "https://rankypulse.com/",
+                  "logo": {
+                    "@type": "ImageObject",
+                    "inLanguage": "en-US",
+                    "@id": "https://rankypulse.com/#/schema/logo/image/",
+                    "url": "https://rankypulse.com/favicon.svg",
+                    "contentUrl": "https://rankypulse.com/favicon.svg",
+                    "width": 512,
+                    "height": 512,
+                    "caption": "RankyPulse"
+                  },
+                  "image": {
+                    "@id": "https://rankypulse.com/#/schema/logo/image/"
+                  }
+                }
+              ]
+            }),
+          }}
+        />
         <SessionProvider>
           {children}
           <Toaster position="bottom-center" richColors closeButton />
