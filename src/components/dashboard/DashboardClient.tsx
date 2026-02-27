@@ -60,23 +60,23 @@ const DEFAULT_TREND: ScoreTrendPoint[] = [
 
 const DEFAULT_AUDITS: RecentAudit[] = [
   { domain: "example.com", score: 78, date: "Today" },
-  { domain: "mysite.com",  score: 62, date: "Yesterday" },
-  { domain: "project.io",  score: 45, date: "2 days ago" },
+  { domain: "mysite.com", score: 62, date: "Yesterday" },
+  { domain: "project.io", score: 45, date: "2 days ago" },
 ];
 
 const QUICK_START = [
-  { label: "Run your first audit",           done: true  },
-  { label: "Fix meta title & description",   done: true  },
-  { label: "Add schema markup",              done: false },
-  { label: "Track discoverability score",    done: false },
+  { label: "Run your first audit", done: true },
+  { label: "Fix meta title & description", done: true },
+  { label: "Add schema markup", done: false },
+  { label: "Track discoverability score", done: false },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getScoreStyle(score: number) {
-  if (score >= 80) return { color: "#10b981", label: "GOOD", bg: "rgba(16,185,129,0.1)",  border: "rgba(16,185,129,0.25)"  };
-  if (score >= 60) return { color: "#f59e0b", label: "OK",   bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.25)"  };
-  return               { color: "#ef4444",  label: "POOR", bg: "rgba(239,68,68,0.1)",   border: "rgba(239,68,68,0.25)"   };
+  if (score >= 80) return { color: "#10b981", label: "GOOD", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.25)" };
+  if (score >= 60) return { color: "#f59e0b", label: "OK", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.25)" };
+  return { color: "#ef4444", label: "POOR", bg: "rgba(239,68,68,0.1)", border: "rgba(239,68,68,0.25)" };
 }
 
 function getGreeting() {
@@ -212,16 +212,9 @@ export function DashboardClient({
     .toUpperCase();
 
   return (
-    <main
-      className="relative min-h-screen px-6 pb-20 pt-24"
-      style={{ background: "#0d0f14" }}
-    >
-      {/* Background glow */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-0 h-[400px] w-[700px] -translate-x-1/2 rounded-full bg-indigo-500/6 blur-[120px]" />
-      </div>
+    <div className="relative">
+      <div className="relative">
 
-      <div className="relative mx-auto max-w-5xl">
 
         {/* ── Header ── */}
         <motion.div
@@ -355,7 +348,7 @@ export function DashboardClient({
             >
               <defs>
                 <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%"   stopColor="#6366f1" stopOpacity={0.35} />
+                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
                   <stop offset="100%" stopColor="#6366f1" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
@@ -437,11 +430,10 @@ export function DashboardClient({
               {QUICK_START.map((step, i) => (
                 <div
                   key={step.label}
-                  className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-all duration-200 ${
-                    step.done
-                      ? "border-emerald-500/10 bg-emerald-500/5"
-                      : "border-white/5 bg-white/2"
-                  }`}
+                  className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-all duration-200 ${step.done
+                    ? "border-emerald-500/10 bg-emerald-500/5"
+                    : "border-white/5 bg-white/2"
+                    }`}
                 >
                   {step.done ? (
                     <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/20">
@@ -461,9 +453,8 @@ export function DashboardClient({
                     </div>
                   )}
                   <span
-                    className={`font-['DM_Sans'] text-sm transition-colors ${
-                      step.done ? "text-gray-600 line-through" : "text-gray-300"
-                    }`}
+                    className={`font-['DM_Sans'] text-sm transition-colors ${step.done ? "text-gray-600 line-through" : "text-gray-300"
+                      }`}
                   >
                     {step.label}
                   </span>
@@ -556,9 +547,8 @@ export function DashboardClient({
             {["URL", "Score", "Date", "Actions"].map((col, i) => (
               <span
                 key={col}
-                className={`font-['DM_Mono'] text-xs uppercase tracking-wider text-gray-600 ${
-                  i === 2 ? "hidden md:block" : ""
-                }`}
+                className={`font-['DM_Mono'] text-xs uppercase tracking-wider text-gray-600 ${i === 2 ? "hidden md:block" : ""
+                  }`}
               >
                 {col}
               </span>
@@ -665,6 +655,7 @@ export function DashboardClient({
           )}
         </motion.div>
       </div>
-    </main>
+    </div>
   );
 }
+

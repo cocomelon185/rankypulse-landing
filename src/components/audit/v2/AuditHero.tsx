@@ -210,6 +210,46 @@ export function AuditHero() {
         </div>
       </div>
 
+      {/* Thematic Reports (Semrush style) */}
+      <div className="mt-8">
+        <h3 className="mb-4 font-display text-sm font-semibold uppercase tracking-widest text-[var(--text-secondary)]">Thematic Reports</h3>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          {[
+            { label: "Crawlability", score: 100, color: "#10b981" },
+            { label: "HTTPS", score: 99, color: "#10b981" },
+            { label: "Site Performance", score: 92, color: "#10b981" },
+            { label: "Internal Linking", score: 97, color: "#10b981" },
+            { label: "Markup", score: 100, color: "#10b981" },
+            { label: "Core Web Vitals", score: 25, color: "#ef4444" },
+          ].map((report) => (
+            <div key={report.label} className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4 flex flex-col items-center gap-3 transition hover:border-white/10 hover:bg-white/[0.04]">
+              <div className="relative h-12 w-12">
+                <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90 transform">
+                  <circle cx="18" cy="18" r="16" fill="none" className="stroke-white/[0.05]" strokeWidth="3.5" />
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="16"
+                    fill="none"
+                    className="transition-all duration-1000 ease-out"
+                    stroke={report.color}
+                    strokeWidth="3.5"
+                    strokeDasharray={`${report.score}, 100`}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-[var(--text-primary)]">
+                  {report.score}%
+                </div>
+              </div>
+              <span className="text-center text-[11px] font-medium leading-tight text-[var(--text-secondary)]">{report.label}</span>
+              <button className="mt-auto rounded-lg bg-white/[0.05] px-3 py-1 text-[10px] font-semibold text-[var(--text-primary)] hover:bg-white/10 transition">
+                Details
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Metric cards grid */}
       <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <MetricCard
