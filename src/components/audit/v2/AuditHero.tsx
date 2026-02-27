@@ -84,7 +84,39 @@ export function AuditHero() {
   const errorsCount = useMemo(() => data.issues.filter(i => i.priority === 'critical' || i.priority === 'high').length, [data.issues]);
   const warningsCount = useMemo(() => data.issues.filter(i => i.priority === 'medium').length, [data.issues]);
   const noticesCount = useMemo(() => data.issues.filter(i => i.priority === 'low' || i.priority === 'opportunity').length, [data.issues]);
-  const healthyPercent = 85;
+  const healthyPercent = Math.max(0, 100 - Math.round((openIssuesCount / Math.max(1, data.issues.length)) * 100));
+
+  const thematicScores = useMemo(() => {
+    // These would ideally come from the API, but we'll infer them from the data we have for now
+    const calcScore = (issueType: string) => {
+      const typeIssues = data.issues.filter(i => JSON.stringify(i).toLowerCase().includes(issueType));
+      return Math.max(0, 100 - (typeIssues.length * 5));
+    };
+
+    const crawlability = calcScore('canonical');
+    const https = calcScore('http');
+    const performance = calcScore('speed') || calcScore('image');
+    // Using adjustedScore and open counts as proxies for remaining areas
+    const internalLinking = Math.min(100, adjustedScore + 10);
+    const markup = calcScore('schema') || calcScore('meta');
+    // Core Web Vitals often correlates with performance but we'll give it a slight penalty if there are open notices
+    const cwv = Math.max(0, performance - noticesCount * 2);
+
+    const getColor = (score: number) => {
+      if (score >= 80) return "#10b981";
+      if (score >= 50) return "#f97316";
+      return "#ef4444";
+    };
+
+    return [
+      { label: "Crawlability", score: crawlability, color: getColor(crawlability) },
+      { label: "HTTPS", score: https, color: getColor(https) },
+      { label: "Site Performance", score: performance, color: getColor(performance) },
+      { label: "Internal Linking", score: internalLinking, color: getColor(internalLinking) },
+      { label: "Markup", score: markup, color: getColor(markup) },
+      { label: "Core Web Vitals", score: cwv, color: getColor(cwv) },
+    ];
+  }, [data.issues, adjustedScore, noticesCount]);
 
   return (
     <motion.section
@@ -177,15 +209,15 @@ export function AuditHero() {
                 <div className="flex flex-1 flex-col gap-1.5">
                   <div className="flex items-center justify-between text-xs">
                     <span className="flex items-center gap-1.5 text-[var(--text-secondary)]"><span className="h-2 w-2 rounded-full bg-[#10b981]"></span>Healthy</span>
-                    <span className="font-medium text-[var(--text-primary)]">42</span>
+                    <span className="font-medium text-[var(--text-primary)]">{Math.max(0, 50 - openIssuesCount)}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="flex items-center gap-1.5 text-[var(--text-secondary)]"><span className="h-2 w-2 rounded-full bg-[#ef4444]"></span>Broken</span>
-                    <span className="font-medium text-[var(--text-primary)]">0</span>
+                    <span className="font-medium text-[var(--text-primary)]">{errorsCount}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="flex items-center gap-1.5 text-[var(--text-secondary)]"><span className="h-2 w-2 rounded-full bg-[#f97316]"></span>Issues</span>
-                    <span className="font-medium text-[var(--text-primary)]">8</span>
+                    <span className="font-medium text-[var(--text-primary)]">{warningsCount + noticesCount}</span>
                   </div>
                 </div>
               </div>
@@ -214,14 +246,7 @@ export function AuditHero() {
       <div className="mt-8">
         <h3 className="mb-4 font-display text-sm font-semibold uppercase tracking-widest text-[var(--text-secondary)]">Thematic Reports</h3>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          {[
-            { label: "Crawlability", score: 100, color: "#10b981" },
-            { label: "HTTPS", score: 99, color: "#10b981" },
-            { label: "Site Performance", score: 92, color: "#10b981" },
-            { label: "Internal Linking", score: 97, color: "#10b981" },
-            { label: "Markup", score: 100, color: "#10b981" },
-            { label: "Core Web Vitals", score: 25, color: "#ef4444" },
-          ].map((report) => (
+          {thematicScores.map((report) => (
             <div key={report.label} className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4 flex flex-col items-center gap-3 transition hover:border-white/10 hover:bg-white/[0.04]">
               <div className="relative h-12 w-12">
                 <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90 transform">
