@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, AlertCircle, AlertTriangle, Info } from "lucide-react";
 import { ScoreGauge } from "../ScoreGauge";
 import { ScoreHistory } from "../ScoreHistory";
 import { useCountUp } from "@/hooks/useCountUp";
@@ -81,6 +81,11 @@ export function AuditHero() {
     return adjustedScore - prev;
   }, [adjustedScore, data.scoreHistory]);
 
+  const errorsCount = useMemo(() => data.issues.filter(i => i.priority === 'critical' || i.priority === 'high').length, [data.issues]);
+  const warningsCount = useMemo(() => data.issues.filter(i => i.priority === 'medium').length, [data.issues]);
+  const noticesCount = useMemo(() => data.issues.filter(i => i.priority === 'low' || i.priority === 'opportunity').length, [data.issues]);
+  const healthyPercent = 85;
+
   return (
     <motion.section
       initial={{ opacity: 0 }}
@@ -127,12 +132,82 @@ export function AuditHero() {
         </div>
       </div>
 
-      {/* Main gauge */}
-      <div className="mt-8 flex flex-col items-center">
-        <p className="mb-4 text-sm font-medium uppercase tracking-widest text-[var(--text-secondary)]">
-          SEO Health Score
-        </p>
-        <ScoreGauge score={adjustedScore} />
+      {/* Main gauge and Semrush-style breakdown */}
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1.5fr]">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-white/[0.05] bg-white/[0.02] p-6 shadow-sm">
+          <p className="mb-4 text-sm font-medium uppercase tracking-widest text-[var(--text-secondary)]">
+            SEO Health Score
+          </p>
+          <ScoreGauge score={adjustedScore} />
+        </div>
+
+        <div className="flex flex-col justify-center gap-4">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-[#ef4444]/20 bg-[#ef4444]/5 p-4 transition hover:bg-[#ef4444]/10">
+              <span className="font-display text-2xl font-bold tabular-nums text-[#ef4444]">{errorsCount}</span>
+              <span className="mt-1 flex items-center justify-center gap-1 text-xs font-medium text-[var(--text-secondary)]">
+                <AlertCircle className="h-3 w-3 text-[#ef4444]" /> Errors
+              </span>
+            </div>
+            <div className="flex flex-col items-center justify-center rounded-xl border border-[#f97316]/20 bg-[#f97316]/5 p-4 transition hover:bg-[#f97316]/10">
+              <span className="font-display text-2xl font-bold tabular-nums text-[#f97316]">{warningsCount}</span>
+              <span className="mt-1 flex items-center justify-center gap-1 text-xs font-medium text-[var(--text-secondary)]">
+                <AlertTriangle className="h-3 w-3 text-[#f97316]" /> Warnings
+              </span>
+            </div>
+            <div className="flex flex-col items-center justify-center rounded-xl border border-[#3b82f6]/20 bg-[#3b82f6]/5 p-4 transition hover:bg-[#3b82f6]/10">
+              <span className="font-display text-2xl font-bold tabular-nums text-[#3b82f6]">{noticesCount}</span>
+              <span className="mt-1 flex items-center justify-center gap-1 text-xs font-medium text-[var(--text-secondary)]">
+                <Info className="h-3 w-3 text-[#3b82f6]" /> Notices
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4">
+              <h4 className="mb-3 font-display text-sm font-semibold text-[var(--text-primary)]">Crawled Pages</h4>
+              <div className="flex items-center gap-4">
+                <div className="relative h-16 w-16 shrink-0">
+                  <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90 transform">
+                    <circle cx="18" cy="18" r="16" fill="none" className="stroke-white/[0.05]" strokeWidth="4" />
+                    <circle cx="18" cy="18" r="16" fill="none" className="stroke-[#10b981]" strokeWidth="4" strokeDasharray={`${healthyPercent}, 100`} />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-[var(--text-primary)]">{healthyPercent}%</span>
+                </div>
+                <div className="flex flex-1 flex-col gap-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5 text-[var(--text-secondary)]"><span className="h-2 w-2 rounded-full bg-[#10b981]"></span>Healthy</span>
+                    <span className="font-medium text-[var(--text-primary)]">42</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5 text-[var(--text-secondary)]"><span className="h-2 w-2 rounded-full bg-[#ef4444]"></span>Broken</span>
+                    <span className="font-medium text-[var(--text-primary)]">0</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5 text-[var(--text-secondary)]"><span className="h-2 w-2 rounded-full bg-[#f97316]"></span>Issues</span>
+                    <span className="font-medium text-[var(--text-primary)]">8</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4">
+              <h4 className="mb-3 font-display text-sm font-semibold text-[var(--text-primary)]">Top Issues</h4>
+              <div className="flex flex-col gap-2.5">
+                {data.issues.slice(0, 3).map((issue) => (
+                  <div key={issue.id} className="group flex items-start justify-between gap-3">
+                    <p className="line-clamp-1 cursor-default text-xs text-[var(--text-secondary)] transition group-hover:text-[var(--text-primary)]">
+                      {issue.title}
+                    </p>
+                    <span className={`shrink-0 text-[10px] font-semibold uppercase tracking-wider ${issue.priority === 'critical' || issue.priority === 'high' ? 'text-[#ef4444]' : 'text-[#f97316]'}`}>
+                      {issue.priority}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Metric cards grid */}
@@ -165,3 +240,4 @@ export function AuditHero() {
     </motion.section>
   );
 }
+
