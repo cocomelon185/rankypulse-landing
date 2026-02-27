@@ -92,11 +92,22 @@ export const useAuditStore = create<AuditState>((set, get) => ({
       : 0;
   },
   adjustedScore: () => {
-    const base = get().data.score;
-    const extraFixes = get().completedFixIds.filter(
-      (id) =>
-        !MOCK_AUDIT.issues.find((i) => i.id === id && i.status === "fixed")
-    ).length;
-    return Math.min(100, base + extraFixes * 3);
+    const issues = get().data.issues;
+    const openIssues = issues.filter((i) => i.status === "open" || i.status === "in-progress" || i.status === "locked");
+
+    if (openIssues.length === 0) return 100;
+
+    let penalty = 0;
+    openIssues.forEach((issue) => {
+      switch (issue.priority) {
+        case "critical": penalty += 12; break;
+        case "high": penalty += 8; break;
+        case "medium": penalty += 4; break;
+        case "low": penalty += 2; break;
+        case "opportunity": penalty += 1; break;
+      }
+    });
+
+    return Math.max(0, 100 - penalty);
   },
 }));
