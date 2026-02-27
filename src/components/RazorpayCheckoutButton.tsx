@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
@@ -30,6 +31,7 @@ export function RazorpayCheckoutButton({
   children,
   onClick,
 }: RazorpayCheckoutButtonProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const { upgradePlan } = useBilling();
 
@@ -67,6 +69,7 @@ export function RazorpayCheckoutButton({
         if (!verifyRes.ok) throw new Error(verifyData.error || "Verification failed");
         upgradePlan(planSlug);
         toast.success(`You're now on ${plan}! (Test mode)`);
+        router.push("/dashboard");
         return;
       }
 
@@ -97,6 +100,7 @@ export function RazorpayCheckoutButton({
           if (!verifyRes.ok) throw new Error(verifyData.error || "Payment verification failed");
           upgradePlan(planSlug);
           toast.success(`Welcome to ${plan}! Your plan is now active.`);
+          router.push("/dashboard");
         },
         onDismiss: () => setLoading(false),
       });
