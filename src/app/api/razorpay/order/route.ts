@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getRateLimitKey } from "@/lib/rate-limit";
 
-const PLAN_AMOUNTS: Record<string, number> = {
-  starter: 99900, // ₹999 in paise
-  pro: 169900, // ₹1699 in paise
+const PLAN_AMOUNTS: Record<string, { INR: number; USD: number }> = {
+  starter: { INR: 99900, USD: 900 }, // ₹999 or $9 in smallest currency units
+  pro: { INR: 260000, USD: 2900 }, // ₹2600 or $29 in smallest currency units
 };
 
 const TEST_MODE = !process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET;
@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const plan = (body.plan as string)?.toLowerCase();
+    const currency = (body.currency as string)?.toUpperCase() === "USD" ? "USD" : "INR";
 
     if (!plan || !["starter", "pro"].includes(plan)) {
       return NextResponse.json(
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const amount = PLAN_AMOUNTS[plan];
+    const amount = PLAN_AMOUNTS[plan]?.[currency];
     if (!amount) {
       return NextResponse.json({ error: "Unknown plan" }, { status: 400 });
     }
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         id: `order_test_${plan}_${Date.now()}`,
         amount,
-        currency: "INR",
+        currency,
         plan,
         test_mode: true,
       });
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         amount,
-        currency: "INR",
+        currency,
         receipt: `rp_${plan}_${Date.now()}`,
         notes: { plan },
       }),

@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { RazorpayCheckoutButton } from "@/components/RazorpayCheckoutButton";
-import { RazorpayComingSoonModal } from "@/components/RazorpayComingSoonModal";
 import { ChevronDown, Zap } from "lucide-react";
 import { track } from "@/lib/analytics";
 
@@ -78,7 +77,7 @@ const faqs = [
   },
   {
     q: "What payment methods do you accept?",
-    a: "We accept all major credit cards via Stripe (USD) and Razorpay for INR payments. Enterprise customers can pay by invoice.",
+    a: "We accept all major credit cards via Razorpay (USD & INR). Enterprise customers can pay by invoice.",
   },
   {
     q: "Do audit result pages get cached?",
@@ -124,8 +123,6 @@ export default function PricingClientPage() {
   const router = useRouter();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [currency, setCurrency] = useState<"USD" | "INR">("USD");
-  const [showRazorpayModal, setShowRazorpayModal] = useState(false);
-  const [razorpayModalPlan, setRazorpayModalPlan] = useState<string>("Starter");
 
   useEffect(() => {
     track("pricing_view", { source: getPricingViewSource() });
@@ -181,11 +178,10 @@ export default function PricingClientPage() {
               <button
                 key={c}
                 onClick={() => setCurrency(c)}
-                className={`rounded-lg px-6 py-2 font-['DM_Mono'] text-sm font-semibold transition-all ${
-                  currency === c
-                    ? "bg-indigo-500 text-white shadow"
-                    : "text-gray-500 hover:text-gray-300"
-                }`}
+                className={`rounded-lg px-6 py-2 font-['DM_Mono'] text-sm font-semibold transition-all ${currency === c
+                  ? "bg-indigo-500 text-white shadow"
+                  : "text-gray-500 hover:text-gray-300"
+                  }`}
               >
                 {c}
               </button>
@@ -206,11 +202,10 @@ export default function PricingClientPage() {
               <motion.div
                 key={plan.name}
                 variants={fadeUp}
-                className={`relative flex flex-col rounded-2xl border p-8 transition-all duration-300 ${
-                  isPopular
-                    ? "border-indigo-500/40 hover:-translate-y-1"
-                    : "border-white/6 hover:-translate-y-0.5 hover:border-white/12"
-                }`}
+                className={`relative flex flex-col rounded-2xl border p-8 transition-all duration-300 ${isPopular
+                  ? "border-indigo-500/40 hover:-translate-y-1"
+                  : "border-white/6 hover:-translate-y-0.5 hover:border-white/12"
+                  }`}
                 style={{
                   background: isPopular ? "rgba(99,102,241,0.07)" : "#13161f",
                   boxShadow: isPopular
@@ -275,11 +270,11 @@ export default function PricingClientPage() {
 
                 {/* CTA */}
                 {plan.isPaid ? (
-                  currency === "INR" ? (
+                  <>
                     <RazorpayCheckoutButton
                       plan={plan.name as "Starter" | "Pro"}
                       planSlug={plan.name.toLowerCase() as "starter" | "pro"}
-                      currency="INR"
+                      currency={currency}
                       variant={isPopular ? "primary" : "secondary"}
                       className="w-full"
                       onClick={() => {
@@ -289,23 +284,10 @@ export default function PricingClientPage() {
                     >
                       {plan.cta}
                     </RazorpayCheckoutButton>
-                  ) : (
-                    <button
-                      className={`w-full rounded-xl py-3 font-['DM_Sans'] font-semibold text-sm transition-all hover:-translate-y-0.5 ${
-                        isPopular
-                          ? "bg-indigo-500 text-white hover:bg-indigo-400 hover:shadow-lg hover:shadow-indigo-500/25"
-                          : "border border-white/10 text-gray-300 hover:bg-white/5 hover:text-white"
-                      }`}
-                      onClick={() => {
-                        track("upgrade_click", { plan: plan.name, placement: "pricing" });
-                        track("checkout_start", { planId: plan.name, billingCycle: "monthly" });
-                        setRazorpayModalPlan(plan.name);
-                        setShowRazorpayModal(true);
-                      }}
-                    >
-                      {plan.cta}
-                    </button>
-                  )
+                    <p className="mt-3 text-center font-['DM_Mono'] text-xs text-gray-600">
+                      Razorpay · {currency}
+                    </p>
+                  </>
                 ) : (
                   <Link
                     href={plan.href}
@@ -315,12 +297,6 @@ export default function PricingClientPage() {
                     <Zap size={13} />
                     {plan.cta}
                   </Link>
-                )}
-
-                {plan.isPaid && (
-                  <p className="mt-3 text-center font-['DM_Mono'] text-xs text-gray-600">
-                    {currency === "INR" ? "Razorpay · INR" : "Stripe · USD"}
-                  </p>
                 )}
               </motion.div>
             );
@@ -392,9 +368,8 @@ export default function PricingClientPage() {
                   <span className="font-['DM_Sans'] font-semibold text-white">{faq.q}</span>
                   <ChevronDown
                     size={18}
-                    className={`flex-shrink-0 text-gray-500 transition-transform duration-200 ${
-                      openFaq === i ? "rotate-180" : ""
-                    }`}
+                    className={`flex-shrink-0 text-gray-500 transition-transform duration-200 ${openFaq === i ? "rotate-180" : ""
+                      }`}
                   />
                 </button>
                 {openFaq === i && (
@@ -430,13 +405,7 @@ export default function PricingClientPage() {
 
       </div>
 
-      {showRazorpayModal && (
-        <RazorpayComingSoonModal
-          onClose={() => setShowRazorpayModal(false)}
-          planName={razorpayModalPlan}
-          paymentType={currency === "USD" ? "stripe" : "razorpay"}
-        />
-      )}
+
     </main>
   );
 }

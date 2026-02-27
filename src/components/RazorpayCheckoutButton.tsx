@@ -35,17 +35,13 @@ export function RazorpayCheckoutButton({
 
   const handleClick = async () => {
     onClick?.();
-    if (currency === "USD") {
-      toast.info("USD payments via Stripe coming soon. Switch to INR for Razorpay.");
-      return;
-    }
 
     setLoading(true);
     try {
       const res = await fetchWithTimeout("/api/razorpay/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planSlug }),
+        body: JSON.stringify({ plan: planSlug, currency }),
         timeout: 15000,
       });
 
@@ -90,13 +86,13 @@ export function RazorpayCheckoutButton({
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-            razorpay_order_id: paymentRes.razorpay_order_id,
-            razorpay_payment_id: paymentRes.razorpay_payment_id,
-            razorpay_signature: paymentRes.razorpay_signature,
-            plan: planSlug,
-          }),
-          timeout: 10000,
-        });
+              razorpay_order_id: paymentRes.razorpay_order_id,
+              razorpay_payment_id: paymentRes.razorpay_payment_id,
+              razorpay_signature: paymentRes.razorpay_signature,
+              plan: planSlug,
+            }),
+            timeout: 10000,
+          });
           const verifyData = await verifyRes.json();
           if (!verifyRes.ok) throw new Error(verifyData.error || "Payment verification failed");
           upgradePlan(planSlug);
