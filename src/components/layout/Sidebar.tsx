@@ -19,45 +19,58 @@ import {
     Settings,
     HelpCircle,
     Menu,
-    X
+    X,
+    Activity,
+    GitCompare,
+    Share2,
+    PenTool,
+    Layout,
+    Lightbulb
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SIDEBAR_STRUCTURE = [
     {
-        category: "Main",
+        category: "Overview",
         items: [
             { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-            { label: "Perform Audit", href: "/audit", icon: Search },
+            { label: "Site Audit", href: "/audits", icon: BarChart3 },
         ]
     },
     {
-        category: "SEO Audit",
+        category: "Rankings",
         items: [
-            { label: "Audit Results", href: "/audits", icon: BarChart3 },
-            { label: "Quick Wins", href: "/dashboard?view=quickwins", icon: Zap },
-        ]
-    },
-    {
-        category: "Competitive Research",
-        items: [
+            { label: "Position Tracking", href: "/position-tracking", icon: Activity },
             { label: "Competitors", href: "/features/competitors", icon: Users },
-            { label: "Growth Tracker", href: "/features/growth", icon: TrendingUp },
         ]
     },
     {
-        category: "On-Page & Tech SEO",
+        category: "Analysis",
         items: [
-            { label: "Action Plan", href: "/features/action-plan", icon: ListChecks },
-            { label: "Discoverability", href: "/features/discoverability", icon: BarChart3 },
+            { label: "Keyword Gap", href: "/features/keyword-gap", icon: GitCompare },
+            { label: "Backlink Gap", href: "/features/backlink-gap", icon: Share2 },
+        ]
+    },
+    {
+        category: "On-Page SEO",
+        items: [
+            { label: "On-Page SEO Checker", href: "/features/on-page-checker", icon: Layout },
+            { label: "SEO Writing Assistant", href: "/features/writing-assistant", icon: PenTool },
+        ]
+    },
+    {
+        category: "Discovery",
+        items: [
+            { label: "Topic Research", href: "/features/topic-research", icon: Lightbulb },
+            { label: "Discoverability", href: "/features/discoverability", icon: Search },
         ]
     },
     {
         category: "Management",
         items: [
+            { label: "Action Plan", href: "/features/action-plan", icon: ListChecks },
             { label: "Reports", href: "/reports", icon: FileText },
             { label: "Billing", href: "/billing", icon: CreditCard },
-            { label: "Settings", href: "/settings", icon: Settings },
         ]
     }
 ];
