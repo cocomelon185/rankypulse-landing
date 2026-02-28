@@ -30,7 +30,7 @@ export function DashboardClient() {
               </div>
             </div>
             <div className="p-5 flex flex-col gap-5">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-col">
                   <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">AI Visibility</span>
                   <div className="flex items-center gap-2 mt-1">
@@ -38,11 +38,11 @@ export function DashboardClient() {
                     <span className="text-3xl font-bold text-indigo-400 font-serif">0</span>
                   </div>
                 </div>
-                <div className="flex flex-col text-center">
+                <div className="flex flex-col text-left sm:text-center">
                   <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Mentions</span>
                   <span className="text-3xl font-bold font-serif text-blue-400 mt-1">0</span>
                 </div>
-                <div className="flex flex-col text-right">
+                <div className="flex flex-col text-left sm:text-right">
                   <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Cited pages</span>
                   <span className="text-3xl font-bold font-serif text-sky-400 mt-1">0</span>
                 </div>
@@ -79,7 +79,7 @@ export function DashboardClient() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-4 p-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-y-6 gap-x-4 p-5">
               <div className="flex flex-col cursor-pointer group">
                 <span className="text-sm font-bold text-gray-400 group-hover:text-indigo-400 transition-colors">Authority Score</span>
                 <div className="flex items-center gap-2 mt-2">
@@ -123,13 +123,13 @@ export function DashboardClient() {
               <span className="font-bold text-white hover:text-indigo-400 cursor-pointer">Position Tracking</span>
               <span className="text-xs text-gray-500">Updated: 24 hours ago | last 7 days</span>
             </div>
-            <div className="p-5 flex flex-col md:flex-row gap-8 flex-1">
-              <div className="flex-1 border-r border-white/5 pr-8">
+            <div className="p-5 flex flex-col xl:flex-row gap-8 flex-1">
+              <div className="flex-1 xl:border-r border-b xl:border-b-0 border-white/5 pb-6 xl:pb-0 xl:pr-8">
                 <span className="text-sm font-bold text-gray-400">Visibility</span>
                 <span className="text-4xl font-bold font-serif text-blue-400 block mt-2">0%</span>
               </div>
 
-              <div className="flex-[1.5] border-r border-white/5 pr-8">
+              <div className="flex-[1.5] xl:border-r border-b xl:border-b-0 border-white/5 pb-6 xl:pb-0 xl:pr-8">
                 <span className="text-sm font-bold text-gray-400 block mb-3">Keywords</span>
                 <div className="grid grid-cols-2 gap-4">
                   {[{ label: "Top 3", v: 0 }, { label: "Top 10", v: 0 }, { label: "Top 20", v: 0 }, { label: "Top 100", v: 0 }].map(g => (
@@ -171,9 +171,9 @@ export function DashboardClient() {
               <span className="text-xs text-gray-500">Updated: Tue, Feb 3</span>
             </div>
             <div className="p-5 flex-1 flex flex-col gap-6">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start gap-6">
                 <div className="flex flex-col relative items-center justify-center">
-                  <span className="text-sm font-bold text-gray-400 mb-2 w-full text-left">Site Health</span>
+                  <span className="text-sm font-bold text-gray-400 mb-2 w-full text-center sm:text-left">Site Health</span>
                   {/* Half donut chart representation */}
                   <div className="w-28 h-14 overflow-hidden relative mt-2">
                     <div className="w-28 h-28 border-[12px] border-blue-400 rounded-full border-b-transparent border-r-transparent transform -rotate-[45deg]"></div>
@@ -183,7 +183,7 @@ export function DashboardClient() {
                     <span className="text-[9px] text-gray-500 uppercase tracking-widest mt-1 scale-90">No changes</span>
                   </div>
                 </div>
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-row sm:flex-col gap-6 sm:gap-3 w-full justify-center sm:justify-end">
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-gray-400 flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-rose-500 shrink-0"></div> Errors</span>
                     <div className="flex gap-2 items-baseline"><span className="text-2xl font-bold font-serif text-rose-500">2</span> <span className="text-xs text-gray-600">0</span></div>
@@ -214,13 +214,13 @@ export function DashboardClient() {
         {/* ── Banner Action ── */}
         <div className="w-full p-8 rounded-2xl border border-indigo-500/20 bg-gradient-to-r from-[#1a1c2e] to-[#25203f] relative overflow-hidden group hover:border-indigo-500/40 transition-colors shadow-2xl flex items-center my-4">
           <div className="relative z-10 max-w-xl">
-            <h2 className="text-3xl font-bold text-white leading-tight mb-2 tracking-tight">You're optimizing for rankings — now optimize for visibility everywhere.</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight mb-2 tracking-tight">You're optimizing for rankings — now optimize for visibility everywhere.</h2>
             <p className="text-indigo-200/80 mb-6 text-sm">See your SEO and AI search performance in one place, instantly.</p>
             <button className="bg-indigo-500 hover:bg-indigo-400 text-white font-bold tracking-wide px-8 py-3 rounded-lg shadow-lg shadow-indigo-500/20 transition-all">Start Free Trial</button>
           </div>
           {/* Decorative abstract art */}
-          <div className="absolute right-[-100px] top-[-50px] w-96 h-96 bg-indigo-500/10 blur-[50px] rounded-full pointer-events-none"></div>
-          <div className="absolute right-[10%] top-[40%] flex gap-4 opacity-70 group-hover:transform group-hover:-translate-y-2 transition-transform duration-500">
+          <div className="absolute right-[-100px] top-[-50px] w-96 h-96 bg-indigo-500/10 blur-[50px] rounded-full pointer-events-none hidden md:block"></div>
+          <div className="absolute right-[10%] top-[40%] hidden xl:flex gap-4 opacity-70 group-hover:transform group-hover:-translate-y-2 transition-transform duration-500">
             <div className="w-24 h-32 rounded-xl bg-white/5 border border-white/10 rotate-12 backdrop-blur-sm p-3">
               <div className="w-full h-2 bg-indigo-500/40 rounded-full mb-2"></div>
               <div className="w-3/4 h-2 bg-white/10 rounded-full"></div>

@@ -75,7 +75,7 @@ const SIDEBAR_STRUCTURE = [
     }
 ];
 
-export function Sidebar() {
+export function Sidebar({ hFull }: { hFull?: boolean } = {}) {
     const pathname = usePathname();
     const [collapsedCategories, setCollapsedCategories] = useState<string[]>([]);
 
@@ -94,7 +94,7 @@ export function Sidebar() {
 
     return (
         <aside
-            className="hidden lg:flex flex-col w-64 h-screen sticky top-0 border-r border-white/5 bg-[#13161f]"
+            className={`hidden lg:flex flex-col w-64 ${hFull ? 'h-full' : 'h-screen sticky top-0'} border-r border-white/5 bg-[#13161f]`}
         >
             {/* Sidebar Header */}
             <div className="h-16 flex items-center px-6 border-b border-white/5">
