@@ -217,6 +217,8 @@ export function AuditDomainClient({ domain: rawDomain }: { domain: string }) {
             <TrafficOpportunity />
             <ActionRoadmap onScrollToIssue={scrollToIssue} />
             <CompetitorBenchmark />
+            <EmailCaptureBanner domain={domain} />
+            <ShareReportBar domain={domain} />
           </div>
 
           <div className="hidden lg:block">
@@ -244,6 +246,100 @@ function MobileDrawer({ onScrollToIssue }: { onScrollToIssue: (id: string) => vo
           <AuditSidebar onScrollToIssue={onScrollToIssue} />
         </div>
       </details>
+    </div>
+  );
+}
+
+function EmailCaptureBanner({ domain }: { domain: string }) {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/email-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, domain }),
+      });
+      setStatus(res.ok ? "sent" : "error");
+    } catch {
+      setStatus("error");
+    }
+  };
+
+  if (status === "sent") {
+    return (
+      <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6 text-center">
+        <p className="font-['DM_Sans'] text-sm text-emerald-400">
+          ✓ Report sent! Check your inbox for the full audit of <strong>{domain}</strong>.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="font-['DM_Sans'] font-semibold text-white">
+            📧 Get this report in your inbox
+          </p>
+          <p className="font-['DM_Sans'] text-sm text-gray-400">
+            We&apos;ll email you a copy of this audit so you can reference it later.
+          </p>
+        </div>
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
+            required
+            className="rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 font-['DM_Sans'] text-sm text-white placeholder-gray-500 outline-none focus:border-indigo-500 transition-colors w-full sm:w-auto"
+          />
+          <button
+            type="submit"
+            disabled={status === "loading"}
+            className="whitespace-nowrap rounded-lg bg-indigo-500 px-5 py-2.5 font-['DM_Sans'] text-sm font-semibold text-white transition-all hover:bg-indigo-400 disabled:opacity-50"
+          >
+            {status === "loading" ? "Sending..." : "Email me"}
+          </button>
+        </form>
+      </div>
+      {status === "error" && (
+        <p className="mt-2 font-['DM_Sans'] text-xs text-red-400">
+          Something went wrong. Please try again.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ShareReportBar({ domain }: { domain: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    const url = `${window.location.origin}/report/${domain}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div className="flex items-center justify-between rounded-2xl border border-white/6 bg-[#13161f] px-6 py-4">
+      <p className="font-['DM_Sans'] text-sm text-gray-400">
+        🔗 Share this report with your team or client
+      </p>
+      <button
+        onClick={handleCopy}
+        className="rounded-lg border border-white/10 px-4 py-2 font-['DM_Sans'] text-sm font-semibold text-white transition-all hover:bg-white/5"
+      >
+        {copied ? "✓ Copied!" : "Copy link"}
+      </button>
     </div>
   );
 }
