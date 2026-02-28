@@ -102,10 +102,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {/* JSON-LD Schema */}
-        <Script
-          id="schema-org"
+        <script
           type="application/ld+json"
-          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
@@ -146,7 +144,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               ]
             }),
           }}
-        />
+        ></script>
         <SessionProvider>
           {children}
           <Toaster position="bottom-center" richColors closeButton />

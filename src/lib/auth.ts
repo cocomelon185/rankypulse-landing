@@ -171,11 +171,15 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
+      // 1. If we just signed in with credentials or magic-link, 'user' exists
       if (user && (account?.provider === "credentials" || account?.provider === "magic-link") && user.id) {
         token.userId = user.id;
         token.role = await getRoleForUserId(user.id);
       }
-      if (account?.provider === "google" && token.sub) {
+      
+      // 2. For Google sign-ins (new or returning), ensure we map to DB UUID
+      // Also handles token persistence - if userId is missing but we have sub, try to find it
+      if ((account?.provider === "google" || (!token.userId && token.sub)) && token.sub) {
         const dbUser = await findUserByGoogleId(token.sub);
         if (dbUser) {
           token.userId = dbUser.id;
@@ -185,12 +189,13 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      // Always prefer our database UUID (userId) over the provider sub
       if (token?.userId) {
         session.user.id = token.userId;
         session.user.role = token.role ?? "user";
-      } else if (token?.sub) {
-        session.user.id = token.sub;
       }
+      // If token.userId is missing, we don't fall back to token.sub
+      // This prevents the application from using external IDs as internal UUIDs
       return session;
     },
     async redirect({ url, baseUrl }) {
