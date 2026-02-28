@@ -167,25 +167,32 @@ export function Sidebar({ hFull }: { hFull?: boolean } = {}) {
 
             {/* Sidebar Footer */}
             <div className="p-4 border-t border-white/5">
-                <div className="rounded-xl p-4 bg-indigo-500/5 border border-indigo-500/10">
-                    <p className="text-[11px] font-medium text-indigo-300 mb-1">PRO PLAN</p>
-                    <p className="text-xs text-gray-400 mb-3 leading-relaxed">Unlock advanced SEO metrics and report daily.</p>
+                {/* Aggressive Upgrade Block */}
+                <div className="rounded-xl p-4 bg-gradient-to-br from-indigo-500/10 to-purple-600/10 border border-indigo-500/20 relative overflow-hidden group hover:border-indigo-500/40 transition-colors">
+                    {/* Animated glow */}
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-indigo-500/20 blur-xl rounded-full pointer-events-none group-hover:scale-150 transition-transform duration-700" />
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 rounded">Starter — $9/mo</span>
+                        <span className="flex h-2 w-2 relative ml-auto">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                        </span>
+                    </div>
+                    <p className="text-xs font-bold text-white mb-1 leading-snug">
+                        850 keywords your competitors steal from you.
+                    </p>
+                    <p className="text-[10px] text-gray-400 mb-3 leading-relaxed">
+                        Unlock Keyword Gap, Backlink Gap, and On-Page SEO Checker.
+                    </p>
                     <Link
                         href="/pricing"
-                        className="block text-center py-2 px-4 rounded-lg bg-indigo-500 text-white text-[11px] font-bold hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/20"
+                        className="block text-center py-2 px-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-[11px] font-bold hover:from-indigo-400 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/20 relative"
                     >
-                        Upgrade Now
+                        🔓 Unlock Full Access
                     </Link>
                 </div>
 
-                <div className="mt-4 flex flex-col gap-1">
-                    <Link
-                        href="/settings"
-                        className="flex items-center gap-3 px-3 py-2 text-xs text-gray-500 hover:text-gray-300 transition-colors"
-                    >
-                        <Settings size={14} />
-                        Account Settings
-                    </Link>
+                <div className="mt-3 flex flex-col gap-1">
                     <Link
                         href="mailto:support@rankypulse.com"
                         className="flex items-center gap-3 px-3 py-2 text-xs text-gray-500 hover:text-gray-300 transition-colors"
