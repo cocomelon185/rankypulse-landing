@@ -172,6 +172,8 @@ export const authOptions: NextAuthOptions = {
         token.userId = user.id;
         if (user.id === 'guest-user-id-001') {
           token.role = 'user';
+          token.email = 'guest@rankypulse.com';
+          token.name = 'Guest User';
         } else {
           token.role = await getRoleForUserId(user.id);
         }

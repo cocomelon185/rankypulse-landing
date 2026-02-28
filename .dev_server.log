@@ -1,0 +1,58 @@
+
+> landing@0.1.0 dev
+> NEXT_DISABLE_TURBOPACK=1 next dev
+
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /Users/amjad.mohammad/package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * /Users/amjad.mohammad/rankypulse-audit/landing/package-lock.json
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.12.68:3000
+- Environments: .env.local, .env
+
+✓ Starting...
+✓ Ready in 984ms
+ GET /pricing 200 in 1059ms (compile: 647ms, proxy.ts: 108ms, render: 305ms)
+ GET /pricing 200 in 117ms (compile: 4ms, proxy.ts: 2ms, render: 110ms)
+ GET /auth/signin?callbackUrl=%2Fdashboard 200 in 303ms (compile: 182ms, proxy.ts: 9ms, render: 112ms)
+ GET /api/auth/providers 200 in 53ms (compile: 44ms, render: 8ms)
+ GET /api/auth/session 200 in 833ms (compile: 824ms, render: 9ms)
+ GET /api/auth/session 200 in 13ms (compile: 8ms, render: 5ms)
+ GET /api/auth/session 200 in 44ms (compile: 28ms, render: 17ms)
+ GET /api/auth/session 200 in 31ms (compile: 10ms, render: 22ms)
+ GET /auth/signin?callbackUrl=%2Fpricing 200 in 200ms (compile: 3ms, proxy.ts: 9ms, render: 188ms)
+ GET /api/auth/session 200 in 62ms (compile: 15ms, render: 48ms)
+ GET /auth/signin?callbackUrl=%2Fpricing 200 in 224ms (compile: 15ms, proxy.ts: 14ms, render: 195ms)
+ GET /api/auth/providers 200 in 6ms (compile: 2ms, render: 4ms)
+ GET /api/auth/providers 200 in 4ms (compile: 1970µs, render: 2ms)
+ GET /api/auth/providers 200 in 4ms (compile: 2ms, render: 2ms)
+ GET /api/auth/providers 200 in 4ms (compile: 1022µs, render: 3ms)
+ POST /api/auth/callback/credentials 302 in 26ms (compile: 18ms, render: 7ms)
+ GET /auth/signin 200 in 195ms (compile: 18ms, proxy.ts: 42ms, render: 134ms)
+ GET /api/auth/session 200 in 29ms (compile: 20ms, render: 9ms)
+ GET /api/auth/providers 200 in 27ms (compile: 16ms, render: 10ms)
+ GET /api/auth/session 200 in 50ms (compile: 37ms, render: 13ms)
+ GET /api/auth/session 200 in 21ms (compile: 4ms, render: 17ms)
+ GET /api/auth/session 200 in 24ms (compile: 4ms, render: 20ms)
+ GET /api/auth/providers 200 in 10ms (compile: 6ms, render: 4ms)
+ GET /api/auth/signin?callbackUrl=%2Fdashboard 302 in 30ms (compile: 18ms, render: 12ms)
+ GET /auth/signin?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard 200 in 126ms (compile: 3ms, proxy.ts: 4ms, render: 119ms)
+ GET /api/auth/session 200 in 9ms (compile: 2ms, render: 6ms)
+ GET /api/auth/providers 200 in 8ms (compile: 4ms, render: 5ms)
+ GET /api/auth/session 200 in 10ms (compile: 3ms, render: 7ms)
+ GET /api/auth/session 200 in 11ms (compile: 2ms, render: 9ms)
+ GET /api/auth/session 200 in 10ms (compile: 2ms, render: 7ms)
+ GET /auth/signin 200 in 120ms (compile: 8ms, proxy.ts: 6ms, render: 107ms)
+ GET /api/auth/session 200 in 17ms (compile: 10ms, render: 6ms)
+ GET /api/auth/session 200 in 5ms (compile: 996µs, render: 4ms)
+ GET /api/auth/session 200 in 10ms (compile: 984µs, render: 9ms)
+ GET /api/auth/session 200 in 10ms (compile: 3ms, render: 7ms)
+ GET /api/auth/providers 200 in 9ms (compile: 5ms, render: 4ms)
+ GET /api/auth/providers 200 in 13ms (compile: 7ms, render: 6ms)
+ GET /api/auth/providers 200 in 16ms (compile: 6ms, render: 10ms)
+ GET /api/auth/providers 200 in 110ms (compile: 103ms, render: 7ms)
+ POST /api/auth/callback/credentials 302 in 156ms (compile: 137ms, render: 19ms)
