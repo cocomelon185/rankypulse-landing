@@ -136,7 +136,15 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
-    // Google provider temporarily disabled due to deleted client ID
+    // Google OAuth — only registered when env vars are configured
+    ...(isGoogleAuthConfigured
+      ? [
+        GoogleProvider({
+          clientId: process.env.GOOGLE_CLIENT_ID!,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+        }),
+      ]
+      : []),
   ],
   pages: {
     signIn: "/auth/signin",
