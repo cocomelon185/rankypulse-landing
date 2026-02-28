@@ -211,26 +211,39 @@ export function DashboardClient() {
           </Card>
         </div>
 
-        {/* ── Banner Action ── */}
-        <div className="w-full p-8 rounded-2xl border border-indigo-500/20 bg-gradient-to-r from-[#1a1c2e] to-[#25203f] relative overflow-hidden group hover:border-indigo-500/40 transition-colors shadow-2xl flex items-center my-4">
-          <div className="relative z-10 max-w-xl">
-            <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight mb-2 tracking-tight">You're optimizing for rankings — now optimize for visibility everywhere.</h2>
-            <p className="text-indigo-200/80 mb-6 text-sm">See your SEO and AI search performance in one place, instantly.</p>
-            <button className="bg-indigo-500 hover:bg-indigo-400 text-white font-bold tracking-wide px-8 py-3 rounded-lg shadow-lg shadow-indigo-500/20 transition-all">Start Free Trial</button>
+        {/* ── Banner Action: Strong Conversion Hook ── */}
+        <div className="w-full p-8 rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-[#1a1c2e] via-[#211b3e] to-[#2e264f] relative overflow-hidden group hover:border-indigo-500/60 transition-colors shadow-2xl flex items-center my-4">
+          <div className="relative z-10 max-w-2xl">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest text-[#00c58e] bg-[#00c58e]/10 border border-[#00c58e]/20">Starter Plan exclusive</span>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight mb-3 tracking-tight">Stop guessing. <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-rose-400">Steal your competitors' traffic.</span></h2>
+            <p className="text-indigo-200/80 mb-6 text-sm md:text-base pr-8">
+              Unlock the <strong>Keyword Gap</strong> and <strong>Backlink Authority</strong> tools. Discover the exact keywords your competitors rank for that you don't, and find immediate link-building opportunities to outrank them.
+              Get your "Aha!" moment today.
+            </p>
+            <button onClick={() => router.push('/pricing')} className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold tracking-wide px-8 py-3 rounded-lg shadow-lg shadow-indigo-500/25 transition-all flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 7-7 7 7" /><path d="M12 19V5" /></svg>
+              Upgrade to Starter Now
+            </button>
           </div>
           {/* Decorative abstract art */}
-          <div className="absolute right-[-100px] top-[-50px] w-96 h-96 bg-indigo-500/10 blur-[50px] rounded-full pointer-events-none hidden md:block"></div>
-          <div className="absolute right-[10%] top-[40%] hidden xl:flex gap-4 opacity-70 group-hover:transform group-hover:-translate-y-2 transition-transform duration-500">
-            <div className="w-24 h-32 rounded-xl bg-white/5 border border-white/10 rotate-12 backdrop-blur-sm p-3">
-              <div className="w-full h-2 bg-indigo-500/40 rounded-full mb-2"></div>
-              <div className="w-3/4 h-2 bg-white/10 rounded-full"></div>
+          <div className="absolute right-[-100px] top-[-50px] w-96 h-96 bg-purple-500/10 blur-[50px] rounded-full pointer-events-none hidden md:block"></div>
+          <div className="absolute right-[5%] top-[25%] hidden xl:flex gap-4 opacity-80 group-hover:transform group-hover:-translate-x-4 group-hover:-translate-y-2 transition-transform duration-700">
+            {/* Mock Keyword Gap Card */}
+            <div className="w-48 h-32 rounded-xl bg-white/5 border border-white/10 rotate-[-10deg] backdrop-blur-md p-4 shadow-2xl relative z-10 transition-transform hover:rotate-0 hover:scale-105 duration-300">
+              <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest block mb-2">Untapped Keywords</span>
+              <span className="text-3xl font-bold font-serif text-white block pb-2 border-b border-white/10">+2,401</span>
+              <span className="text-xs text-gray-400 mt-2 block w-full whitespace-nowrap overflow-hidden text-ellipsis">Missed opportunities found</span>
             </div>
-            <div className="w-32 h-40 rounded-xl bg-white/10 border border-white/20 -rotate-6 backdrop-blur-md z-10 p-4 shadow-2xl shadow-black/50">
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest block mb-2">Domain Analytics</span>
-              <span className="text-3xl font-bold font-serif text-blue-400 block pb-2 border-b border-white/10">74 <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded ml-1 font-sans mt-0 absolute">Good</span></span>
-            </div>
-            <div className="w-24 h-32 rounded-xl bg-amber-500/5 border border-amber-500/10 rotate-[20deg] backdrop-blur-sm p-3 mt-4">
-
+            {/* Mock Backlink Gap Card */}
+            <div className="w-40 h-40 rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-600/10 border border-purple-500/20 rotate-[15deg] backdrop-blur-md p-4 shadow-2xl relative z-0 -ml-12 mt-6">
+              <span className="text-[10px] text-orange-400 font-bold uppercase tracking-widest block mb-2">Authority Gap</span>
+              <div className="flex gap-2 items-end mt-4">
+                <div className="w-4 h-12 bg-gray-600 rounded-t-sm"></div>
+                <div className="w-4 h-20 bg-gray-600 rounded-t-sm"></div>
+                <div className="w-4 h-16 bg-gradient-to-t from-orange-500 to-rose-500 rounded-t-sm shadow-[0_0_15px_rgba(249,115,22,0.5)]"></div>
+              </div>
             </div>
           </div>
         </div>

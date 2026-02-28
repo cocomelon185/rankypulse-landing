@@ -141,6 +141,9 @@ export default function SignInClientPage() {
           <p className="mt-2 font-['DM_Sans'] text-sm text-gray-500">
             Sign in to see your audit history
           </p>
+          <div className="mt-4 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg inline-block">
+            <p className="text-xs text-indigo-300">Guest Access: <strong>guest</strong> / <strong>guest123</strong></p>
+          </div>
         </div>
 
         <div

@@ -62,6 +62,17 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.identifier || !credentials?.password) {
           return null;
         }
+        // HARDCODED GUEST ACCESS
+        if (credentials.identifier.toLowerCase() === 'guest' && credentials.password === 'guest123') {
+          return {
+            id: 'guest-user-id-001',
+            email: 'guest@rankypulse.com',
+            name: 'Guest User',
+            image: null,
+            role: 'user',
+          };
+        }
+
         const user = await findUserByEmailOrUsername(credentials.identifier);
         if (!user || !user.password_hash) return null;
         const valid = await verifyPassword(credentials.password, user.password_hash);
@@ -135,21 +146,7 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
-    ...(isGoogleAuthConfigured
-      ? [
-          GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID!,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-            authorization: {
-              params: {
-                prompt: "consent",
-                access_type: "offline",
-                response_type: "code",
-              },
-            },
-          }),
-        ]
-      : []),
+    // Google provider temporarily disabled due to deleted client ID
   ],
   pages: {
     signIn: "/auth/signin",
@@ -171,14 +168,15 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      // 1. If we just signed in with credentials or magic-link, 'user' exists
       if (user && (account?.provider === "credentials" || account?.provider === "magic-link") && user.id) {
         token.userId = user.id;
-        token.role = await getRoleForUserId(user.id);
+        if (user.id === 'guest-user-id-001') {
+          token.role = 'user';
+        } else {
+          token.role = await getRoleForUserId(user.id);
+        }
       }
-      
-      // 2. For Google sign-ins (new or returning), ensure we map to DB UUID
-      // Also handles token persistence - if userId is missing but we have sub, try to find it
+
       if ((account?.provider === "google" || (!token.userId && token.sub)) && token.sub) {
         const dbUser = await findUserByGoogleId(token.sub);
         if (dbUser) {
@@ -189,13 +187,16 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      // Always prefer our database UUID (userId) over the provider sub
       if (token?.userId) {
         session.user.id = token.userId;
         session.user.role = token.role ?? "user";
       }
-      // If token.userId is missing, we don't fall back to token.sub
-      // This prevents the application from using external IDs as internal UUIDs
+
+      // Hardcode admin for developer
+      if (session.user?.email === "cocomelon185@gmail.com") {
+        session.user.role = "admin";
+      }
+
       return session;
     },
     async redirect({ url, baseUrl }) {
