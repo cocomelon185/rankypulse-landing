@@ -63,7 +63,7 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
         // HARDCODED GUEST ACCESS
-        if (credentials.identifier.toLowerCase() === 'guest' && credentials.password === 'guest123') {
+        if (credentials.identifier.toLowerCase() === 'guest' && credentials.password === '@Familyandfriends123') {
           return {
             id: 'guest-user-id-001',
             email: 'guest@rankypulse.com',
