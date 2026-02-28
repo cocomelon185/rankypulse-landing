@@ -62,16 +62,6 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.identifier || !credentials?.password) {
           return null;
         }
-        // HARDCODED GUEST ACCESS
-        if (credentials.identifier.toLowerCase() === 'guest' && credentials.password === '@Familyandfriends123') {
-          return {
-            id: 'guest-user-id-001',
-            email: 'guest@rankypulse.com',
-            name: 'Guest User',
-            image: null,
-            role: 'user',
-          };
-        }
 
         const user = await findUserByEmailOrUsername(credentials.identifier);
         if (!user || !user.password_hash) return null;
@@ -170,13 +160,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account }) {
       if (user && (account?.provider === "credentials" || account?.provider === "magic-link") && user.id) {
         token.userId = user.id;
-        if (user.id === 'guest-user-id-001') {
-          token.role = 'user';
-          token.email = 'guest@rankypulse.com';
-          token.name = 'Guest User';
-        } else {
-          token.role = await getRoleForUserId(user.id);
-        }
+        token.role = await getRoleForUserId(user.id);
       }
 
       if ((account?.provider === "google" || (!token.userId && token.sub)) && token.sub) {
@@ -202,8 +186,10 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      const siteUrl =
-        process.env.NEXTAUTH_URL ?? baseUrl ?? "https://rankypulse.com";
+      // Vercel deployment URLs or custom domains.
+      // We prioritize baseUrl (which trustHost gets from the request) over NEXTAUTH_URL 
+      // because NEXTAUTH_URL might be statically set to production in Vercel envs.
+      const siteUrl = baseUrl ?? process.env.NEXTAUTH_URL ?? "https://rankypulse.com";
       const base = siteUrl.replace(/\/$/, "");
 
       if (url.startsWith("/")) {

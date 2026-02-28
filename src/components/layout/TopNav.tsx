@@ -15,7 +15,6 @@ export function TopNav() {
         : session?.user?.email?.slice(0, 2).toUpperCase() ?? "?";
 
     const isAdmin = session?.user?.role === "admin";
-    const isGuest = session?.user?.email === "guest@rankypulse.com";
 
     return (
         <nav className="w-full flex items-center justify-between px-4 lg:px-6 h-14 border-b border-white/5 shadow-2xl z-50 sticky top-0" style={{ backgroundColor: "#1a1535" }}>
@@ -81,10 +80,10 @@ export function TopNav() {
                         </div>
                         <div className="hidden sm:flex flex-col items-start">
                             <span className="text-xs font-medium text-gray-200 leading-none">
-                                {isGuest ? "Guest User" : session?.user?.name ?? "Account"}
+                                {session?.user?.name ?? "Account"}
                             </span>
                             <span className="text-[10px] text-gray-500 leading-none mt-0.5">
-                                {isAdmin ? "Admin" : isGuest ? "Free Plan" : "Free Plan"}
+                                {isAdmin ? "Admin" : "Free Plan"}
                             </span>
                         </div>
                         <ChevronDown size={12} className="text-gray-500 hidden sm:block" />

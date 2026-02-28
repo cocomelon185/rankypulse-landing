@@ -32,7 +32,7 @@ const HOOKS = [
     },
 ];
 
-export function UpgradeBanner({ isGuest }: { isGuest: boolean }) {
+export function UpgradeBanner() {
     const [visible, setVisible] = useState(false);
     const [hookIdx, setHookIdx] = useState(0);
     const [dismissed, setDismissed] = useState(false);
@@ -76,11 +76,6 @@ export function UpgradeBanner({ isGuest }: { isGuest: boolean }) {
                                 <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 rounded">
                                     {hook.badge}
                                 </span>
-                                {isGuest && (
-                                    <span className="text-[9px] font-bold uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded flex items-center gap-1">
-                                        <Gift size={8} /> Guest Mode
-                                    </span>
-                                )}
                             </div>
                             <p className="text-sm font-semibold text-white leading-snug truncate">{hook.title}</p>
                             <p className="text-xs text-gray-400 leading-snug hidden sm:block">{hook.subtitle}</p>

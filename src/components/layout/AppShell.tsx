@@ -40,7 +40,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const isGuest = session?.user?.id === "guest-user-id-001" || session?.user?.email === "guest@rankypulse.com";
   const isAdmin = session?.user?.role === "admin";
 
   return (
@@ -57,8 +56,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto scrollbar-hide">
           <Header onMenuClick={() => setMobileMenuOpen(true)} />
 
-          {/* Aggressive Upgrade Banner for guests/free users */}
-          {!isAdmin && <UpgradeBanner isGuest={isGuest} />}
+          {/* Aggressive Upgrade Banner for free users */}
+          {!isAdmin && <UpgradeBanner />}
 
           <main className="flex-1 flex flex-col pt-0">
             <div className="flex-1 max-w-[1600px] w-full mx-auto p-4 md:p-6 lg:p-8 animate-in fade-in duration-700">
