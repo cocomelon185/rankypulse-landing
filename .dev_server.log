@@ -56,3 +56,102 @@
  GET /api/auth/providers 200 in 16ms (compile: 6ms, render: 10ms)
  GET /api/auth/providers 200 in 110ms (compile: 103ms, render: 7ms)
  POST /api/auth/callback/credentials 302 in 156ms (compile: 137ms, render: 19ms)
+ GET /auth/signin 200 in 132ms (compile: 11ms, proxy.ts: 10ms, render: 111ms)
+ GET /api/auth/session 200 in 13ms (compile: 7ms, render: 6ms)
+ GET /api/auth/session 200 in 7ms (compile: 1138µs, render: 6ms)
+ GET /api/auth/session 200 in 5ms (compile: 821µs, render: 4ms)
+ GET /api/auth/session 200 in 6ms (compile: 1223µs, render: 5ms)
+ GET /api/auth/providers 200 in 5ms (compile: 1605µs, render: 3ms)
+ GET /api/auth/providers 200 in 4ms (compile: 1257µs, render: 2ms)
+ GET /api/auth/providers 200 in 25ms (compile: 19ms, render: 6ms)
+ GET /api/auth/signin?callbackUrl=%2Fdashboard 302 in 17ms (compile: 10ms, render: 6ms)
+ GET /auth/signin?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard 200 in 100ms (compile: 6ms, proxy.ts: 4ms, render: 90ms)
+ GET /api/auth/session 200 in 12ms (compile: 5ms, render: 7ms)
+ GET /api/auth/session 200 in 6ms (compile: 1126µs, render: 4ms)
+ GET /api/auth/session 200 in 9ms (compile: 986µs, render: 8ms)
+ GET /api/auth/session 200 in 5ms (compile: 802µs, render: 5ms)
+ GET /api/auth/providers 200 in 6ms (compile: 1814µs, render: 4ms)
+ GET /api/auth/providers 200 in 3ms (compile: 1269µs, render: 2ms)
+✓ Compiled in 148ms
+ GET /auth/signin?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard 200 in 254ms (compile: 83ms, proxy.ts: 16ms, render: 154ms)
+ GET /api/auth/providers 200 in 116ms (compile: 110ms, render: 6ms)
+ GET /api/auth/session 200 in 208ms (compile: 196ms, render: 12ms)
+ GET /api/auth/session 200 in 9ms (compile: 4ms, render: 5ms)
+ GET /api/auth/session 200 in 8ms (compile: 1343µs, render: 6ms)
+ GET /api/auth/session 200 in 7ms (compile: 1038µs, render: 6ms)
+✓ Compiled in 94ms
+✓ Compiled in 36ms
+✓ Compiled in 54ms
+✓ Compiled in 86ms
+ GET /auth/signin?callbackUrl=%2Fpricing 200 in 321ms (compile: 64ms, proxy.ts: 3ms, render: 254ms)
+ GET /auth/signin?callbackUrl=%2Fpricing 200 in 104ms (compile: 2ms, proxy.ts: 5ms, render: 97ms)
+ GET /api/auth/session 200 in 139ms (compile: 125ms, render: 14ms)
+ GET /api/auth/providers 200 in 66ms (compile: 59ms, render: 7ms)
+ GET /api/auth/session 200 in 14ms (compile: 3ms, render: 12ms)
+ GET /api/auth/providers 200 in 11ms (compile: 4ms, render: 7ms)
+ GET /api/auth/session 200 in 27ms (compile: 8ms, render: 19ms)
+ GET /api/auth/session 200 in 8ms (compile: 866µs, render: 7ms)
+ GET /api/auth/session 200 in 8ms (compile: 3ms, render: 5ms)
+⨯ ./rankypulse-audit/landing/src/app/(marketing)
+You cannot have two parallel pages that resolve to the same path. Please check /(app)/pricing and /(marketing).
+
+⨯ ./rankypulse-audit/landing/src/app/(marketing)
+You cannot have two parallel pages that resolve to the same path. Please check /(app)/pricing and /(marketing).
+
+⨯ ./rankypulse-audit/landing/src/app/(marketing)
+You cannot have two parallel pages that resolve to the same path. Please check /(app)/pricing and /(marketing).
+
+ GET /auth/signin?callbackUrl=%2Fdashboard 500 in 1910ms (compile: 1672ms, proxy.ts: 61ms, render: 176ms)
+ GET /auth/signin?callbackUrl=%2Fpricing 500 in 1965ms (compile: 1803ms, proxy.ts: 112ms, render: 50ms)
+ GET /auth/signin?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard 500 in 2.1s (compile: 1798ms, proxy.ts: 236ms, render: 77ms)
+⨯ ./rankypulse-audit/landing/src/app/(marketing)
+You cannot have two parallel pages that resolve to the same path. Please check /(app)/pricing and /(marketing).
+
+⨯ ./rankypulse-audit/landing/src/app/(marketing)
+You cannot have two parallel pages that resolve to the same path. Please check /(app)/pricing and /(marketing).
+
+⨯ ./rankypulse-audit/landing/src/app/(marketing)
+You cannot have two parallel pages that resolve to the same path. Please check /(app)/pricing and /(marketing).
+
+⨯ ./rankypulse-audit/landing/src/app/(marketing)
+You cannot have two parallel pages that resolve to the same path. Please check /(app)/pricing and /(marketing).
+
+⨯ ./rankypulse-audit/landing/src/app/(marketing)
+You cannot have two parallel pages that resolve to the same path. Please check /(app)/pricing and /(marketing).
+
+ GET /auth/signin?callbackUrl=%2Fpricing 500 in 155ms (compile: 57ms, proxy.ts: 38ms, render: 59ms)
+ GET /auth/signin?callbackUrl=%2Fpricing 500 in 130ms (compile: 70ms, proxy.ts: 14ms, render: 45ms)
+ GET /auth/signin?callbackUrl=%2Fdashboard 500 in 153ms (compile: 92ms, proxy.ts: 14ms, render: 47ms)
+⨯ ./rankypulse-audit/landing/src/app/(marketing)
+You cannot have two parallel pages that resolve to the same path. Please check /(app)/pricing and /(marketing).
+
+ GET /auth/signin?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard 500 in 158ms (compile: 94ms, proxy.ts: 18ms, render: 46ms)
+ GET /auth/signin?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard 500 in 160ms (compile: 108ms, proxy.ts: 21ms, render: 30ms)
+ GET /auth/signin?callbackUrl=%2Fdashboard 500 in 179ms (compile: 128ms, proxy.ts: 37ms, render: 14ms)
+⨯ ./rankypulse-audit/landing/src/app/(marketing)
+You cannot have two parallel pages that resolve to the same path. Please check /(app)/pricing and /(marketing).
+
+⨯ ./rankypulse-audit/landing/src/app/(marketing)
+You cannot have two parallel pages that resolve to the same path. Please check /(app)/pricing and /(marketing).
+
+⨯ ./rankypulse-audit/landing/src/app/(marketing)
+You cannot have two parallel pages that resolve to the same path. Please check /(app)/pricing and /(marketing).
+
+ GET /auth/signin?callbackUrl=%2Fpricing 500 in 170ms (compile: 55ms, proxy.ts: 50ms, render: 65ms)
+ GET /auth/signin?callbackUrl=%2Fpricing 500 in 200ms (compile: 75ms, proxy.ts: 40ms, render: 85ms)
+✓ Compiled in 834ms
+ GET /auth/signin?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fdashboard 200 in 323ms (compile: 76ms, proxy.ts: 15ms, render: 232ms)
+ GET /auth/signin?callbackUrl=%2Fdashboard 200 in 327ms (compile: 30ms, proxy.ts: 8ms, render: 289ms)
+ GET /auth/signin?callbackUrl=%2Fpricing 200 in 323ms (compile: 102ms, proxy.ts: 21ms, render: 200ms)
+ GET /auth/signin?callbackUrl=%2Fpricing 200 in 92ms (compile: 4ms, proxy.ts: 7ms, render: 81ms)
+ GET /api/auth/providers 200 in 149ms (compile: 145ms, render: 4ms)
+ GET /api/auth/session 200 in 256ms (compile: 240ms, render: 16ms)
+ GET /api/auth/providers 200 in 7ms (compile: 5ms, render: 2ms)
+ GET /api/auth/session 200 in 8ms (compile: 2ms, render: 6ms)
+ GET /api/auth/session 200 in 33ms (compile: 8ms, render: 24ms)
+ GET /api/auth/session 200 in 11ms (compile: 2ms, render: 9ms)
+ GET /api/auth/session 200 in 13ms (compile: 997µs, render: 12ms)
+ GET /api/auth/providers 200 in 24ms (compile: 4ms, render: 19ms)
+ GET /api/auth/providers 200 in 13ms (compile: 10ms, render: 2ms)
+ GET /api/auth/providers 200 in 6ms (compile: 1766µs, render: 5ms)
+ GET /api/auth/providers 200 in 5ms (compile: 1662µs, render: 3ms)
