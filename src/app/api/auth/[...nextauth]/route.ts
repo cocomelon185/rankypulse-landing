@@ -1,14 +1,16 @@
 import NextAuth from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
 
-// Force NextAuth to use the Vercel deployment URL dynamically, 
-// preventing CSRF errors when testing on preview domains.
-const v_url = process.env.VERCEL_URL || process.env.NEXT_PUBLIC_VERCEL_URL;
-if (v_url && !v_url.includes("rankypulse.com")) {
-    process.env.NEXTAUTH_URL = `https://${v_url}`;
-    process.env.NEXT_PUBLIC_APP_URL = `https://${v_url}`;
-}
+// Wrapper to dynamically set NEXTAUTH_URL for Vercel preview/alias domains
+// otherwise CSRF tokens will fail when testing.
+const wrapper = (req: NextRequest, ctx: any) => {
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+    if (host && !host.includes("rankypulse.com") && host.includes("vercel.app")) {
+        process.env.NEXTAUTH_URL = `https://${host}`;
+        process.env.NEXT_PUBLIC_APP_URL = `https://${host}`;
+    }
+    return NextAuth(authOptions)(req, ctx);
+};
 
-const handler = NextAuth(authOptions);
-
-export { handler as GET, handler as POST };
+export { wrapper as GET, wrapper as POST };
