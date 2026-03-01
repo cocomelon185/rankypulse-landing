@@ -2,7 +2,10 @@
 
 import { useMemo } from "react";
 import { motion } from "framer-motion";
+import { Lock } from "lucide-react";
 import { useAuditStore } from "@/lib/use-audit";
+import { useAuth } from "@/hooks/useAuth";
+import { useSession } from "next-auth/react";
 import { MOCK_AUDIT } from "@/lib/audit-data";
 import { SectionHeading } from "./SectionHeading";
 
@@ -30,11 +33,10 @@ function BenchmarkBar({
       className="flex items-center gap-3"
     >
       <span
-        className={`w-40 shrink-0 truncate text-sm ${
-          isYou
+        className={`w-40 shrink-0 truncate text-sm ${isYou
             ? "font-semibold text-[var(--text-primary)]"
             : "text-[var(--text-secondary)]"
-        }`}
+          }`}
       >
         {domain}
         {isYou && (
@@ -65,7 +67,14 @@ function BenchmarkBar({
 export function CompetitorBenchmark() {
   const data = useAuditStore((s) => s.data);
   const completedFixIds = useAuditStore((s) => s.completedFixIds);
+  const { isAuthenticated } = useAuth();
+  const { data: session } = useSession();
 
+  const userPlan = (session?.user as { plan?: string } | undefined)?.plan ?? "free";
+  const isPro = userPlan === "pro";
+
+  // Show full competitor section only to authenticated Pro users.
+  // Free users see YOU + first competitor in full, rest blurred.
   const adjustedScore = useMemo(() => {
     const base = data.score;
     const extraFixes = completedFixIds.filter(
@@ -85,6 +94,11 @@ export function CompetitorBenchmark() {
     data.competitors.reduce((sum, c) => sum + c.score, 0) / data.competitors.length
   );
 
+  // Free tier: show 2 bars (YOU + one competitor), blur the rest
+  const visibleCount = isPro ? all.length : 2;
+  const visibleBars = all.slice(0, visibleCount);
+  const hiddenBars = !isPro ? all.slice(visibleCount) : [];
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 30 }}
@@ -98,7 +112,8 @@ export function CompetitorBenchmark() {
       />
 
       <div className="mt-5 space-y-3">
-        {all.map((entry, idx) => (
+        {/* Fully visible rows */}
+        {visibleBars.map((entry, idx) => (
           <BenchmarkBar
             key={entry.domain}
             domain={entry.domain}
@@ -108,6 +123,49 @@ export function CompetitorBenchmark() {
             isYou={entry.isYou}
           />
         ))}
+
+        {/* Blurred teaser rows for free users */}
+        {hiddenBars.length > 0 && (
+          <div className="relative mt-2">
+            {/* Blurred ghost bars */}
+            <div className="space-y-3 select-none pointer-events-none blur-[5px] opacity-60">
+              {hiddenBars.map((entry, idx) => (
+                <BenchmarkBar
+                  key={entry.domain}
+                  domain={entry.domain}
+                  score={entry.score}
+                  maxScore={maxScore}
+                  delay={0}
+                  isYou={entry.isYou}
+                />
+              ))}
+            </div>
+
+            {/* Gradient fade + CTA overlay */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl bg-gradient-to-b from-transparent via-[var(--bg-card)]/80 to-[var(--bg-card)] px-4 py-6 text-center">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-indigo-500/20">
+                <Lock size={18} className="text-indigo-400" />
+              </div>
+              <p className="mb-1 font-['DM_Sans'] text-sm font-semibold text-white">
+                {hiddenBars.length} more competitor{hiddenBars.length > 1 ? "s" : ""} hidden
+              </p>
+              <p className="mb-4 font-['DM_Sans'] text-xs text-[var(--text-secondary)]">
+                See exactly where you rank vs. every competitor in your niche.<br />
+                Upgrade to Pro to unlock the full benchmark.
+              </p>
+              <a
+                href={
+                  isAuthenticated
+                    ? "/pricing"
+                    : `/auth/signin?callbackUrl=${encodeURIComponent("/pricing")}`
+                }
+                className="rounded-lg bg-indigo-600 px-5 py-2 font-['DM_Sans'] text-xs font-semibold text-white transition hover:bg-indigo-500"
+              >
+                {isAuthenticated ? "Upgrade to Pro →" : "Sign in to Upgrade →"}
+              </a>
+            </div>
+          </div>
+        )}
       </div>
     </motion.section>
   );

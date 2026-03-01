@@ -24,6 +24,8 @@ import { useAuditStore } from "@/lib/use-audit";
 import { useAuth } from "@/hooks/useAuth";
 import { incrementAuditsUsed } from "@/lib/billing-store";
 import { MOCK_AUDIT } from "@/lib/audit-data";
+import { ExportPdfButton } from "@/components/audit/ExportPdfButton";
+import { PdfCoverPage } from "@/components/audit/PdfCoverPage";
 
 type ErrorKind = "unreachable" | "rate_limited" | "timeout" | "failed";
 
@@ -52,6 +54,7 @@ export function AuditDomainClient({ domain: rawDomain }: { domain: string }) {
   currentDomainRef.current = domain;
 
   const setData = useAuditStore((s) => s.setData);
+  const auditData = useAuditStore((s) => s.data);
   const setExpandedIssue = useAuditStore((s) => s.setExpandedIssue);
   const { isAuthenticated } = useAuth();
   const isAuthenticatedRef = useRef(isAuthenticated);
@@ -206,17 +209,25 @@ export function AuditDomainClient({ domain: rawDomain }: { domain: string }) {
   // ── Success: render full audit page ──
   return (
     <div className="audit-dark min-h-screen">
+      {/* Hidden PDF cover page — off-screen capture target */}
+      <PdfCoverPage domain={domain} score={auditData?.score ?? 0} />
+
       <main className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 md:px-8">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-6">
-            <AuditHero />
+            {/* Export button row */}
+            <div className="flex justify-end">
+              <ExportPdfButton domain={domain} />
+            </div>
+            <div id="pdf-hero"><AuditHero /></div>
             <AhaMomentBanner />
             <SocialProofStrip />
             <IssueRadar />
-            <FindingsBoard highlightedId={highlightedId} />
+            <div id="pdf-findings"><FindingsBoard highlightedId={highlightedId} /></div>
             <TrafficOpportunity />
-            <ActionRoadmap onScrollToIssue={scrollToIssue} />
+            <div id="pdf-roadmap"><ActionRoadmap onScrollToIssue={scrollToIssue} /></div>
             <CompetitorBenchmark />
+            <SaveDomainTracker domain={domain} />
             <EmailCaptureBanner domain={domain} />
             <ShareReportBar domain={domain} />
           </div>
@@ -246,6 +257,61 @@ function MobileDrawer({ onScrollToIssue }: { onScrollToIssue: (id: string) => vo
           <AuditSidebar onScrollToIssue={onScrollToIssue} />
         </div>
       </details>
+    </div>
+  );
+}
+
+function SaveDomainTracker({ domain }: { domain: string }) {
+  const [status, setStatus] = useState<"idle" | "loading" | "saved" | "error">("idle");
+  const { isAuthenticated } = useAuth();
+
+  const handleSave = async () => {
+    if (!isAuthenticated) {
+      // Prompt user to sign in
+      window.location.href = `/auth/signin?callbackUrl=/report/${domain}`;
+      return;
+    }
+
+    setStatus("loading");
+    try {
+      // In a real implementation this hits an API to do the Supabase insert
+      // MOCK implementation for scaffolding phase:
+      await new Promise(res => setTimeout(res, 800));
+      setStatus("saved");
+    } catch {
+      setStatus("error");
+    }
+  };
+
+  if (status === "saved") {
+    return (
+      <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6 text-center">
+        <p className="font-['DM_Sans'] text-sm text-emerald-400">
+          ✓ Domain saved! You'll receive weekly SEO progress reports for <strong>{domain}</strong>.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] p-6 shadow-sm">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="font-['DM_Sans'] font-semibold text-[var(--text-primary)]">
+            📊 Track weekly SEO progress
+          </p>
+          <p className="font-['DM_Sans'] text-sm text-[var(--text-secondary)] mt-1">
+            Save this domain to your account. We'll crawl it automatically every Monday and email you a delta report.
+          </p>
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={status === "loading"}
+          className="whitespace-nowrap rounded-lg bg-[var(--accents-indigo)] px-5 py-2.5 font-['DM_Sans'] text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          {status === "loading" ? "Saving..." : isAuthenticated ? "Activate Weekly Scans" : "Sign in to Track"}
+        </button>
+      </div>
     </div>
   );
 }
