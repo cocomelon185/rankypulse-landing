@@ -41,6 +41,9 @@ declare module "next-auth/jwt" {
     sub?: string;
     userId?: string;
     role?: string;
+    gscAccessToken?: string;
+    gscRefreshToken?: string;
+    gscTokenExpiry?: number;
   }
 }
 
@@ -142,6 +145,19 @@ export const authOptions: NextAuthOptions = {
         GoogleProvider({
           clientId: process.env.GOOGLE_CLIENT_ID!,
           clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+          authorization: {
+            params: {
+              // Request GSC access alongside standard profile/email scopes
+              scope: [
+                "openid",
+                "email",
+                "profile",
+                "https://www.googleapis.com/auth/webmasters.readonly",
+              ].join(" "),
+              access_type: "offline",   // request refresh_token
+              prompt: "consent",        // always show consent to get refresh_token
+            },
+          },
         }),
       ]
       : []),
@@ -178,6 +194,14 @@ export const authOptions: NextAuthOptions = {
           token.role = dbUser.role;
         }
       }
+
+      // Persist GSC tokens from the initial Google sign-in
+      if (account?.provider === "google") {
+        if (account.access_token) token.gscAccessToken = account.access_token;
+        if (account.refresh_token) token.gscRefreshToken = account.refresh_token;
+        if (account.expires_at) token.gscTokenExpiry = account.expires_at * 1000;
+      }
+
       return token;
     },
     async session({ session, token }) {

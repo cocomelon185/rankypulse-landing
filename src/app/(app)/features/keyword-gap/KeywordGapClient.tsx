@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/horizon";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 const MOCK_GAP_DATA = [
     { keyword: "best seo audit tool", vol: "8.1k", kd: 64, cpc: "4.50", myPos: "-", comp1: 2, comp2: 5, status: "missing" },
@@ -27,6 +29,15 @@ const MOCK_GAP_DATA = [
 
 export default function KeywordGapClient() {
     const [activeTab, setActiveTab] = useState("missing");
+    const [isComparing, setIsComparing] = useState(false);
+
+    const handleCompare = () => {
+        setIsComparing(true);
+        setTimeout(() => {
+            setIsComparing(false);
+            toast.success("Keyword gap analysis complete! Displaying results.");
+        }, 1500);
+    };
 
     const tabs = [
         { id: "all", label: "All Keywords", count: 1245 },
@@ -84,8 +95,19 @@ export default function KeywordGapClient() {
                             className="w-full bg-[#0d0f14] border border-white/10 rounded-xl py-3 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-amber-500"
                         />
                     </div>
-                    <Button className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl py-3 px-6 h-auto">
-                        Compare
+                    <Button
+                        onClick={handleCompare}
+                        disabled={isComparing}
+                        className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl py-3 px-6 h-auto"
+                    >
+                        {isComparing ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Analyzing
+                            </>
+                        ) : (
+                            "Compare"
+                        )}
                     </Button>
                 </div>
             </Card>
@@ -99,8 +121,8 @@ export default function KeywordGapClient() {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab.id
-                                    ? "bg-indigo-500/10 text-indigo-400"
-                                    : "text-gray-400 hover:text-white hover:bg-white/[0.02]"
+                                ? "bg-indigo-500/10 text-indigo-400"
+                                : "text-gray-400 hover:text-white hover:bg-white/[0.02]"
                                 }`}
                         >
                             {tab.label}

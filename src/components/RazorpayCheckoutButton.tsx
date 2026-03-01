@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 const RAZORPAY_KEY = process.env.NEXT_PUBLIC_RAZORPAY_KEY;
-const HAS_RAZORPAY = !!RAZORPAY_KEY;
 
 interface RazorpayCheckoutButtonProps {
   plan: "Starter" | "Pro";
@@ -73,13 +72,15 @@ export function RazorpayCheckoutButton({
         return;
       }
 
-      if (!HAS_RAZORPAY) {
+      const razorpayKeyToUse = data.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY;
+
+      if (!razorpayKeyToUse) {
         toast.error("Razorpay key not configured. Enable NEXT_PUBLIC_RAZORPAY_KEY for live payments.");
         return;
       }
 
       await openRazorpayCheckout({
-        keyId: RAZORPAY_KEY,
+        keyId: razorpayKeyToUse as string,
         orderId: data.id,
         amount: data.amount,
         currency: "INR",

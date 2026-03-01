@@ -18,37 +18,84 @@ import {
     ChevronRight,
     Settings,
     HelpCircle,
-    Menu,
-    X,
     Activity,
     GitCompare,
     Share2,
     PenTool,
     Layout,
-    Lightbulb
+    Globe,
+    AlertTriangle,
+    Zap as ZapIcon,
+    Link as LinkIcon,
+    Cpu,
+    FilePieChart,
+    Search as SearchIcon,
+    Star,
+    Layers,
+    FileSearch,
+    Wand2,
+    BarChart,
+    ExternalLink,
+    X,
+    Menu
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const SIDEBAR_STRUCTURE = [
+interface SidebarItem {
+    label: string;
+    href: string;
+    icon: any;
+    pro?: boolean;
+    beta?: boolean;
+    new?: boolean;
+}
+
+interface SidebarSection {
+    category: string;
+    items: SidebarItem[];
+}
+
+const SIDEBAR_STRUCTURE: SidebarSection[] = [
     {
         category: "Overview",
         items: [
             { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+            { label: "Projects", href: "/projects", icon: Layers },
+        ]
+    },
+    {
+        category: "Site Audit",
+        items: [
+            { label: "Full Site Audit", href: "/audits/full", icon: Star, pro: true },
             { label: "Site Audit", href: "/audits", icon: BarChart3 },
+            { label: "Crawl Issues", href: "/audits/issues", icon: AlertTriangle },
+            { label: "Core Web Vitals", href: "/audits/vitals", icon: ZapIcon },
+            { label: "Internal Linking", href: "/audits/links", icon: LinkIcon },
+            { label: "Page Speed", href: "/audits/speed", icon: Activity },
         ]
     },
     {
         category: "Rankings",
         items: [
-            { label: "Position Tracking", href: "/position-tracking", icon: Activity },
+            { label: "Position Tracking", href: "/position-tracking", icon: TrendingUp },
             { label: "Competitors", href: "/features/competitors", icon: Users },
+            { label: "SERP Analysis", href: "/features/serp-analysis", icon: Layout },
         ]
     },
     {
-        category: "Analysis",
+        category: "Keyword Research",
         items: [
             { label: "Keyword Gap", href: "/features/keyword-gap", icon: GitCompare },
+            { label: "Keyword Explorer", href: "/features/keyword-explorer", icon: SearchIcon },
+            { label: "Keyword Difficulty", href: "/features/keyword-difficulty", icon: BarChart },
+        ]
+    },
+    {
+        category: "Backlinks",
+        items: [
             { label: "Backlink Gap", href: "/features/backlink-gap", icon: Share2 },
+            { label: "Backlink Audit", href: "/features/backlink-audit", icon: LinkIcon },
+            { label: "Referring Domains", href: "/features/referring-domains", icon: Globe },
         ]
     },
     {
@@ -56,21 +103,21 @@ const SIDEBAR_STRUCTURE = [
         items: [
             { label: "On-Page SEO Checker", href: "/features/on-page-checker", icon: Layout },
             { label: "SEO Writing Assistant", href: "/features/writing-assistant", icon: PenTool },
+            { label: "Content Audit", href: "/features/content-audit", icon: FileSearch },
         ]
     },
     {
-        category: "Discovery",
+        category: "AI Tools",
         items: [
-            { label: "Topic Research", href: "/features/topic-research", icon: Lightbulb },
-            { label: "Discoverability", href: "/features/discoverability", icon: Search },
+            { label: "AI Writer", href: "/features/ai-writer", icon: Wand2, beta: true },
+            { label: "AI Search Visibility", href: "/features/ai-visibility", icon: Cpu, new: true },
         ]
     },
     {
-        category: "Management",
+        category: "Reports",
         items: [
-            { label: "Action Plan", href: "/features/action-plan", icon: ListChecks },
-            { label: "Reports", href: "/reports", icon: FileText },
-            { label: "Billing", href: "/billing", icon: CreditCard },
+            { label: "My Reports", href: "/reports", icon: FilePieChart },
+            { label: "PDF Reports", href: "/reports/pdf", icon: FileText },
         ]
     }
 ];
@@ -94,20 +141,22 @@ export function Sidebar({ hFull }: { hFull?: boolean } = {}) {
 
     return (
         <aside
-            className={`hidden lg:flex flex-col w-64 ${hFull ? 'h-full' : 'h-screen sticky top-0'} border-r border-white/5 bg-[#13161f]`}
+            className={`hidden md:flex flex-col w-64 ${hFull ? 'h-full' : 'h-screen sticky top-0'} border-r border-[#1e2336] bg-[#0f1119]`}
         >
             {/* Sidebar Header */}
-            <div className="h-16 flex items-center px-6 border-b border-white/5">
+            <div className="h-16 flex items-center px-6 border-b border-[#1e2336]">
                 <Link href="/" className="flex items-center gap-2 group">
                     <div
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg relative overflow-hidden"
                         style={{
-                            background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                            background: "linear-gradient(135deg, #f97316, #fb923c)",
+                            boxShadow: "0 2px 12px rgba(249, 115, 22, 0.3)"
                         }}
                     >
-                        <Zap className="h-4 w-4 text-white" />
+                        <span className="text-white font-bold text-sm z-10">RP</span>
+                        <div className="absolute inset-x-0 top-0 h-full w-full bg-gradient-to-tr from-transparent via-white/20 to-transparent animate-shimmer" style={{ transform: 'rotate(45deg)' }} />
                     </div>
-                    <span className="font-display text-[17px] font-bold text-white tracking-tight">
+                    <span className="font-bold text-[16px] tracking-tight bg-gradient-to-br from-[#e8eaf0] to-[#8b91a8] bg-clip-text text-transparent">
                         RankyPulse
                     </span>
                 </Link>
@@ -115,12 +164,12 @@ export function Sidebar({ hFull }: { hFull?: boolean } = {}) {
 
             {/* Navigation Content */}
             <div className="flex-1 overflow-y-auto py-6 px-4 custom-scrollbar">
-                <div className="flex flex-col gap-8">
+                <div className="flex flex-col gap-6">
                     {SIDEBAR_STRUCTURE.map((section) => (
-                        <div key={section.category} className="flex flex-col gap-2">
+                        <div key={section.category} className="flex flex-col gap-1">
                             <button
                                 onClick={() => toggleCategory(section.category)}
-                                className="flex items-center justify-between px-2 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-gray-300 transition-colors"
+                                className="flex items-center justify-between px-2 text-[10px] font-bold uppercase tracking-widest text-[#545a72] hover:text-[#8b91a8] transition-colors mb-2"
                             >
                                 {section.category}
                                 {collapsedCategories.includes(section.category)
@@ -133,27 +182,51 @@ export function Sidebar({ hFull }: { hFull?: boolean } = {}) {
                                 <div className="flex flex-col gap-0.5">
                                     {section.items.map((item) => {
                                         const active = isActive(item.href);
+                                        const isPro = item.pro;
                                         return (
                                             <Link
                                                 key={item.label}
                                                 href={item.href}
                                                 className={cn(
-                                                    "group flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200",
+                                                    "group flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-all duration-150 relative border border-transparent",
                                                     active
-                                                        ? "bg-indigo-500/10 text-indigo-400 font-medium"
-                                                        : "text-gray-400 hover:text-gray-200 hover:bg-white/[0.03]"
+                                                        ? "bg-[#f97316]/10 text-[#f97316] font-medium"
+                                                        : "text-[#8b91a8] hover:text-[#e8eaf0] hover:bg-[#171b26]",
+                                                    isPro && "bg-gradient-to-r from-[#f97316]/8 to-[#eab308]/6 border-[#f97316]/25 text-[#f97316] font-semibold mt-1 mb-1 overflow-hidden"
                                                 )}
                                             >
+                                                {/* Active/Pro indicator */}
+                                                {(active || isPro) && (
+                                                    <div className={cn(
+                                                        "absolute left-[-12px] top-1 bottom-1 w-[3px] rounded-r",
+                                                        isPro ? "bg-gradient-to-b from-[#f97316] to-[#eab308]" : "bg-[#f97316]"
+                                                    )} />
+                                                )}
+
                                                 <item.icon className={cn(
                                                     "h-4 w-4 transition-colors",
-                                                    active ? "text-indigo-400" : "text-gray-500 group-hover:text-gray-300"
+                                                    active || isPro ? "text-[#f97316]" : "text-[#545a72] group-hover:text-[#8b91a8]"
                                                 )} />
                                                 {item.label}
-                                                {active && (
-                                                    <motion.div
-                                                        layoutId="active-indicator"
-                                                        className="ml-auto w-1 h-1 rounded-full bg-indigo-500"
-                                                    />
+
+                                                {item.pro && (
+                                                    <span className="ml-auto text-[9px] font-bold bg-gradient-to-r from-[#f97316] to-[#eab308] text-black px-1.5 py-0.5 rounded flex items-center gap-1 shadow-lg shadow-[#f97316]/30 animate-pulse">
+                                                        <Star size={8} fill="currentColor" /> PRO
+                                                    </span>
+                                                )}
+                                                {item.beta && (
+                                                    <span className="ml-auto text-[10px] font-bold bg-[#a78bfa]/12 text-[#a78bfa] px-1.5 py-0.5 rounded">
+                                                        Beta
+                                                    </span>
+                                                )}
+                                                {item.new && (
+                                                    <span className="ml-auto text-[10px] font-bold bg-[#22c55e]/12 text-[#22c55e] px-1.5 py-0.5 rounded">
+                                                        New
+                                                    </span>
+                                                )}
+
+                                                {isPro && (
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#f97316]/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                                                 )}
                                             </Link>
                                         );
@@ -166,36 +239,12 @@ export function Sidebar({ hFull }: { hFull?: boolean } = {}) {
             </div>
 
             {/* Sidebar Footer */}
-            <div className="p-4 border-t border-white/5">
-                {/* Aggressive Upgrade Block */}
-                <div className="rounded-xl p-4 bg-gradient-to-br from-indigo-500/10 to-purple-600/10 border border-indigo-500/20 relative overflow-hidden group hover:border-indigo-500/40 transition-colors">
-                    {/* Animated glow */}
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-indigo-500/20 blur-xl rounded-full pointer-events-none group-hover:scale-150 transition-transform duration-700" />
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 rounded">Starter — $9/mo</span>
-                        <span className="flex h-2 w-2 relative ml-auto">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                        </span>
-                    </div>
-                    <p className="text-xs font-bold text-white mb-1 leading-snug">
-                        850 keywords your competitors steal from you.
-                    </p>
-                    <p className="text-[10px] text-gray-400 mb-3 leading-relaxed">
-                        Unlock Keyword Gap, Backlink Gap, and On-Page SEO Checker.
-                    </p>
-                    <Link
-                        href="/pricing"
-                        className="block text-center py-2 px-4 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-[11px] font-bold hover:from-indigo-400 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/20 relative"
-                    >
-                        🔓 Unlock Full Access
-                    </Link>
-                </div>
-
-                <div className="mt-3 flex flex-col gap-1">
+            <div className="p-4 border-t border-[#1e2336]">
+                {/* Support Block */}
+                <div className="flex flex-col gap-1">
                     <Link
                         href="mailto:support@rankypulse.com"
-                        className="flex items-center gap-3 px-3 py-2 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                        className="flex items-center gap-3 px-3 py-2 text-xs text-[#545a72] hover:text-[#8b91a8] transition-colors"
                     >
                         <HelpCircle size={14} />
                         Support Center
@@ -225,23 +274,23 @@ export function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: (
                         animate={{ x: 0 }}
                         exit={{ x: "-100%" }}
                         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                        className="fixed top-0 left-0 z-[120] bottom-0 w-[280px] bg-[#13161f] border-r border-white/5 lg:hidden flex flex-col"
+                        className="fixed top-0 left-0 z-[120] bottom-0 w-[280px] bg-[#0f1119] border-r border-[#1e2336] lg:hidden flex flex-col"
                     >
-                        <div className="h-16 flex items-center justify-between px-6 border-b border-white/5">
+                        <div className="h-16 flex items-center justify-between px-6 border-b border-[#1e2336]">
                             <Link href="/" className="flex items-center gap-2">
                                 <div
-                                    className="flex h-7 w-7 items-center justify-center rounded-lg"
+                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
                                     style={{
-                                        background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                                        background: "linear-gradient(135deg, #f97316, #fb923c)",
                                     }}
                                 >
-                                    <Zap className="h-4 w-4 text-white" />
+                                    <span className="text-white font-bold text-sm">RP</span>
                                 </div>
-                                <span className="font-display text-[17px] font-bold text-white tracking-tight">
+                                <span className="font-bold text-[16px] text-[#e8eaf0] tracking-tight">
                                     RankyPulse
                                 </span>
                             </Link>
-                            <button onClick={onClose} className="text-gray-400 hover:text-white">
+                            <button onClick={onClose} className="text-[#545a72] hover:text-[#e8eaf0]">
                                 <X size={20} />
                             </button>
                         </div>
@@ -250,7 +299,7 @@ export function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: (
                             <div className="flex flex-col gap-8">
                                 {SIDEBAR_STRUCTURE.map((section) => (
                                     <div key={section.category} className="flex flex-col gap-2">
-                                        <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                                        <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-[#545a72]">
                                             {section.category}
                                         </p>
                                         <div className="flex flex-col gap-0.5">
@@ -263,12 +312,17 @@ export function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: (
                                                         className={cn(
                                                             "flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-all",
                                                             active
-                                                                ? "bg-indigo-500/10 text-indigo-400 font-medium"
-                                                                : "text-gray-400 hover:text-gray-200"
+                                                                ? "bg-[#f97316]/10 text-[#f97316] font-medium"
+                                                                : "text-[#8b91a8] hover:text-[#e8eaf0]"
                                                         )}
                                                     >
-                                                        <item.icon size={18} className={active ? "text-indigo-400" : "text-gray-500"} />
+                                                        <item.icon size={18} className={active ? "text-[#f97316]" : "text-[#545a72]"} />
                                                         {item.label}
+                                                        {item.pro && (
+                                                            <span className="ml-auto text-[9px] font-bold bg-gradient-to-r from-[#f97316] to-[#eab308] text-black px-1.5 py-0.5 rounded">
+                                                                PRO
+                                                            </span>
+                                                        )}
                                                     </Link>
                                                 );
                                             })}

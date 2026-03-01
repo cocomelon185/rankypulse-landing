@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RankyPulse — Dashboard Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ===== CSS VARIABLES ===== */
+:root {
+  --bg-primary: #0c0e14;
+  --bg-secondary: #12151e;
+  --bg-card: #171b26;
+  --bg-card-hover: #1c2130;
+  --bg-sidebar: #0f1119;
+  --bg-topbar: #0c0e14;
+  --border: #1e2336;
+  --border-light: #252a3e;
+  --text-primary: #e8eaf0;
+  --text-secondary: #8b91a8;
+  --text-muted: #545a72;
+  --accent-orange: #f97316;
+  --accent-orange-glow: rgba(249, 115, 22, 0.15);
+  --accent-green: #22c55e;
+  --accent-green-dim: rgba(34, 197, 94, 0.12);
+  --accent-blue: #3b82f6;
+  --accent-blue-dim: rgba(59, 130, 246, 0.12);
+  --accent-purple: #a78bfa;
+  --accent-purple-dim: rgba(167, 139, 250, 0.12);
+  --accent-cyan: #06b6d4;
+  --accent-cyan-dim: rgba(6, 182, 212, 0.12);
+  --accent-red: #ef4444;
+  --accent-red-dim: rgba(239, 68, 68, 0.12);
+  --accent-yellow: #eab308;
+  --accent-yellow-dim: rgba(234, 179, 8, 0.12);
+  --sidebar-width: 250px;
+  --topbar-height: 56px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+/* ===== RESET ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ===== TOP NAVBAR ===== */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--topbar-height);
+  background: var(--bg-topbar);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px 0 0;
+  z-index: 100;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.logo-area {
+  width: var(--sidebar-width);
+  height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 10px;
+  border-right: 1px solid var(--border);
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--accent-orange), #fb923c);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(249, 115, 22, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+.logo-icon::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+  animation: logoShine 3s ease-in-out infinite;
+}
+@keyframes logoShine {
+  0%, 100% { transform: translateX(-100%) rotate(45deg); }
+  50% { transform: translateX(100%) rotate(45deg); }
+}
+
+.logo-text {
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.3px;
+  background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Search Bar */
+.topbar-search {
+  display: flex;
+  align-items: center;
+  margin-left: 24px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  height: 36px;
+  width: 340px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.topbar-search:focus-within {
+  border-color: var(--accent-orange);
+  box-shadow: 0 0 0 3px var(--accent-orange-glow);
+}
+.topbar-search svg { color: var(--text-muted); flex-shrink: 0; }
+.topbar-search input {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  margin-left: 8px;
+  width: 100%;
+}
+.topbar-search input::placeholder { color: var(--text-muted); }
+.topbar-search .kbd {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 5px;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+/* Topbar Buttons */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.topbar-btn {
+  height: 36px;
+  padding: 0 12px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+.topbar-btn:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+.topbar-btn svg { width: 16px; height: 16px; }
+
+.notification-dot { position: relative; }
+.notification-dot::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 7px;
+  height: 7px;
+  background: var(--accent-red);
+  border-radius: 50%;
+  border: 2px solid var(--bg-topbar);
+}
+
+.avatar-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  margin-left: 4px;
+  transition: transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatar-btn:hover { transform: scale(1.08); }
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  position: fixed;
+  top: var(--topbar-height);
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-width);
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  z-index: 90;
+  padding: 16px 0 24px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.sidebar-section { margin-bottom: 6px; }
+
+.sidebar-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 14px 20px 6px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px;
+  margin: 1px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+.sidebar-item:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+.sidebar-item.active {
+  background: var(--accent-orange-glow);
+  color: var(--accent-orange);
+  font-weight: 500;
+}
+.sidebar-item.active::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  background: var(--accent-orange);
+  border-radius: 0 3px 3px 0;
+}
+.sidebar-item svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+.sidebar-item.active svg { opacity: 1; }
+.sidebar-item:hover svg { opacity: 0.85; }
+
+/* Sidebar Badges */
+.sidebar-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+.sidebar-badge.new {
+  background: var(--accent-green-dim);
+  color: var(--accent-green);
+}
+.sidebar-badge.beta {
+  background: var(--accent-purple-dim);
+  color: var(--accent-purple);
+}
+
+/* ===== PRO FEATURE HIGHLIGHT ===== */
+.sidebar-item.pro-feature {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(234, 179, 8, 0.06));
+  border-color: rgba(249, 115, 22, 0.25);
+  color: var(--accent-orange);
+  font-weight: 600;
+  margin-top: 2px;
+  margin-bottom: 4px;
+  overflow: hidden;
+}
+.sidebar-item.pro-feature::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  background: linear-gradient(180deg, var(--accent-orange), var(--accent-yellow));
+  border-radius: 0 3px 3px 0;
+}
+.sidebar-item.pro-feature::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -80%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(135deg, transparent 40%, rgba(249, 115, 22, 0.06) 50%, transparent 60%);
+  animation: proShimmer 4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes proShimmer {
+  0%, 100% { transform: translateX(-100%) rotate(25deg); }
+  50% { transform: translateX(100%) rotate(25deg); }
+}
+.sidebar-item.pro-feature:hover {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.14), rgba(234, 179, 8, 0.1));
+  border-color: rgba(249, 115, 22, 0.4);
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.1);
+}
+.sidebar-item.pro-feature svg {
+  opacity: 1;
+  color: var(--accent-orange);
+  filter: drop-shadow(0 0 3px rgba(249, 115, 22, 0.4));
+}
+
+.sidebar-badge.pro {
+  background: linear-gradient(135deg, var(--accent-orange), var(--accent-yellow));
+  color: #000;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+  animation: proPulse 3s ease-in-out infinite;
+}
+.sidebar-badge.pro svg {
+  width: 10px;
+  height: 10px;
+  filter: none;
+}
+@keyframes proPulse {
+  0%, 100% { box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3); }
+  50% { box-shadow: 0 2px 14px rgba(249, 115, 22, 0.5); }
+}
+
+/* ===== MAIN CONTENT ===== */
+.main {
+  margin-left: var(--sidebar-width);
+  margin-top: var(--topbar-height);
+  padding: 24px 28px;
+  min-height: calc(100vh - var(--topbar-height));
+  background: var(--bg-primary);
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+.breadcrumb span { color: var(--text-secondary); }
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.page-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.domain-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.domain-selector:hover { border-color: var(--accent-orange); }
+.domain-selector .domain-url {
+  color: var(--accent-orange);
+  font-weight: 600;
+  font-size: 14px;
+}
+.domain-selector svg { color: var(--text-muted); }
+
+.page-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.header-btn {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+.header-btn:hover {
+  border-color: var(--border-light);
+  color: var(--text-primary);
+}
+.header-btn svg { width: 14px; height: 14px; }
+.header-btn.cta {
+  background: linear-gradient(135deg, var(--accent-orange), #ea580c);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ===== DASHBOARD CARDS ===== */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.dashboard-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 18px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: var(--border-light); }
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.card-tag {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+.card-tag.ai { background: var(--accent-purple-dim); color: var(--accent-purple); }
+.card-tag.seo { background: var(--accent-blue-dim); color: var(--accent-blue); }
+.card-tag.audit { background: var(--accent-green-dim); color: var(--accent-green); }
+.card-tag.links { background: var(--accent-cyan-dim); color: var(--accent-cyan); }
+
+.card-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.card-filter .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+}
+
+/* Metrics */
+.metrics-row {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 18px;
+}
+.metric { flex: 1; text-align: center; }
+.metric-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.metric-value {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: -1px;
+}
+.metric-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* AI source rows */
+.ai-source-list { display: flex; flex-direction: column; gap: 2px; }
+.ai-source-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+.ai-source-row:hover { background: rgba(255,255,255,0.02); }
+.ai-source-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+.ai-source-dot.chatgpt { background: #22c55e; }
+.ai-source-dot.overview { background: #3b82f6; }
+.ai-source-dot.aimode { background: #f59e0b; }
+.ai-source-dot.gemini { background: #a78bfa; }
+.ai-source-dot.perplexity { background: #06b6d4; }
+.ai-source-name {
+  font-size: 13px;
+  color: var(--text-secondary);
+  flex: 1;
+}
+.ai-source-val {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  color: var(--text-primary);
+  width: 60px;
+  text-align: center;
+}
+
+/* SEO Grid */
+.seo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.seo-metric-block {
+  padding: 14px;
+  background: rgba(255,255,255,0.015);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255,255,255,0.03);
+}
+.seo-metric-block .label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.seo-metric-block .label .pct {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+}
+.seo-metric-block .label .pct.up { color: var(--accent-green); }
+.seo-metric-block .val {
+  font-size: 24px;
+  font-weight: 700;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: -0.5px;
+}
+.seo-metric-block .sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Audit score ring */
+.audit-score-ring {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 14px;
+  position: relative;
+}
+.audit-score-ring svg { width: 100%; height: 100%; }
+.audit-score-ring .score-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Space Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent-green);
+}
+
+.audit-issues { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.audit-issue-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+.audit-issue-row .issue-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+}
+.audit-issue-row .issue-dot { width: 6px; height: 6px; border-radius: 50%; }
+.audit-issue-row .issue-dot.error { background: var(--accent-red); }
+.audit-issue-row .issue-dot.warning { background: var(--accent-yellow); }
+.audit-issue-row .issue-dot.notice { background: var(--accent-blue); }
+.audit-issue-row .issue-count {
+  font-family: 'Space Mono', monospace;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+/* Mini chart */
+.mini-chart {
+  height: 40px;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  margin-top: 12px;
+}
+.mini-chart .bar {
+  flex: 1;
+  border-radius: 2px 2px 0 0;
+  min-height: 4px;
+}
+
+/* Core Web Vitals */
+.cwv-list { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+.cwv-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.cwv-item .cwv-label { color: var(--text-secondary); }
+.cwv-item .cwv-val {
+  font-family: 'Space Mono', monospace;
+  font-weight: 600;
+  font-size: 12px;
+}
+.cwv-item .cwv-val.good { color: var(--accent-green); }
+.cwv-item .cwv-val.ok { color: var(--accent-yellow); }
+.cwv-item .cwv-val.bad { color: var(--accent-red); }
+.cwv-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+.cwv-bar .fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.sidebar-section { animation: fadeInUp 0.4s ease both; }
+.sidebar-section:nth-child(1) { animation-delay: 0.05s; }
+.sidebar-section:nth-child(2) { animation-delay: 0.08s; }
+.sidebar-section:nth-child(3) { animation-delay: 0.11s; }
+.sidebar-section:nth-child(4) { animation-delay: 0.14s; }
+.sidebar-section:nth-child(5) { animation-delay: 0.17s; }
+.sidebar-section:nth-child(6) { animation-delay: 0.20s; }
+.sidebar-section:nth-child(7) { animation-delay: 0.23s; }
+.sidebar-section:nth-child(8) { animation-delay: 0.26s; }
+.sidebar-section:nth-child(9) { animation-delay: 0.29s; }
+
+.card { animation: fadeInUp 0.5s ease both; }
+.dashboard-grid .card:nth-child(1) { animation-delay: 0.1s; }
+.dashboard-grid .card:nth-child(2) { animation-delay: 0.15s; }
+.dashboard-grid-3 .card:nth-child(1) { animation-delay: 0.2s; }
+.dashboard-grid-3 .card:nth-child(2) { animation-delay: 0.25s; }
+.dashboard-grid-3 .card:nth-child(3) { animation-delay: 0.3s; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+  .dashboard-grid-3 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 900px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .dashboard-grid-3 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ========== TOP NAVBAR ========== -->
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="logo-area">
+      <div class="logo-icon">RP</div>
+      <span class="logo-text">RankyPulse</span>
+    </div>
+    <div class="topbar-search">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" placeholder="Search domains, metrics, tools...">
+      <span class="kbd">⌘K</span>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="topbar-btn">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg>
+      New Project
+    </button>
+    <button class="topbar-btn notification-dot">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    </button>
+    <button class="topbar-btn">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+    <button class="avatar-btn">AM</button>
+  </div>
+</header>
+
+<!-- ========== SIDEBAR ========== -->
+<nav class="sidebar">
+
+  <!-- 1. OVERVIEW -->
+  <div class="sidebar-section">
+    <div class="sidebar-label">Overview</div>
+    <a class="sidebar-item active">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </a>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Projects
+    </a>
+  </div>
+
+  <!-- 2. SITE AUDIT (Core Product) -->
+  <div class="sidebar-section">
+    <div class="sidebar-label">Site Audit</div>
+
+    <!-- ★ FULL SITE AUDIT — PRO Feature -->
+    <a class="sidebar-item pro-feature">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      Full Site Audit
+      <span class="sidebar-badge pro">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        PRO
+      </span>
+    </a>
+
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Site Audit
+    </a>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Crawl Issues
+    </a>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      Core Web Vitals
+    </a>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      Internal Linking
+    </a>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Page Speed
+    </a>
+  </div>
+
+  <!-- 3. RANKINGS -->
+  <div class="sidebar-section">
+    <div class="sidebar-label">Rankings</div>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Position Tracking
+    </a>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Competitors
+    </a>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+      SERP Analysis
+    </a>
+  </div>
+
+  <!-- 4. KEYWORD RESEARCH -->
+  <div class="sidebar-section">
+    <div class="sidebar-label">Keyword Research</div>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/></svg>
+      Keyword Gap
+    </a>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Keyword Explorer
+    </a>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+      Keyword Difficulty
+    </a>
+  </div>
+
+  <!-- 5. BACKLINKS -->
+  <div class="sidebar-section">
+    <div class="sidebar-label">Backlinks</div>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/></svg>
+      Backlink Gap
+    </a>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      Backlink Audit
+    </a>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3"/></svg>
+      Referring Domains
+    </a>
+  </div>
+
+  <!-- 6. ON-PAGE SEO -->
+  <div class="sidebar-section">
+    <div class="sidebar-label">On-Page SEO</div>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      On-Page SEO Checker
+    </a>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      SEO Writing Assistant
+    </a>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Content Audit
+    </a>
+  </div>
+
+  <!-- 7. AI TOOLS -->
+  <div class="sidebar-section">
+    <div class="sidebar-label">AI Tools</div>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a4 4 0 0 1 4 4c0 1.1-.45 2.1-1.17 2.83L12 12l-2.83-3.17A4 4 0 0 1 12 2z"/><path d="M12 12v10"/><path d="M8 22h8"/><path d="M5 12h14"/></svg>
+      AI Writer
+      <span class="sidebar-badge beta">Beta</span>
+    </a>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+      AI Search Visibility
+      <span class="sidebar-badge new">New</span>
+    </a>
+  </div>
+
+  <!-- 8. REPORTS -->
+  <div class="sidebar-section">
+    <div class="sidebar-label">Reports</div>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+      My Reports
+    </a>
+    <a class="sidebar-item">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      PDF Reports
+    </a>
+  </div>
+
+</nav>
+
+<!-- ========== MAIN CONTENT ========== -->
+<main class="main">
+
+  <div class="breadcrumb">
+    RankyPulse
+    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    <span>Dashboard</span>
+  </div>
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1 class="page-title">SEO Dashboard</h1>
+      <div class="domain-selector">
+        <span class="domain-url">www.rankypulse.com</span>
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+    <div class="page-header-right">
+      <button class="header-btn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Share
+      </button>
+      <button class="header-btn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export
+      </button>
+      <button class="header-btn cta">+ New Audit</button>
+    </div>
+  </div>
+
+  <!-- Row 1: AI Search + SEO Overview -->
+  <div class="dashboard-grid">
+
+    <!-- AI SEARCH CARD -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-tag ai">AI Search</span>
+        <div class="card-filter">
+          <div class="dot" style="background: var(--accent-blue)"></div>
+          United States
+        </div>
+      </div>
+      <div class="metrics-row">
+        <div class="metric">
+          <div class="metric-label">AI Visibility</div>
+          <div class="metric-value" style="color: var(--accent-purple)">0</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Mentions</div>
+          <div class="metric-value" style="color: var(--text-primary)">0</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Cited Pages</div>
+          <div class="metric-value" style="color: var(--accent-orange)">0</div>
+        </div>
+      </div>
+      <div class="ai-source-list">
+        <div class="ai-source-row">
+          <div class="ai-source-dot chatgpt"></div>
+          <span class="ai-source-name">ChatGPT</span>
+          <span class="ai-source-val">0</span>
+          <span class="ai-source-val">0</span>
+        </div>
+        <div class="ai-source-row">
+          <div class="ai-source-dot overview"></div>
+          <span class="ai-source-name">AI Overview</span>
+          <span class="ai-source-val">0</span>
+          <span class="ai-source-val">0</span>
+        </div>
+        <div class="ai-source-row">
+          <div class="ai-source-dot aimode"></div>
+          <span class="ai-source-name">AI Mode</span>
+          <span class="ai-source-val">0</span>
+          <span class="ai-source-val">0</span>
+        </div>
+        <div class="ai-source-row">
+          <div class="ai-source-dot gemini"></div>
+          <span class="ai-source-name">Gemini</span>
+          <span class="ai-source-val">0</span>
+          <span class="ai-source-val">0</span>
+        </div>
+        <div class="ai-source-row">
+          <div class="ai-source-dot perplexity"></div>
+          <span class="ai-source-name">Perplexity</span>
+          <span class="ai-source-val">0</span>
+          <span class="ai-source-val">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEO OVERVIEW CARD -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-tag seo">SEO</span>
+        <div class="card-filter" style="font-size: 11px;">Last 30 days</div>
+      </div>
+      <div class="seo-grid">
+        <div class="seo-metric-block">
+          <div class="label">Authority Score <span class="pct up">+2%</span></div>
+          <div class="val" style="color: var(--accent-blue)">0</div>
+          <div class="sub">Semrush Rank: 28.6M</div>
+        </div>
+        <div class="seo-metric-block">
+          <div class="label">Organic Traffic <span class="pct">0%</span></div>
+          <div class="val" style="color: var(--text-primary)">0</div>
+        </div>
+        <div class="seo-metric-block">
+          <div class="label">Organic Keywords <span class="pct up">+100%</span></div>
+          <div class="val" style="color: var(--accent-green)">1</div>
+        </div>
+        <div class="seo-metric-block">
+          <div class="label">Paid Keywords <span class="pct">0%</span></div>
+          <div class="val" style="color: var(--accent-orange)">0</div>
+          <div class="sub">Paid Traffic: 0</div>
+        </div>
+        <div class="seo-metric-block">
+          <div class="label">Ref. Domains <span class="pct">0%</span></div>
+          <div class="val" style="color: var(--accent-cyan)">4</div>
+          <div class="sub">Backlinks: 6</div>
+        </div>
+        <div class="seo-metric-block">
+          <div class="label">Indexed Pages</div>
+          <div class="val" style="color: var(--accent-purple)">12</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Site Audit Score + Core Web Vitals + Backlinks -->
+  <div class="dashboard-grid-3">
+
+    <!-- SITE AUDIT SCORE -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-tag audit">Site Audit</span>
+      </div>
+      <div class="audit-score-ring">
+        <svg viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="34" fill="none" stroke="var(--border)" stroke-width="6"/>
+          <circle cx="40" cy="40" r="34" fill="none" stroke="var(--accent-green)" stroke-width="6"
+            stroke-dasharray="213.6" stroke-dashoffset="42.7"
+            stroke-linecap="round" transform="rotate(-90 40 40)">
+            <animate attributeName="stroke-dashoffset" from="213.6" to="42.7" dur="1.2s" fill="freeze"/>
+          </circle>
+        </svg>
+        <div class="score-text">80</div>
+      </div>
+      <div class="audit-issues">
+        <div class="audit-issue-row">
+          <span class="issue-label"><span class="issue-dot error"></span>Errors</span>
+          <span class="issue-count" style="color: var(--accent-red)">3</span>
+        </div>
+        <div class="audit-issue-row">
+          <span class="issue-label"><span class="issue-dot warning"></span>Warnings</span>
+          <span class="issue-count" style="color: var(--accent-yellow)">12</span>
+        </div>
+        <div class="audit-issue-row">
+          <span class="issue-label"><span class="issue-dot notice"></span>Notices</span>
+          <span class="issue-count" style="color: var(--accent-blue)">24</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CORE WEB VITALS -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-tag" style="background: var(--accent-yellow-dim); color: var(--accent-yellow);">Vitals</span>
+      </div>
+      <div class="cwv-list">
+        <div>
+          <div class="cwv-item">
+            <span class="cwv-label">LCP</span>
+            <span class="cwv-val good">1.8s</span>
+          </div>
+          <div class="cwv-bar"><div class="fill" style="width: 72%; background: var(--accent-green);"></div></div>
+        </div>
+        <div>
+          <div class="cwv-item">
+            <span class="cwv-label">INP</span>
+            <span class="cwv-val good">85ms</span>
+          </div>
+          <div class="cwv-bar"><div class="fill" style="width: 88%; background: var(--accent-green);"></div></div>
+        </div>
+        <div>
+          <div class="cwv-item">
+            <span class="cwv-label">CLS</span>
+            <span class="cwv-val ok">0.12</span>
+          </div>
+          <div class="cwv-bar"><div class="fill" style="width: 55%; background: var(--accent-yellow);"></div></div>
+        </div>
+        <div>
+          <div class="cwv-item">
+            <span class="cwv-label">FCP</span>
+            <span class="cwv-val good">0.9s</span>
+          </div>
+          <div class="cwv-bar"><div class="fill" style="width: 82%; background: var(--accent-green);"></div></div>
+        </div>
+        <div>
+          <div class="cwv-item">
+            <span class="cwv-label">TTFB</span>
+            <span class="cwv-val bad">1.2s</span>
+          </div>
+          <div class="cwv-bar"><div class="fill" style="width: 35%; background: var(--accent-red);"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BACKLINKS OVERVIEW -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-tag links">Backlinks</span>
+      </div>
+      <div style="text-align: center; margin-bottom: 14px;">
+        <div class="metric-label">Total Backlinks</div>
+        <div class="metric-value" style="color: var(--accent-cyan)">6</div>
+        <div class="metric-sub">from 4 referring domains</div>
+      </div>
+      <div class="mini-chart">
+        <div class="bar" style="height: 20%; background: var(--accent-cyan);"></div>
+        <div class="bar" style="height: 35%; background: var(--accent-cyan);"></div>
+        <div class="bar" style="height: 25%; background: var(--accent-cyan);"></div>
+        <div class="bar" style="height: 55%; background: var(--accent-cyan);"></div>
+        <div class="bar" style="height: 40%; background: var(--accent-cyan);"></div>
+        <div class="bar" style="height: 70%; background: var(--accent-cyan);"></div>
+        <div class="bar" style="height: 50%; background: var(--accent-cyan);"></div>
+        <div class="bar" style="height: 85%; background: var(--accent-cyan);"></div>
+        <div class="bar" style="height: 60%; background: var(--accent-cyan);"></div>
+        <div class="bar" style="height: 90%; background: var(--accent-cyan);"></div>
+        <div class="bar" style="height: 75%; background: var(--accent-cyan);"></div>
+        <div class="bar" style="height: 100%; background: var(--accent-cyan);"></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 10px; color: var(--text-muted);">
+        <span>Oct</span><span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span><span>Mar</span>
+      </div>
+      <div class="audit-issues" style="margin-top: 14px;">
+        <div class="audit-issue-row">
+          <span class="issue-label" style="font-size: 12px; color: var(--text-secondary);">Dofollow</span>
+          <span class="issue-count" style="color: var(--accent-green);">5</span>
+        </div>
+        <div class="audit-issue-row">
+          <span class="issue-label" style="font-size: 12px; color: var(--text-secondary);">Nofollow</span>
+          <span class="issue-count" style="color: var(--text-muted);">1</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+</body>
+</html>

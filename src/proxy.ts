@@ -50,7 +50,6 @@ function isProtectedPath(pathname: string): boolean {
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/audits") ||
     pathname.startsWith("/reports") ||
-    pathname.startsWith("/report/") ||
     pathname.startsWith("/billing") ||
     pathname.startsWith("/features")
   );

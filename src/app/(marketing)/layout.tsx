@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   metadataBase: new URL("https://rankypulse.com"),
   title: {
-    default: "RankyPulse — Free SEO Audit Tool with Step-by-Step Fix Guides",
+    default: "RankyPulse — Free SEO Audit Tool",
     template: "%s | RankyPulse",
   },
   description:
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: "https://rankypulse.com",
-    title: "RankyPulse — Free SEO Audit with Step-by-Step Fix Guides",
+    title: "RankyPulse — Free SEO Audit Tool",
     description:
       "Enter any domain. Get a complete SEO audit with step-by-step fix guides and real traffic estimates. Free. Takes 30 seconds.",
     siteName: "RankyPulse",

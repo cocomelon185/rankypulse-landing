@@ -19,6 +19,7 @@ import { MOCK_AUDIT } from "@/lib/audit-data";
 import { ScoreHistory } from "../ScoreHistory";
 import { SerpPreview } from "./SerpPreview";
 import { ShareScoreCard } from "./ShareScoreCard";
+import { toast } from "sonner";
 
 export function AuditSidebar({
   onScrollToIssue,
@@ -32,6 +33,8 @@ export function AuditSidebar({
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
+  const [reportCopied, setReportCopied] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const { handleFixAction } = useFixGate();
 
   const currentTask = useMemo(() => {
@@ -80,16 +83,61 @@ export function AuditSidebar({
 
   const handleEmailSubmit = async () => {
     if (!email.includes("@")) return;
-    // Fire-and-forget — UX shows success regardless of API outcome
     setEmailSent(true);
     try {
-      await fetch("/api/capture-email", {
+      const reportUrl = typeof window !== "undefined" ? window.location.href : "";
+      await fetch("/api/email-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, domain: data.domain, auditData: data }),
+        body: JSON.stringify({ email, domain: data.domain, reportUrl, siteUrl: `https://${data.domain}` }),
       });
+      toast.success("Report sent! Check your inbox.");
     } catch {
       // silently fail — user already saw success state
+    }
+  };
+
+  const handleShareReport = async () => {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      setReportCopied(true);
+      toast.success("Report link copied to clipboard!");
+      setTimeout(() => setReportCopied(false), 3000);
+    } catch {
+      toast.error("Could not copy link");
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    setPdfLoading(true);
+    try {
+      const { default: jsPDF } = await import("jspdf");
+      const { default: html2canvas } = await import("html2canvas");
+
+      const heroEl = document.getElementById("pdf-hero");
+      const findingsEl = document.getElementById("pdf-findings");
+      const roadmapEl = document.getElementById("pdf-roadmap");
+
+      const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+
+      const sections = [heroEl, findingsEl, roadmapEl].filter(Boolean) as HTMLElement[];
+
+      for (let i = 0; i < sections.length; i++) {
+        const canvas = await html2canvas(sections[i], { scale: 1.5, useCORS: true });
+        const imgData = canvas.toDataURL("image/jpeg", 0.85);
+        const imgH = (canvas.height * pageW) / canvas.width;
+        if (i > 0) pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, 0, pageW, imgH);
+      }
+
+      pdf.save(`rankypulse-audit-${data.domain}.pdf`);
+      toast.success("PDF downloaded!");
+    } catch {
+      toast.error("Could not generate PDF. Please try again.");
+    } finally {
+      setPdfLoading(false);
     }
   };
 
@@ -265,15 +313,22 @@ export function AuditSidebar({
           </div>
           <button
             type="button"
+            onClick={handleShareReport}
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--text-secondary)] transition hover:bg-white/[0.04]"
           >
-            <Share2 className="h-4 w-4" /> Share Report
+            {reportCopied ? (
+              <><Check className="h-4 w-4 text-green-400" /><span className="text-green-400">Link Copied!</span></>
+            ) : (
+              <><Share2 className="h-4 w-4" /> Share Report</>
+            )}
           </button>
           <button
             type="button"
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--text-secondary)] transition hover:bg-white/[0.04]"
+            onClick={handleDownloadPdf}
+            disabled={pdfLoading}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--text-secondary)] transition hover:bg-white/[0.04] disabled:opacity-50"
           >
-            <Download className="h-4 w-4" /> Download PDF
+            <Download className="h-4 w-4" /> {pdfLoading ? "Generating PDF…" : "Download PDF"}
           </button>
         </div>
       </div>

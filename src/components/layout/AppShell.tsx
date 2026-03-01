@@ -4,10 +4,8 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar, MobileSidebar } from "@/components/layout/Sidebar";
-import { Header } from "@/components/layout/Header";
 import { TopNav } from "@/components/layout/TopNav";
 import { Footer } from "@/components/layout/Footer";
-import { UpgradeBanner } from "@/components/layout/UpgradeBanner";
 
 /** Auth guard + full layout shell */
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -43,9 +41,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAdmin = session?.user?.role === "admin";
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#0d0f14] overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-[#0c0e14] overflow-hidden">
       {/* Global Top Navbar */}
-      <TopNav />
+      <TopNav onMenuClick={() => setMobileMenuOpen(true)} />
 
       <div className="flex flex-1 overflow-hidden h-[calc(100vh-56px)]">
         {/* Sidebar */}
@@ -53,14 +51,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <MobileSidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto scrollbar-hide">
-          <Header onMenuClick={() => setMobileMenuOpen(true)} />
-
-          {/* Aggressive Upgrade Banner for free users */}
-          {!isAdmin && <UpgradeBanner />}
-
+        <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto custom-scrollbar">
           <main className="flex-1 flex flex-col pt-0">
-            <div className="flex-1 max-w-[1600px] w-full mx-auto p-4 md:p-6 lg:p-8 animate-in fade-in duration-700">
+            <div className="flex-1 max-w-[1600px] w-full mx-auto p-4 md:p-6 lg:p-10 animate-in fade-in duration-700">
               {children}
             </div>
             {/* Global Footer */}

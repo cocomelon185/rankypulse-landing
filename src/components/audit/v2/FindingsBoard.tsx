@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, PartyPopper } from "lucide-react";
+import { CheckCircle2, PartyPopper, LayoutGrid, TableIcon } from "lucide-react";
 import { useAuditStore } from "@/lib/use-audit";
 import { IssueCard } from "./IssueCard";
+import { IssueCommandCenter } from "./IssueCommandCenter";
 import { SectionHeading } from "./SectionHeading";
 import { FixQuotaModal } from "../FixQuotaModal";
 import { useFixGate } from "@/hooks/useFixGate";
@@ -102,6 +103,7 @@ export function FindingsBoard({ highlightedId }: { highlightedId: string | null 
   const markFixed = useAuditStore((s) => s.markFixed);
   const { handleFixAction } = useFixGate();
   const [showQuotaModal, setShowQuotaModal] = useState(false);
+  const [viewMode, setViewMode] = useState<"kanban" | "diagnostic">("kanban");
 
   const handleToggleExpand = (id: string) => {
     if (expandedIssueId === id) {
@@ -131,6 +133,11 @@ export function FindingsBoard({ highlightedId }: { highlightedId: string | null 
     return { critical, high, medium, fixed };
   }, [data.issues]);
 
+  const allOpenIssues = useMemo(
+    () => data.issues.filter((i) => i.status !== "fixed" && i.status !== "locked"),
+    [data.issues]
+  );
+
   return (
     <motion.section
       id="findings-section"
@@ -138,80 +145,120 @@ export function FindingsBoard({ highlightedId }: { highlightedId: string | null 
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.5, duration: 0.5 }}
     >
-      <SectionHeading
-        title="Findings"
-        subtitle="Priority-sorted issues with inline fix guides and SERP previews"
-      />
-
-      {/* Desktop: Kanban columns */}
-      <div className="hidden lg:grid lg:grid-cols-4 lg:gap-4">
-        <Column
-          title="CRITICAL"
-          count={columns.critical.length}
-          color="#ef4444"
-          emoji="🔴"
-          issues={columns.critical}
-          expandedIssueId={expandedIssueId}
-          highlightedId={highlightedId}
-          onToggleExpand={handleToggleExpand}
-          onMarkFixed={markFixed}
+      {/* Heading + view mode toggle */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <SectionHeading
+          title="Findings"
+          subtitle="Priority-sorted issues with inline fix guides and SERP previews"
         />
-        <Column
-          title="HIGH"
-          count={columns.high.length}
-          color="#f97316"
-          emoji="🟡"
-          issues={columns.high}
-          expandedIssueId={expandedIssueId}
-          highlightedId={highlightedId}
-          onToggleExpand={handleToggleExpand}
-          onMarkFixed={markFixed}
-        />
-        <Column
-          title="MEDIUM"
-          count={columns.medium.length}
-          color="#6366f1"
-          emoji="🔵"
-          issues={columns.medium}
-          expandedIssueId={expandedIssueId}
-          highlightedId={highlightedId}
-          onToggleExpand={handleToggleExpand}
-          onMarkFixed={markFixed}
-        />
-        <Column
-          title="FIXED"
-          count={columns.fixed.length}
-          color="#10b981"
-          emoji="✅"
-          issues={columns.fixed}
-          expandedIssueId={expandedIssueId}
-          highlightedId={highlightedId}
-          onToggleExpand={handleToggleExpand}
-          onMarkFixed={markFixed}
-        />
+        <div className="flex shrink-0 items-center gap-1 rounded-xl border border-white/[0.08] bg-white/[0.03] p-1">
+          <button
+            type="button"
+            onClick={() => setViewMode("kanban")}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${viewMode === "kanban"
+              ? "bg-[var(--accent-primary)] text-white shadow-sm"
+              : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+              }`}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+            Kanban
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("diagnostic")}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${viewMode === "diagnostic"
+              ? "bg-[var(--accent-primary)] text-white shadow-sm"
+              : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+              }`}
+          >
+            <TableIcon className="h-3.5 w-3.5" />
+            Diagnostic
+          </button>
+        </div>
       </div>
 
-      {/* Mobile: Stacked list, highest priority first */}
-      <div className="space-y-3 lg:hidden">
-        {[...columns.critical, ...columns.high, ...columns.medium, ...columns.fixed].map(
-          (issue, idx) => (
-            <motion.div
-              key={issue.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.08, duration: 0.4 }}
-            >
-              <IssueCard
-                issue={issue}
-                isExpanded={expandedIssueId === issue.id}
-                isHighlighted={highlightedId === issue.id}
-                onToggleExpand={() => handleToggleExpand(issue.id)}
-                onMarkFixed={() => markFixed(issue.id)}
-              />
-            </motion.div>
-          )
-        )}
-      </div>
+
+      {/* Diagnostic mode */}
+      {viewMode === "diagnostic" && (
+        <IssueCommandCenter
+          issues={allOpenIssues}
+          onMarkFixed={markFixed}
+        />
+      )}
+
+      {/* Kanban mode — Desktop columns */}
+      {viewMode === "kanban" && (
+        <>
+          <div className="hidden lg:grid lg:grid-cols-4 lg:gap-4">
+            <Column
+              title="CRITICAL"
+              count={columns.critical.length}
+              color="#ef4444"
+              emoji="🔴"
+              issues={columns.critical}
+              expandedIssueId={expandedIssueId}
+              highlightedId={highlightedId}
+              onToggleExpand={handleToggleExpand}
+              onMarkFixed={markFixed}
+            />
+            <Column
+              title="HIGH"
+              count={columns.high.length}
+              color="#f97316"
+              emoji="🟡"
+              issues={columns.high}
+              expandedIssueId={expandedIssueId}
+              highlightedId={highlightedId}
+              onToggleExpand={handleToggleExpand}
+              onMarkFixed={markFixed}
+            />
+            <Column
+              title="MEDIUM"
+              count={columns.medium.length}
+              color="#6366f1"
+              emoji="🔵"
+              issues={columns.medium}
+              expandedIssueId={expandedIssueId}
+              highlightedId={highlightedId}
+              onToggleExpand={handleToggleExpand}
+              onMarkFixed={markFixed}
+            />
+            <Column
+              title="FIXED"
+              count={columns.fixed.length}
+              color="#10b981"
+              emoji="✅"
+              issues={columns.fixed}
+              expandedIssueId={expandedIssueId}
+              highlightedId={highlightedId}
+              onToggleExpand={handleToggleExpand}
+              onMarkFixed={markFixed}
+            />
+          </div>
+
+          {/* Mobile: Stacked list, highest priority first */}
+          <div className="space-y-3 lg:hidden">
+            {[...columns.critical, ...columns.high, ...columns.medium, ...columns.fixed].map(
+              (issue, idx) => (
+                <motion.div
+                  key={issue.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.08, duration: 0.4 }}
+                >
+                  <IssueCard
+                    issue={issue}
+                    isExpanded={expandedIssueId === issue.id}
+                    isHighlighted={highlightedId === issue.id}
+                    onToggleExpand={() => handleToggleExpand(issue.id)}
+                    onMarkFixed={() => markFixed(issue.id)}
+                  />
+                </motion.div>
+              )
+            )}
+          </div>
+        </>
+      )}
 
       {showQuotaModal && <FixQuotaModal onClose={() => setShowQuotaModal(false)} />}
     </motion.section>

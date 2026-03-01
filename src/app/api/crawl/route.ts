@@ -25,7 +25,7 @@ function checkRateLimit(ip: string): boolean {
 // ── THE KEY FIX: timeout via Promise.race ────────────────────────
 // AbortSignal.timeout() does NOT work reliably in Vercel Edge.
 // This approach works everywhere.
-function withTimeout<T>(
+export function withTimeout<T>(
   promise: Promise<T>,
   ms: number,
   fallback: T
@@ -37,7 +37,7 @@ function withTimeout<T>(
 }
 
 // ── Fetch raw HTML (8s max) ──────────────────────────────────────
-async function fetchHTML(domain: string): Promise<string> {
+export async function fetchHTML(domain: string): Promise<string> {
   const urls = [
     `https://${domain}`,
     `https://www.${domain}`,
@@ -85,11 +85,11 @@ async function fetchHTML(domain: string): Promise<string> {
         bytes += readResult.value.byteLength;
       }
 
-      try { reader.cancel(); } catch {}
+      try { reader.cancel(); } catch { }
 
       const decoder = new TextDecoder();
       return chunks.map(c => decoder.decode(c, { stream: true })).join('') +
-             decoder.decode();
+        decoder.decode();
 
     } catch {
       continue;
@@ -99,7 +99,7 @@ async function fetchHTML(domain: string): Promise<string> {
 }
 
 // ── Fetch PSI (20s max, returns null on failure) ─────────────────
-async function fetchPSI(domain: string): Promise<Record<string, unknown> | null> {
+export async function fetchPSI(domain: string): Promise<Record<string, unknown> | null> {
   const key = process.env.GOOGLE_PSI_KEY ?? '';
   const url = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed` +
     `?url=https://${domain}&strategy=mobile${key ? `&key=${key}` : ''}`;
@@ -126,11 +126,69 @@ async function fetchPSI(domain: string): Promise<Record<string, unknown> | null>
   }
 }
 
+
+// ── Crawl Internal Links ──────────────────────────────────────────
+export function extractInternalLinks(html: string, domain: string): string[] {
+  const links: string[] = [];
+  const regex = /<a[^>]+href=["']([^"']+)["']/gi;
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    let url = match[1];
+    if (url.startsWith('mailto:') || url.startsWith('tel:') || url.startsWith('#')) continue;
+
+    // Resolve relative URLs
+    if (url.startsWith('/')) {
+      url = `https://${domain}${url}`;
+    } else if (!url.startsWith('http')) {
+      url = `https://${domain}/${url}`;
+    }
+
+    if (url.includes(domain)) {
+      try {
+        const u = new URL(url);
+        if ((u.protocol === 'http:' || u.protocol === 'https:') && u.hostname.includes(domain)) {
+          const clean = u.origin + u.pathname;
+          if (!links.includes(clean)) links.push(clean);
+        }
+      } catch {
+        // invalid URL
+      }
+    }
+  }
+  return links;
+}
+
+export async function checkBrokenLinks(links: string[]): Promise<string[]> {
+  const broken: string[] = [];
+  const toCheck = links.slice(0, 8); // check up to 8 links
+
+  await Promise.all(toCheck.map(async (url) => {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 3500);
+      const res = await fetch(url, {
+        method: 'HEAD',
+        signal: controller.signal,
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RankyPulseBot/1.0)' }
+      });
+      clearTimeout(timer);
+      if (res.status === 404 || res.status >= 500) {
+        broken.push(url);
+      }
+    } catch {
+      // Ignore network errors/timeouts
+    }
+  }));
+
+  return broken;
+}
+
 // ── Parse issues from real data ──────────────────────────────────
-function buildAuditData(
+export function buildAuditData(
   domain: string,
   html: string,
   psi: Record<string, unknown> | null,
+  brokenLinks: string[] = []
 ) {
   let score = 85;
   const issues: Record<string, unknown>[] = [];
@@ -147,22 +205,24 @@ function buildAuditData(
   const lcpAudit = audits['largest-contentful-paint'] as Record<string, unknown> | undefined;
   const clsAudit = audits['cumulative-layout-shift'] as Record<string, unknown> | undefined;
   const lcpMs = typeof lcpAudit?.numericValue === 'number' ? lcpAudit.numericValue : 0;
-  const cls   = typeof clsAudit?.numericValue === 'number' ? clsAudit.numericValue : 0;
+  const cls = typeof clsAudit?.numericValue === 'number' ? clsAudit.numericValue : 0;
 
   // Parse HTML
   const hasMeta = /<meta\s+name=["']description["']/i.test(html) ||
-                  /<meta\s+content=["'][^"']+["']\s+name=["']description["']/i.test(html);
+    /<meta\s+content=["'][^"']+["']\s+name=["']description["']/i.test(html);
   const metaMatch = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']{10,})/i);
-  const metaDesc  = metaMatch?.[1] ?? '';
+  const metaDesc = metaMatch?.[1] ?? '';
 
   const canonicalMatch = html.match(/<link\s+rel=["']canonical["']\s+href=["']([^"']+)["']/i);
-  const canonical      = canonicalMatch?.[1] ?? '';
+  const canonical = canonicalMatch?.[1] ?? '';
 
   const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-  const pageTitle  = titleMatch?.[1]?.trim() ?? domain;
+  const pageTitle = titleMatch?.[1]?.trim() ?? domain;
 
-  const hasH1     = /<h1[\s>]/i.test(html);
-  const hasOG     = /og:title|og:description/i.test(html);
+  const h1Matches = html.match(/<h1[\s>]/gi);
+  const h1Count = h1Matches ? h1Matches.length : 0;
+  const hasH1 = h1Count > 0;
+  const hasOG = /og:title|og:description/i.test(html);
   const hasSchema = /application\/ld\+json/i.test(html);
 
   // Build issues
@@ -184,7 +244,7 @@ function buildAuditData(
         'Re-run this audit to verify',
       ],
       serpBefore: { url: `https://${domain}`, title: pageTitle, description: 'No meta description — Google will auto-generate...' },
-      serpAfter:  { url: `https://${domain}`, title: pageTitle, description: 'Your compelling 155-char description with main keyword.' },
+      serpAfter: { url: `https://${domain}`, title: pageTitle, description: 'Your compelling 155-char description with main keyword.' },
       isLocked: false,
     });
   }
@@ -207,7 +267,7 @@ function buildAuditData(
         'Update sitemap to only list the preferred version',
       ],
       serpBefore: { url: `https://www.${domain}`, title: pageTitle, description: metaDesc },
-      serpAfter:  { url: `https://${domain}`,     title: pageTitle, description: metaDesc },
+      serpAfter: { url: `https://${domain}`, title: pageTitle, description: metaDesc },
       isLocked: false,
     });
   }
@@ -231,7 +291,7 @@ function buildAuditData(
         'Remove render-blocking scripts from <head>',
       ],
       serpBefore: { url: `https://${domain}`, title: pageTitle, description: metaDesc },
-      serpAfter:  { url: `https://${domain}`, title: pageTitle, description: metaDesc },
+      serpAfter: { url: `https://${domain}`, title: pageTitle, description: metaDesc },
       isLocked: false,
     });
   }
@@ -254,7 +314,7 @@ function buildAuditData(
         'Test with Twitter Card Validator',
       ],
       serpBefore: { url: `https://${domain}`, title: pageTitle, description: '' },
-      serpAfter:  { url: `https://${domain}`, title: pageTitle, description: 'Rich social preview with image and description' },
+      serpAfter: { url: `https://${domain}`, title: pageTitle, description: 'Rich social preview with image and description' },
       isLocked: true,
     });
   }
@@ -277,7 +337,7 @@ function buildAuditData(
         'Add FAQ schema for content pages',
       ],
       serpBefore: { url: `https://${domain}`, title: pageTitle, description: metaDesc },
-      serpAfter:  { url: `https://${domain}`, title: pageTitle, description: '⭐ Rich snippet eligible' },
+      serpAfter: { url: `https://${domain}`, title: pageTitle, description: '⭐ Rich snippet eligible' },
       isLocked: true,
     });
   }
@@ -301,8 +361,95 @@ function buildAuditData(
         'Do not use an image instead of text for your H1',
       ],
       serpBefore: { url: `https://${domain}`, title: pageTitle, description: metaDesc || 'No H1 — Google infers topic from body text.' },
-      serpAfter:  { url: `https://${domain}`, title: pageTitle, description: `${domain} — Your H1 that clearly describes your main offering.` },
+      serpAfter: { url: `https://${domain}`, title: pageTitle, description: `${domain} — Your H1 that clearly describes your main offering.` },
       isLocked: true,
+    });
+  }
+
+
+  if (h1Count > 1) {
+    score -= 5;
+    issues.push({
+      id: 'duplicate-h1',
+      priority: 'medium',
+      status: 'open',
+      title: 'Multiple H1 tags found',
+      description: `Your page has ${h1Count} <h1> tags. While HTML5 allows multiple H1s, SEO best practice is exactly one H1 per page to indicate the primary topic.`,
+      impact: 'Confuses search engines about the primary topic',
+      trafficImpact: { min: 20, max: 100 },
+      timeEstimateMinutes: 10,
+      howToFix: [
+        'Identify the secondary <h1> tags in your HTML',
+        'Change them to <h2> or <h3> tags depending on hierarchy',
+        'Ensure the single remaining <h1> has your primary keyword'
+      ],
+      serpBefore: { url: `https://${domain}`, title: pageTitle, description: metaDesc },
+      serpAfter: { url: `https://${domain}`, title: pageTitle, description: metaDesc },
+      isLocked: false,
+    });
+  }
+
+  if (pageTitle !== domain && (pageTitle.length > 60 || pageTitle.length < 30)) {
+    score -= 5;
+    issues.push({
+      id: 'title-length',
+      priority: 'low',
+      status: 'open',
+      title: `Suboptimal Title Length (${pageTitle.length} chars)`,
+      description: `Best practice is 30-60 characters. Titles >60 chars get truncated in search results, while <30 chars miss keyword opportunities.`,
+      impact: 'Lower click-through rates from search results',
+      trafficImpact: { min: 30, max: 150 },
+      timeEstimateMinutes: 5,
+      howToFix: [
+        'Rewrite your title to be 30-60 characters',
+        'Put primary keyword near the beginning',
+      ],
+      serpBefore: { url: `https://${domain}`, title: pageTitle.substring(0, 60), description: metaDesc },
+      serpAfter: { url: `https://${domain}`, title: pageTitle.substring(0, 55) + '...', description: metaDesc },
+      isLocked: false,
+    });
+  }
+
+  if (metaDesc.length > 0 && (metaDesc.length < 70 || metaDesc.length > 160)) {
+    score -= 5;
+    issues.push({
+      id: 'meta-desc-length',
+      priority: 'low',
+      status: 'open',
+      title: `Suboptimal Meta Description (${metaDesc.length} chars)`,
+      description: `Best practice is 70-160 characters. Descriptions >160 chars get truncated, and <70 chars don't use the available real estate.`,
+      impact: 'Missed opportunity to stand out in search results',
+      trafficImpact: { min: 20, max: 100 },
+      timeEstimateMinutes: 5,
+      howToFix: [
+        'Rewrite your meta description to 70-160 characters',
+        'Include a clear call-to-action',
+      ],
+      serpBefore: { url: `https://${domain}`, title: pageTitle, description: metaDesc.substring(0, 60) },
+      serpAfter: { url: `https://${domain}`, title: pageTitle, description: metaDesc.substring(0, 150) + '...' },
+      isLocked: false,
+    });
+  }
+
+  if (brokenLinks.length > 0) {
+    score -= 15;
+    issues.push({
+      id: 'broken-links',
+      priority: 'high',
+      status: 'open',
+      title: `${brokenLinks.length} Broken Internal Link(s) Found`,
+      description: `We performed a mini-crawl and found broken 404 links: ${brokenLinks.slice(0, 3).join(', ')}${brokenLinks.length > 3 ? '...' : ''}.`,
+      impact: 'Loss of PageRank flow and poor user experience',
+      trafficImpact: { min: 80, max: 400 },
+      timeEstimateMinutes: 15,
+      howToFix: [
+        'Locate the broken links in your content or navigation',
+        'Update them to point to live pages',
+        'Or remove the links entirely',
+      ],
+      serpBefore: { url: `https://${domain}`, title: pageTitle, description: metaDesc },
+      serpAfter: { url: `https://${domain}`, title: pageTitle, description: metaDesc },
+      isLocked: false,
     });
   }
 
@@ -317,7 +464,7 @@ function buildAuditData(
   const totalTrafficMin = issues.reduce((s, i) => s + ((i.trafficImpact as { min: number }).min), 0);
   const totalTrafficMax = issues.reduce((s, i) => s + ((i.trafficImpact as { max: number }).max), 0);
 
-  const trafficMin = Math.max(50,  Math.min(totalTrafficMin, 5000));
+  const trafficMin = Math.max(50, Math.min(totalTrafficMin, 5000));
   const trafficMax = Math.max(200, Math.min(totalTrafficMax, 20000));
 
   const roadmap = issues.map((issue, index) => ({
@@ -338,19 +485,19 @@ function buildAuditData(
     estimatedTrafficLoss: { min: trafficMin, max: trafficMax },
     confidence: psi ? 'High' : 'Medium',
     categories: [
-      { name: 'Technical SEO', score: Math.min(100, finalScore + 7),          benchmark: 74 },
-      { name: 'Content',       score: hasMeta && hasH1 ? 75 : 40,             benchmark: 68 },
-      { name: 'Performance',   score: Math.min(100, perfScore),               benchmark: 61 },
-      { name: 'Mobile',        score: Math.min(100, perfScore + 5),           benchmark: 72 },
-      { name: 'UX Signals',    score: hasOG ? 72 : 48,                        benchmark: 70 },
-      { name: 'Link Authority', score: 22,                                    benchmark: 55 },
+      { name: 'Technical SEO', score: Math.min(100, finalScore + 7), benchmark: 74 },
+      { name: 'Content', score: hasMeta && hasH1 ? 75 : 40, benchmark: 68 },
+      { name: 'Performance', score: Math.min(100, perfScore), benchmark: 61 },
+      { name: 'Mobile', score: Math.min(100, perfScore + 5), benchmark: 72 },
+      { name: 'UX Signals', score: hasOG ? 72 : 48, benchmark: 70 },
+      { name: 'Link Authority', score: 22, benchmark: 55 },
     ],
     issues,
     roadmap,
     competitors: [
       { domain: 'competitor-a.com', score: finalScore + 13 },
-      { domain: 'competitor-b.com', score: finalScore + 8  },
-      { domain,                     score: finalScore,      isYou: true },
+      { domain: 'competitor-b.com', score: finalScore + 8 },
+      { domain, score: finalScore, isYou: true },
       { domain: 'competitor-c.com', score: Math.max(10, finalScore - 4) },
     ],
     _raw: {
@@ -402,7 +549,7 @@ export async function GET(req: NextRequest) {
     // withTimeout adds an outer safety net.
     const [html, psi] = await Promise.all([
       withTimeout(fetchHTML(cleanDomain), 10000, ''),
-      withTimeout(fetchPSI(cleanDomain),  22000, null),
+      withTimeout(fetchPSI(cleanDomain), 22000, null),
     ]);
 
     // Both failed = unreachable
@@ -415,7 +562,14 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const auditData = buildAuditData(cleanDomain, html, psi);
+    let brokenLinks: string[] = [];
+    if (html) {
+      const internalLinks = extractInternalLinks(html, cleanDomain);
+      // Run the check but don't hold up the main process for more than a few seconds
+      brokenLinks = await withTimeout(checkBrokenLinks(internalLinks), 4500, []);
+    }
+
+    const auditData = buildAuditData(cleanDomain, html, psi, brokenLinks);
     return NextResponse.json(auditData);
 
   } catch {

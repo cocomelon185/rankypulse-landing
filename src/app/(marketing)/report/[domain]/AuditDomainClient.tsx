@@ -12,6 +12,7 @@ import { AuditSidebar } from "@/components/audit/v2/AuditSidebar";
 import { CompetitorBenchmark } from "@/components/audit/v2/CompetitorBenchmark";
 import { AhaMomentBanner } from "@/components/audit/v2/AhaMomentBanner";
 import { SocialProofStrip } from "@/components/audit/v2/SocialProofStrip";
+import { FullAuditProgress } from "@/components/audit/FullAuditProgress";
 import { StickyUpgradeBar } from "@/components/audit/v2/StickyUpgradeBar";
 import { AuditLoadingScreen } from "@/components/audit/AuditLoadingScreen";
 import {
@@ -224,6 +225,7 @@ export function AuditDomainClient({ domain: rawDomain }: { domain: string }) {
             <SocialProofStrip />
             <IssueRadar />
             <div id="pdf-findings"><FindingsBoard highlightedId={highlightedId} /></div>
+            <FullAuditProgress domain={domain} />
             <TrafficOpportunity />
             <div id="pdf-roadmap"><ActionRoadmap onScrollToIssue={scrollToIssue} /></div>
             <CompetitorBenchmark />
@@ -325,10 +327,11 @@ function EmailCaptureBanner({ domain }: { domain: string }) {
     if (!email) return;
     setStatus("loading");
     try {
+      const reportUrl = typeof window !== "undefined" ? window.location.href : "";
       const res = await fetch("/api/email-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, domain }),
+        body: JSON.stringify({ email, domain, reportUrl, siteUrl: `https://${domain}` }),
       });
       setStatus(res.ok ? "sent" : "error");
     } catch {

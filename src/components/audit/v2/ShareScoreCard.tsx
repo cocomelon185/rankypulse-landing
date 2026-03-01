@@ -21,10 +21,10 @@ export function ShareScoreCard() {
   const adjustedScore = Math.min(
     100,
     data.score +
-      completedFixIds.filter(
-        (id) => !MOCK_AUDIT.issues.find((i) => i.id === id && i.status === "fixed")
-      ).length *
-        3
+    completedFixIds.filter(
+      (id) => !MOCK_AUDIT.issues.find((i) => i.id === id && i.status === "fixed")
+    ).length *
+    3
   );
 
   const scoreColor = getScoreColor(adjustedScore);
@@ -40,9 +40,9 @@ export function ShareScoreCard() {
       if (!cardRef.current) return;
 
       // Reveal the hidden card so html2canvas can paint it
-      cardRef.current.style.left = "0";
-      cardRef.current.style.top = "0";
-      cardRef.current.style.zIndex = "9999";
+      // Use visibility instead of position to prevent top-left flash
+      cardRef.current.style.visibility = "visible";
+      cardRef.current.style.pointerEvents = "none";
 
       // Wait two animation frames for the card to paint
       await new Promise<void>((resolve) => {
@@ -50,7 +50,6 @@ export function ShareScoreCard() {
       });
 
       // ── FONT RELIABILITY FIX ──
-      // Wait for all document fonts to finish loading before screenshotting
       try {
         await document.fonts.ready;
         await Promise.all([
@@ -59,7 +58,6 @@ export function ShareScoreCard() {
           document.fonts.load('400 10px "DM Mono"'),
         ]);
       } catch {
-        // fonts.load() can throw in some browsers — continue with a small delay
         await new Promise<void>((r) => setTimeout(r, 300));
       }
       // ── END FONT FIX ──
@@ -72,7 +70,6 @@ export function ShareScoreCard() {
         width: 600,
         height: 315,
         onclone: (clonedDoc) => {
-          // Inject Google Fonts into the cloned document for html2canvas rendering
           const style = clonedDoc.createElement("style");
           style.textContent = `
             @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700&family=DM+Sans:wght@400;600&family=DM+Mono:wght@400;500&display=swap');
@@ -83,9 +80,7 @@ export function ShareScoreCard() {
       });
 
       // Re-hide the card
-      cardRef.current.style.left = "-9999px";
-      cardRef.current.style.top = "-9999px";
-      cardRef.current.style.zIndex = "-1";
+      cardRef.current.style.visibility = "hidden";
 
       canvas.toBlob((blob) => {
         if (blob) {
@@ -139,8 +134,9 @@ export function ShareScoreCard() {
         data-html2canvas-ignore="false"
         className="fixed"
         style={{
-          left: "-9999px",
+          left: "50%",
           top: "-9999px",
+          transform: "translateX(-50%)",
           width: "600px",
           height: "315px",
           background: "#0d0f14",
@@ -150,13 +146,15 @@ export function ShareScoreCard() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          zIndex: -1,
+          visibility: "hidden",
+          zIndex: 9999,
         }}
         aria-hidden
       >
         {/* Inline font injection for html2canvas font reliability */}
         {/* eslint-disable-next-line react/no-danger */}
-        <style dangerouslySetInnerHTML={{ __html: `
+        <style dangerouslySetInnerHTML={{
+          __html: `
           @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700&family=DM+Sans:wght@400;600&family=DM+Mono:wght@400;500&display=swap');
         ` }} />
 
