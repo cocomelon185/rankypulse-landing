@@ -13,7 +13,8 @@ interface RazorpayOptions {
   key: string;
   amount: number;
   currency: string;
-  order_id: string;
+  order_id?: string;
+  subscription_id?: string;
   name: string;
   description?: string;
   handler: (res: RazorpayPaymentResponse) => void;
@@ -21,9 +22,10 @@ interface RazorpayOptions {
 }
 
 interface RazorpayPaymentResponse {
-  razorpay_order_id: string;
+  razorpay_order_id?: string;
   razorpay_payment_id: string;
   razorpay_signature: string;
+  razorpay_subscription_id?: string;
 }
 
 interface RazorpayInstance {
@@ -48,7 +50,8 @@ function loadScript(): Promise<void> {
 
 export async function openRazorpayCheckout(params: {
   keyId: string;
-  orderId: string;
+  orderId?: string;
+  subscriptionId?: string;
   amount: number;
   currency?: string;
   plan: string;
@@ -64,6 +67,7 @@ export async function openRazorpayCheckout(params: {
     amount: params.amount,
     currency: params.currency || "INR",
     order_id: params.orderId,
+    subscription_id: params.subscriptionId,
     name: "RankyPulse",
     description: `${params.plan} plan`,
     handler: (res) => params.onSuccess(res),

@@ -17,9 +17,9 @@ export async function POST(request: NextRequest) {
   }
   try {
     const body = await request.json();
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan } = body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, razorpay_subscription_id, plan } = body;
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    if (!razorpay_payment_id || !razorpay_signature || (!razorpay_order_id && !razorpay_subscription_id)) {
       return NextResponse.json(
         { error: "Missing payment verification fields" },
         { status: 400 }
@@ -55,12 +55,21 @@ export async function POST(request: NextRequest) {
     }
 
     const keySecret = process.env.RAZORPAY_KEY_SECRET!;
-    const expectedSignature = crypto
-      .createHmac("sha256", keySecret)
-      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-      .digest("hex");
+    let expectedSignature = "";
 
-    if (expectedSignature !== razorpay_signature) {
+    if (razorpay_order_id) {
+      expectedSignature = crypto
+        .createHmac("sha256", keySecret)
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest("hex");
+    } else if (razorpay_subscription_id) {
+      expectedSignature = crypto
+        .createHmac("sha256", keySecret)
+        .update(`${razorpay_payment_id}|${razorpay_subscription_id}`)
+        .digest("hex");
+    }
+
+    if (!expectedSignature || expectedSignature !== razorpay_signature) {
       return NextResponse.json(
         { error: "Invalid payment signature" },
         { status: 400 }

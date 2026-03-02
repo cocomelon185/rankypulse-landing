@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { rateLimit, getRateLimitKey } from "@/lib/rate-limit";
 
 const PLAN_AMOUNTS: Record<string, { INR: number; USD: number }> = {
-  starter: { INR: 99900, USD: 900 }, // ₹999 or $9 in smallest currency units
-  pro: { INR: 260000, USD: 2900 }, // ₹2600 or $29 in smallest currency units
+  starter: { INR: 99900, USD: 900 },         // ₹999 or $9
+  starter_annual: { INR: 958800, USD: 8400 }, // ₹9,588 or $84 (Total for 12 months)
+  pro: { INR: 260000, USD: 2900 },           // ₹2,600 or $29
+  pro_annual: { INR: 2496000, USD: 27600 },  // ₹24,960 or $276 (Total for 12 months)
 };
 
 const TEST_MODE = !process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET;
@@ -19,6 +21,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const plan = (body.plan as string)?.toLowerCase();
+    const billing = (body.billing as string)?.toLowerCase() === "annual" ? "annual" : "monthly";
     const currency = (body.currency as string)?.toUpperCase() === "USD" ? "USD" : "INR";
 
     if (!plan || !["starter", "pro"].includes(plan)) {
@@ -28,9 +31,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const amount = PLAN_AMOUNTS[plan]?.[currency];
+    const planKey = billing === "annual" ? `${plan}_annual` : plan;
+    const amount = PLAN_AMOUNTS[planKey]?.[currency];
     if (!amount) {
-      return NextResponse.json({ error: "Unknown plan" }, { status: 400 });
+      return NextResponse.json({ error: `Unknown plan configuration: ${planKey}` }, { status: 400 });
     }
 
     // Test mode: return mock order without calling Razorpay

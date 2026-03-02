@@ -360,6 +360,7 @@ export default function PricingClientPage() {
                       plan={plan.name as "Starter" | "Pro"}
                       planSlug={plan.name.toLowerCase() as "starter" | "pro"}
                       currency={currency}
+                      billing={billing}
                       variant={isPopular ? "primary" : "secondary"}
                       className="w-full"
                       onClick={() => {
