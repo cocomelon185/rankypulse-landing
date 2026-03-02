@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import {
@@ -28,57 +28,9 @@ const CRAWL_STATS = {
 };
 
 const ISSUE_CATEGORIES = [
-    { id: 'errors', label: 'Errors', count: 42, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: AlertCircle },
-    { id: 'warnings', label: 'Warnings', count: 128, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', icon: AlertTriangle },
-    { id: 'notices', label: 'Notices', count: 856, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: Info },
-];
-
-const MOCK_ISSUES = [
-    {
-        id: '1',
-        severity: 'error',
-        title: '404 Page Not Found',
-        description: 'Pages returning a 404 status code lose link equity and provide a poor user experience.',
-        urlsAffected: 12,
-        trend: '+2',
-        discovered: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    },
-    {
-        id: '2',
-        severity: 'error',
-        title: 'Duplicate Title Tags',
-        description: 'Multiple pages share the exact same title tag, competing against each other in SERPs.',
-        urlsAffected: 28,
-        trend: '-5',
-        discovered: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    },
-    {
-        id: '3',
-        severity: 'warning',
-        title: 'Missing Meta Descriptions',
-        description: 'Pages without meta descriptions may have lower CTR in search results.',
-        urlsAffected: 84,
-        trend: '+12',
-        discovered: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    },
-    {
-        id: '4',
-        severity: 'warning',
-        title: 'Slow Load Time (> 3s)',
-        description: 'Pages taking longer than 3 seconds to load impact user experience and rankings.',
-        urlsAffected: 44,
-        trend: '0',
-        discovered: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    },
-    {
-        id: '5',
-        severity: 'notice',
-        title: 'Images Missing Alt Attributes',
-        description: 'Images without alt text miss out on image search traffic and accessibility benefits.',
-        urlsAffected: 856,
-        trend: '-120',
-        discovered: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    },
+    { id: 'errors', label: 'Errors', count: 0, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: AlertCircle },
+    { id: 'warnings', label: 'Warnings', count: 0, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', icon: AlertTriangle },
+    { id: 'notices', label: 'Notices', count: 0, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: Info },
 ];
 
 const timeAgo = (date: Date) => {
@@ -88,16 +40,78 @@ const timeAgo = (date: Date) => {
     return `${Math.floor(seconds / 86400)}d ago`;
 };
 
+const apiSeverityToIssueSeverity = (sev: string) => {
+    switch (sev?.toUpperCase()) {
+        case 'HIGH':
+        case 'CRITICAL':
+            return 'error';
+        case 'MED':
+        case 'MEDIUM':
+            return 'warning';
+        case 'LOW':
+        default:
+            return 'notice';
+    }
+};
+
 export default function CrawlIssuesPage() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<'all' | 'errors' | 'warnings' | 'notices'>('all');
     const [search, setSearch] = useState('');
 
-    const filteredIssues = MOCK_ISSUES.filter(issue => {
-        const matchesSearch = issue.title.toLowerCase().includes(search.toLowerCase());
-        const matchesTab = activeTab === 'all' || issue.severity === activeTab;
+    const [loading, setLoading] = useState(true);
+    const [issues, setIssues] = useState<any[]>([]);
+    const [stats, setStats] = useState({ healthScore: 0, crawledPages: 1, healthyPages: 1, brokenPages: 0, redirects: 0, blocked: 0 });
+    const [urlChecked, setUrlChecked] = useState<string | null>(null);
+
+    useEffect(() => {
+        async function fetchAudit() {
+            try {
+                const lastUrl = localStorage.getItem('rankypulse_last_url');
+                if (!lastUrl) {
+                    setLoading(false);
+                    return;
+                }
+                setUrlChecked(lastUrl);
+                const res = await fetch('/api/audit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: lastUrl }),
+                });
+                const json = await res.json();
+                if (json.ok && json.data) {
+                    const apiIssues = json.data.issues || [];
+                    const mappedIssues = apiIssues.map((apiIssue: any, index: number) => ({
+                        id: apiIssue.id || index.toString(),
+                        severity: apiSeverityToIssueSeverity(apiIssue.severity),
+                        title: apiIssue.title || apiIssue.id,
+                        description: apiIssue.suggestedFix || apiIssue.msg || apiIssue.title,
+                        urlsAffected: 1,
+                        trend: '0',
+                        discovered: new Date(),
+                    }));
+                    setIssues(mappedIssues);
+                    setStats(prev => ({ ...prev, healthScore: Math.round(json.data.scores?.seo || 0) }));
+                }
+            } catch (err) {
+                console.error("Failed to fetch audit for crawl issues", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchAudit();
+    }, []);
+
+    const filteredIssues = issues.filter(issue => {
+        const matchesSearch = issue.title?.toLowerCase().includes(search.toLowerCase());
+        const matchesTab = activeTab === 'all' || issue.severity === (activeTab.endsWith('s') ? activeTab.slice(0, -1) : activeTab);
         return matchesSearch && matchesTab;
     });
+
+    const categoriesWithCounts = ISSUE_CATEGORIES.map(cat => ({
+        ...cat,
+        count: issues.filter(i => i.severity === (cat.id.endsWith('s') ? cat.id.slice(0, -1) : cat.id)).length
+    }));
 
     return (
         <main className="min-h-screen bg-[#0d0f14] pt-20 pb-20 px-6">
@@ -161,12 +175,12 @@ export default function CrawlIssuesPage() {
                         </div>
                         <span className="font-['DM_Mono'] text-xs text-gray-500 tracking-wider mb-2">HEALTH SCORE</span>
                         <div className="flex items-end gap-2">
-                            <span className="font-['Fraunces'] text-4xl font-bold text-emerald-400">{CRAWL_STATS.healthScore}</span>
+                            <span className="font-['Fraunces'] text-4xl font-bold text-emerald-400">{stats.healthScore}</span>
                             <span className="text-gray-500 text-sm mb-1">/100</span>
                         </div>
                     </motion.div>
 
-                    {ISSUE_CATEGORIES.map((cat, i) => (
+                    {categoriesWithCounts.map((cat, i) => (
                         <motion.div
                             key={cat.id}
                             initial={{ opacity: 0, y: 10 }}
@@ -174,8 +188,8 @@ export default function CrawlIssuesPage() {
                             transition={{ delay: 0.1 + (i + 1) * 0.05 }}
                             onClick={() => setActiveTab(cat.id as any)}
                             className={`p-5 rounded-2xl border cursor-pointer transition-all relative overflow-hidden ${activeTab === cat.id || activeTab === 'all'
-                                    ? 'bg-[#13161f] border-white/[0.12] shadow-sm'
-                                    : 'bg-white/[0.02] border-white/[0.04] opacity-70 hover:opacity-100'
+                                ? 'bg-[#13161f] border-white/[0.12] shadow-sm'
+                                : 'bg-white/[0.02] border-white/[0.04] opacity-70 hover:opacity-100'
                                 }`}
                         >
                             <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -214,8 +228,8 @@ export default function CrawlIssuesPage() {
                     <button
                         onClick={() => setActiveTab('all')}
                         className={`px-4 py-2.5 rounded-xl font-['DM_Mono'] text-xs tracking-wider transition-all ${activeTab === 'all'
-                                ? 'bg-white/10 text-white border border-white/20'
-                                : 'bg-transparent text-gray-500 border border-transparent hover:text-gray-300'
+                            ? 'bg-white/10 text-white border border-white/20'
+                            : 'bg-transparent text-gray-500 border border-transparent hover:text-gray-300'
                             }`}
                     >
                         ALL ISSUES
@@ -244,8 +258,14 @@ export default function CrawlIssuesPage() {
 
                     {/* List */}
                     <AnimatePresence mode="popLayout">
-                        {filteredIssues.map((issue) => {
-                            const categoryInfo = ISSUE_CATEGORIES.find(c => c.id.toLowerCase() === issue.severity + 's');
+                        {loading && (
+                            <div className="px-6 py-10 text-center text-gray-500">Loading audit data...</div>
+                        )}
+                        {!loading && !urlChecked && (
+                            <div className="px-6 py-10 text-center text-gray-500">Run an audit first to see crawl issues. <button onClick={() => router.push('/audits')} className="text-indigo-400 hover:underline">Go to Site Audit</button></div>
+                        )}
+                        {!loading && urlChecked && filteredIssues.map((issue) => {
+                            const categoryInfo = categoriesWithCounts.find(c => c.id.toLowerCase() === issue.severity + 's');
                             const Icon = categoryInfo?.icon || Info;
 
                             return (
@@ -280,8 +300,8 @@ export default function CrawlIssuesPage() {
 
                                     <div className="col-span-2 text-right">
                                         <span className={`font-['DM_Mono'] text-[13px] ${issue.trend.startsWith('+') ? 'text-red-400' :
-                                                issue.trend.startsWith('-') ? 'text-emerald-400' :
-                                                    'text-gray-500'
+                                            issue.trend.startsWith('-') ? 'text-emerald-400' :
+                                                'text-gray-500'
                                             }`}>
                                             {issue.trend.startsWith('-') ? '↓ ' : issue.trend.startsWith('+') ? '↑ ' : ''}
                                             {Math.abs(parseInt(issue.trend))}
@@ -299,7 +319,7 @@ export default function CrawlIssuesPage() {
                         })}
                     </AnimatePresence>
 
-                    {filteredIssues.length === 0 && (
+                    {!loading && urlChecked && filteredIssues.length === 0 && (
                         <div className="py-20 text-center flex flex-col items-center">
                             <CheckCircle size={32} className="text-gray-700 mb-4" />
                             <p className="font-['DM_Sans'] text-gray-400">No issues found matching your criteria.</p>

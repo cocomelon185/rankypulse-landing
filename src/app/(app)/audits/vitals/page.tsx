@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import {
@@ -16,7 +16,7 @@ import {
     Activity
 } from 'lucide-react';
 
-const CWV_METRICS = [
+const INITIAL_CWV_METRICS = [
     {
         id: 'lcp',
         name: 'Largest Contentful Paint (LCP)',
@@ -81,6 +81,48 @@ const StatusBars = ({ distribution }: { distribution: { good: number, needs_impr
 
 export default function CoreWebVitalsPage() {
     const router = useRouter();
+    const [metrics, setMetrics] = useState(INITIAL_CWV_METRICS);
+    const [loading, setLoading] = useState(true);
+    const [urlChecked, setUrlChecked] = useState<string | null>(null);
+
+    useEffect(() => {
+        async function fetchVitals() {
+            try {
+                const lastUrl = localStorage.getItem('rankypulse_last_url');
+                if (!lastUrl) {
+                    setLoading(false);
+                    return;
+                }
+                const hostname = new URL(lastUrl).hostname;
+                setUrlChecked(hostname);
+
+                const res = await fetch(`/api/crawl?domain=${hostname}`);
+                const json = await res.json();
+
+                if (json._raw) {
+                    const lcp = json._raw.lcpSeconds || 0;
+                    const cls = json._raw.cls || 0;
+
+                    setMetrics(prev => prev.map(m => {
+                        if (m.id === 'lcp') {
+                            const status = lcp <= 2.5 ? 'good' : lcp <= 4.0 ? 'needs_improvement' : 'poor';
+                            return { ...m, value: `${lcp}s`, status: status as any };
+                        }
+                        if (m.id === 'cls') {
+                            const status = cls <= 0.1 ? 'good' : cls <= 0.25 ? 'needs_improvement' : 'poor';
+                            return { ...m, value: cls.toString(), status: status as any };
+                        }
+                        return m;
+                    }));
+                }
+            } catch (err) {
+                console.error("Failed to fetch CWV data", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchVitals();
+    }, []);
 
     return (
         <main className="min-h-screen bg-[#0d0f14] pt-20 pb-20 px-6">
@@ -173,54 +215,65 @@ export default function CoreWebVitalsPage() {
 
                 {/* Individual Metrics */}
                 <h2 className="font-['Fraunces'] text-2xl font-bold text-white tracking-tight mb-4">Metric Breakdown</h2>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-                    {CWV_METRICS.map((metric, i) => {
-                        const statusConfig = {
-                            good: { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', icon: CheckCircle },
-                            needs_improvement: { color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', icon: AlertTriangle },
-                            poor: { color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: AlertCircle },
-                        }[metric.status];
 
-                        const StatusIcon = statusConfig.icon;
+                {loading && (
+                    <div className="py-10 text-center text-gray-500">Loading lab data...</div>
+                )}
+                {!loading && !urlChecked && (
+                    <div className="py-10 text-center text-gray-500">Run an audit first to analyze lab data. <button onClick={() => router.push('/audits')} className="text-amber-500 hover:underline">Go to Site Audit</button></div>
+                )}
 
-                        return (
-                            <motion.div
-                                key={metric.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 + i * 0.05 }}
-                                className="p-6 rounded-2xl bg-[#13161f] border border-white/[0.06] hover:bg-white/[0.02] transition-colors relative overflow-hidden group cursor-pointer"
-                            >
-                                <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                                    <metric.icon size={80} className="text-white" />
-                                </div>
+                {!loading && urlChecked && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+                        {metrics.map((metric, i) => {
+                            const statusMap = {
+                                good: { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', icon: CheckCircle },
+                                needs_improvement: { color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', icon: AlertTriangle },
+                                poor: { color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: AlertCircle },
+                            };
+                            const statusConfig = statusMap[metric.status as keyof typeof statusMap] || statusMap.needs_improvement;
 
-                                <div className="flex items-start justify-between relative z-10 mb-6">
-                                    <div>
-                                        <h3 className="font-['DM_Sans'] font-bold text-lg text-white mb-1 flex items-center gap-2">
-                                            <metric.icon size={18} className="text-gray-400" />
-                                            {metric.name}
-                                        </h3>
-                                        <p className="font-['DM_Sans'] text-sm text-gray-500">
-                                            {metric.description}
-                                        </p>
+                            const StatusIcon = statusConfig.icon;
+
+                            return (
+                                <motion.div
+                                    key={metric.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.2 + i * 0.05 }}
+                                    className="p-6 rounded-2xl bg-[#13161f] border border-white/[0.06] hover:bg-white/[0.02] transition-colors relative overflow-hidden group cursor-pointer"
+                                >
+                                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                                        <metric.icon size={80} className="text-white" />
                                     </div>
-                                    <div className={`flex flex-col items-end`}>
-                                        <span className={`font-['Fraunces'] text-3xl font-bold ${statusConfig.color}`}>
-                                            {metric.value}
-                                        </span>
-                                        <div className={`mt-1 flex items-center gap-1 text-[11px] font-bold tracking-wider px-2 py-0.5 rounded ${statusConfig.bg} ${statusConfig.color} border ${statusConfig.border} uppercase`}>
-                                            <StatusIcon size={10} />
-                                            {metric.status.replace('_', ' ')}
+
+                                    <div className="flex items-start justify-between relative z-10 mb-6">
+                                        <div>
+                                            <h3 className="font-['DM_Sans'] font-bold text-lg text-white mb-1 flex items-center gap-2">
+                                                <metric.icon size={18} className="text-gray-400" />
+                                                {metric.name}
+                                            </h3>
+                                            <p className="font-['DM_Sans'] text-sm text-gray-500">
+                                                {metric.description}
+                                            </p>
+                                        </div>
+                                        <div className={`flex flex-col items-end`}>
+                                            <span className={`font-['Fraunces'] text-3xl font-bold ${statusConfig.color}`}>
+                                                {metric.value}
+                                            </span>
+                                            <div className={`mt-1 flex items-center gap-1 text-[11px] font-bold tracking-wider px-2 py-0.5 rounded ${statusConfig.bg} ${statusConfig.color} border ${statusConfig.border} uppercase`}>
+                                                <StatusIcon size={10} />
+                                                {metric.status.replace('_', ' ')}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <StatusBars distribution={metric.distribution} />
-                            </motion.div>
-                        );
-                    })}
-                </div>
+                                    <StatusBars distribution={metric.distribution} />
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+                )}
 
             </div>
         </main>
