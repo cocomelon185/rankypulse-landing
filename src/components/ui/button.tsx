@@ -15,13 +15,13 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "bg-[#4318ff] text-white shadow-md hover:bg-[#3311db] hover:shadow-lg active:bg-[#2d1b9e] focus:ring-2 focus:ring-[#4318ff] focus:ring-offset-2",
+    "bg-[var(--brand-primary)] text-white shadow-[0_4px_14px_0_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.2)] hover:bg-[var(--brand-secondary)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.2)] active:translate-y-0 disabled:hover:translate-y-0 focus:ring-2 focus:ring-[var(--brand-primary)] focus:ring-offset-2",
   secondary:
-    "bg-gray-100 text-gray-800 hover:bg-gray-200 active:bg-gray-300 focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 dark:bg-navy-700 dark:text-white dark:hover:bg-navy-600",
+    "bg-gray-100 text-gray-800 hover:bg-gray-200 active:bg-gray-300 active:translate-y-0 focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 dark:bg-navy-700 dark:text-white dark:hover:bg-navy-600",
   ghost:
-    "bg-transparent text-gray-700 hover:bg-gray-100 active:bg-gray-200 focus:ring-2 focus:ring-gray-200 focus:ring-offset-2 dark:text-white dark:hover:bg-white/10",
+    "bg-transparent text-gray-700 hover:bg-gray-100 active:bg-gray-200 active:translate-y-0 focus:ring-2 focus:ring-gray-200 focus:ring-offset-2 dark:text-white dark:hover:bg-white/10",
   outline:
-    "border-2 border-gray-300 bg-transparent text-gray-700 hover:border-gray-400 hover:bg-gray-50 active:bg-gray-100 focus:ring-2 focus:ring-gray-300 focus:ring-offset-2",
+    "border-2 border-gray-300 bg-transparent text-gray-700 hover:border-gray-400 hover:bg-gray-50 hover:-translate-y-[1px] active:bg-gray-100 active:translate-y-0 focus:ring-2 focus:ring-gray-300 focus:ring-offset-2",
 };
 
 const sizeStyles = {
