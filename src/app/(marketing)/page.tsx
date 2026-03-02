@@ -12,7 +12,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 
 export default function HomePage() {
   return (
-    <div style={{ background: "#0d0f14", minHeight: "100vh" }}>
+    <div className="bg-background min-h-screen text-foreground">
       <AppNavbar />
       {/* pt-16 accounts for the fixed 64px navbar */}
       <div className="pt-16">

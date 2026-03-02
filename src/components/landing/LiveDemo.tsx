@@ -20,7 +20,7 @@ export function LiveDemo() {
   const router = useRouter();
 
   return (
-    <section className="overflow-hidden py-20" style={{ background: "#0a0c10" }}>
+    <section className="overflow-hidden py-20 bg-gray-50 dark:bg-[#0a0c10]">
       <div className="mx-auto max-w-6xl px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -33,7 +33,7 @@ export function LiveDemo() {
             Try it now
           </p>
           <h2
-            className="font-['Fraunces'] font-bold leading-tight tracking-tight text-white"
+            className="font-['Fraunces'] font-bold leading-tight tracking-tight text-foreground"
             style={{ fontSize: "clamp(26px, 4vw, 40px)" }}
           >
             See what an audit looks like{" "}
@@ -43,8 +43,8 @@ export function LiveDemo() {
 
         {/* Scrollable card strip */}
         <div className="relative">
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-[#0a0c10] to-transparent" />
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-[#0a0c10] to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-gray-50 dark:from-[#0a0c10] to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-gray-50 dark:from-[#0a0c10] to-transparent" />
 
           <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
             {DEMO_SITES.map((site, i) => {
@@ -57,8 +57,7 @@ export function LiveDemo() {
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1, duration: 0.5 }}
                   onClick={() => router.push(`/report/${site.domain}`)}
-                  className="group min-w-[240px] rounded-2xl border border-white/6 p-5 text-left transition-all duration-300 hover:-translate-y-1 hover:border-white/12"
-                  style={{ background: "#13161f" }}
+                  className="group min-w-[240px] rounded-2xl border border-black/5 dark:border-white/6 p-5 text-left transition-all duration-300 hover:-translate-y-1 hover:border-black/10 dark:hover:border-white/12 bg-white dark:bg-[#13161f]"
                 >
                   {/* Score badge */}
                   <div className="mb-4 flex items-center justify-between">
@@ -68,13 +67,13 @@ export function LiveDemo() {
                     >
                       {site.score}
                     </span>
-                    <span className="rounded-full border border-white/6 bg-white/4 px-2 py-1 font-['DM_Mono'] text-[10px] text-gray-500">
+                    <span className="rounded-full border border-black/10 dark:border-white/6 bg-black/5 dark:bg-white/4 px-2 py-1 font-['DM_Mono'] text-[10px] text-gray-500">
                       {site.issues} issues
                     </span>
                   </div>
 
                   {/* Domain */}
-                  <div className="mb-3 font-['DM_Mono'] text-sm text-gray-300 truncate">
+                  <div className="mb-3 font-['DM_Mono'] text-sm text-gray-700 dark:text-gray-300 truncate">
                     {site.domain}
                   </div>
 
@@ -99,7 +98,7 @@ export function LiveDemo() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.4, duration: 0.5 }}
-              className="flex min-w-[200px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 p-5 text-center"
+              className="flex min-w-[200px] flex-col items-center justify-center rounded-2xl border border-dashed border-black/10 dark:border-white/10 p-5 text-center"
             >
               <p className="mb-2 font-['DM_Sans'] text-sm text-gray-500">or enter yours</p>
               <button

@@ -39,18 +39,10 @@ export function AppNavbar() {
   return (
     <>
       <nav
-        className="fixed inset-x-0 top-0 z-[100] h-16 transition-all duration-300"
-        style={{
-          background: scrolled
-            ? "rgba(13,15,20,0.92)"
-            : "rgba(13,15,20,0.6)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          borderBottom: scrolled
-            ? "1px solid rgba(255,255,255,0.08)"
-            : "1px solid transparent",
-          boxShadow: scrolled ? "0 4px 40px rgba(0,0,0,0.4)" : "none",
-        }}
+        className={`fixed inset-x-0 top-0 z-[100] h-16 transition-all duration-300 backdrop-blur-[20px] ${scrolled
+            ? "bg-background/90 border-b border-border shadow-md dark:shadow-2xl"
+            : "bg-background/50 border-b border-transparent shadow-none"
+          }`}
       >
         <div className="mx-auto flex h-full max-w-[1400px] items-center justify-between gap-4 px-4 md:px-6 lg:px-8">
           {/* Logo */}
@@ -64,7 +56,7 @@ export function AppNavbar() {
               <Zap className="h-3.5 w-3.5 text-white" />
             </div>
             <span
-              className="font-display text-[17px] font-bold text-white tracking-tight group-hover:opacity-85 transition-opacity"
+              className="font-display text-[17px] font-bold text-foreground tracking-tight group-hover:opacity-85 transition-opacity"
             >
               RankyPulse
             </span>
@@ -96,13 +88,13 @@ export function AppNavbar() {
                   }}
                   onMouseEnter={(e) => {
                     if (!active) {
-                      e.currentTarget.style.color = "#fff";
-                      e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                      e.currentTarget.style.color = "var(--foreground)";
+                      e.currentTarget.style.background = "var(--bg-subtle)";
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!active) {
-                      e.currentTarget.style.color = "#94a3b8";
+                      e.currentTarget.style.color = "var(--text-muted)";
                       e.currentTarget.style.background = "transparent";
                     }
                   }}
@@ -126,7 +118,7 @@ export function AppNavbar() {
               <button
                 type="button"
                 onClick={() => signOut({ callbackUrl: "/" })}
-                className="flex items-center gap-2 rounded-lg px-4 py-2 text-[13px] font-medium text-gray-300 transition-all hover:text-white hover:bg-white/[0.06]"
+                className="flex items-center gap-2 rounded-lg px-4 py-2 text-[13px] font-medium text-muted-foreground transition-all hover:text-foreground hover:bg-black/[0.06] dark:hover:bg-white/[0.06]"
               >
                 <LogOut size={14} />
                 Sign out
@@ -134,7 +126,7 @@ export function AppNavbar() {
             ) : (
               <Link
                 href="/auth/signin"
-                className="rounded-lg px-4 py-2 text-[13px] font-medium text-gray-300 transition-all hover:text-white hover:bg-white/[0.06]"
+                className="rounded-lg px-4 py-2 text-[13px] font-medium text-muted-foreground transition-all hover:text-foreground hover:bg-black/[0.06] dark:hover:bg-white/[0.06]"
               >
                 Sign In
               </Link>
@@ -195,16 +187,11 @@ export function AppNavbar() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed right-0 top-0 z-[100] flex h-full w-72 flex-col md:hidden"
-              style={{
-                background: "#0d0f14",
-                borderLeft: "1px solid rgba(255,255,255,0.08)",
-              }}
+              className="fixed right-0 top-0 z-[100] flex h-full w-72 flex-col bg-background border-l border-border md:hidden"
             >
               {/* Drawer header */}
               <div
-                className="flex h-16 items-center justify-between px-5"
-                style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+                className="flex h-16 items-center justify-between px-5 border-b border-border"
               >
                 <div className="flex items-center gap-2">
                   <div
@@ -213,14 +200,14 @@ export function AppNavbar() {
                   >
                     <Zap className="h-3 w-3 text-white" />
                   </div>
-                  <span className="font-display text-base font-bold text-white">
+                  <span className="font-display text-base font-bold text-foreground">
                     RankyPulse
                   </span>
                 </div>
                 <button
                   type="button"
                   aria-label="Close menu"
-                  className="rounded-lg p-2 text-gray-400 hover:bg-white/[0.06]"
+                  className="rounded-lg p-2 text-muted-foreground hover:bg-black/[0.06] dark:hover:bg-white/[0.06]"
                   onClick={() => setMobileOpen(false)}
                 >
                   <X className="h-4 w-4" />
@@ -267,8 +254,7 @@ export function AppNavbar() {
                         setMobileOpen(false);
                         signOut({ callbackUrl: "/" });
                       }}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-center text-[14px] font-medium text-gray-300 transition hover:bg-white/[0.06]"
-                      style={{ borderColor: "rgba(255,255,255,0.12)" }}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-center text-[14px] font-medium text-foreground transition hover:bg-black/[0.06] dark:hover:bg-white/[0.06]"
                     >
                       <LogOut size={16} />
                       Sign out
@@ -277,8 +263,7 @@ export function AppNavbar() {
                     <Link
                       href="/auth/signin"
                       onClick={() => setMobileOpen(false)}
-                      className="block w-full rounded-xl border px-4 py-3 text-center text-[14px] font-medium text-gray-300 transition hover:bg-white/[0.06]"
-                      style={{ borderColor: "rgba(255,255,255,0.12)" }}
+                      className="block w-full rounded-xl border border-border px-4 py-3 text-center text-[14px] font-medium text-foreground transition hover:bg-black/[0.06] dark:hover:bg-white/[0.06]"
                     >
                       Sign In
                     </Link>

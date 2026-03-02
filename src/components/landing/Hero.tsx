@@ -37,8 +37,7 @@ function FloatingScorePreview() {
     >
       <div className="absolute -inset-8 rounded-full bg-indigo-500/8 blur-3xl" />
       <div
-        className="relative overflow-hidden rounded-2xl border border-white/8 shadow-[0_32px_80px_rgba(0,0,0,0.6)]"
-        style={{ background: "#13161f" }}
+        className="relative overflow-hidden rounded-2xl border border-border shadow-2xl bg-card"
       >
         {/* Browser chrome */}
         <div className="flex items-center justify-between border-b border-white/5 px-5 py-3">
@@ -58,8 +57,7 @@ function FloatingScorePreview() {
         <div className="grid grid-cols-3 gap-5 p-6">
           {/* Score */}
           <div
-            className="col-span-1 flex flex-col items-center justify-center rounded-xl border border-white/5 p-4"
-            style={{ background: "#0d0f14" }}
+            className="col-span-1 flex flex-col items-center justify-center rounded-xl border border-border p-4 bg-background"
           >
             <span className="mb-2 font-mono text-xs tracking-widest text-gray-600">SEO SCORE</span>
             <span className="font-['Fraunces'] text-5xl font-bold text-emerald-400">75</span>
@@ -74,17 +72,15 @@ function FloatingScorePreview() {
             {DEMO_ISSUES.map((issue) => (
               <div
                 key={issue.text}
-                className="flex items-center gap-3 rounded-lg border border-white/5 p-2.5"
-                style={{ background: "#0d0f14" }}
+                className="flex items-center gap-3 rounded-lg border border-border p-2.5 bg-background"
               >
                 <span
-                  className={`flex-shrink-0 rounded-full px-2 py-0.5 font-mono text-[9px] tracking-wider ${
-                    issue.color === "yellow"
+                  className={`flex-shrink-0 rounded-full px-2 py-0.5 font-mono text-[9px] tracking-wider ${issue.color === "yellow"
                       ? "border border-yellow-500/20 bg-yellow-500/10 text-yellow-400"
                       : issue.color === "blue"
                         ? "border border-blue-500/20 bg-blue-500/10 text-blue-400"
                         : "border border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                  }`}
+                    }`}
                 >
                   {issue.label}
                 </span>
@@ -195,7 +191,7 @@ export function Hero() {
           className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-white/8 bg-white/4 px-4 py-2"
         >
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-          <span className="font-['DM_Mono'] text-xs uppercase tracking-[2px] text-gray-400">
+          <span className="font-['DM_Mono'] text-xs uppercase tracking-[2px] text-gray-600 dark:text-gray-400">
             Free Audit · No Signup · 30 Seconds
           </span>
         </motion.div>
@@ -205,14 +201,14 @@ export function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-6 font-['Fraunces'] font-bold leading-[1.06] tracking-[-0.03em] text-white"
+          className="mb-6 font-['Fraunces'] font-bold leading-[1.06] tracking-[-0.03em] text-foreground"
           style={{ fontSize: "clamp(42px, 7vw, 76px)" }}
         >
           Your website is{" "}
-          <span className="italic text-indigo-400">invisible</span>
+          <span className="italic text-indigo-600 dark:text-indigo-400">invisible</span>
           {" "}to Google.
           <br />
-          <span className="text-gray-300">We&apos;ll show you why.</span>
+          <span className="text-gray-600 dark:text-gray-300">We&apos;ll show you why.</span>
         </motion.h1>
 
         {/* Subheadline */}
@@ -220,11 +216,11 @@ export function Hero() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25, duration: 0.5 }}
-          className="mx-auto mb-10 max-w-2xl font-['DM_Sans'] text-xl leading-relaxed text-gray-400"
+          className="mx-auto mb-10 max-w-2xl font-['DM_Sans'] text-xl leading-relaxed text-gray-600 dark:text-gray-400"
         >
           Enter any domain. Get a complete SEO audit with step-by-step fix guides
           and real traffic estimates — in under 30 seconds. No jargon. No overwhelm.{" "}
-          <span className="text-white">Just fixes that work.</span>
+          <span className="text-foreground">Just fixes that work.</span>
         </motion.p>
 
         {/* Input */}
@@ -249,7 +245,7 @@ export function Hero() {
                 value={domain}
                 onChange={(e) => { setDomain(e.target.value); setError(""); }}
                 placeholder="yoursite.com"
-                className="w-full rounded-xl border border-white/10 bg-white/5 py-4 pl-10 pr-4 font-['DM_Sans'] text-sm text-white placeholder-gray-600 transition-all duration-200 focus:border-indigo-500/60 focus:bg-indigo-500/4 focus:outline-none"
+                className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 py-4 pl-10 pr-4 font-['DM_Sans'] text-sm text-foreground placeholder-gray-500 dark:placeholder-gray-600 transition-all duration-200 focus:border-indigo-500/60 focus:bg-indigo-500/4 focus:outline-none"
               />
             </div>
             <button
@@ -313,7 +309,7 @@ export function Hero() {
               key={demo}
               type="button"
               onClick={() => handleQuickLink(demo)}
-              className="rounded-lg border border-white/8 bg-white/4 px-3 py-1.5 font-['DM_Mono'] text-xs text-gray-400 transition-all duration-150 hover:border-white/15 hover:bg-white/8 hover:text-white"
+              className="rounded-lg border border-black/10 dark:border-white/8 bg-black/5 dark:bg-white/4 px-3 py-1.5 font-['DM_Mono'] text-xs text-gray-500 dark:text-gray-400 transition-all duration-150 hover:border-black/20 hover:bg-black/10 hover:text-foreground dark:hover:border-white/15 dark:hover:bg-white/8"
             >
               {demo}
             </button>
@@ -331,7 +327,7 @@ export function Hero() {
           {STATS.map((stat, i) => (
             <div
               key={stat.label}
-              className="rounded-xl border border-white/5 bg-white/2 p-4 text-center transition-all duration-200 hover:border-white/8 hover:bg-white/4"
+              className="rounded-xl border border-border dark:border-white/5 bg-card dark:bg-white/2 p-4 text-center transition-all duration-200 hover:border-black/10 dark:hover:border-white/8 hover:bg-black/5 dark:hover:bg-white/4"
             >
               <div className="mb-1 font-['Fraunces'] text-2xl font-bold" style={{ color: stat.color }}>
                 {statsInView ? (
