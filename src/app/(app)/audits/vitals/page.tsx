@@ -16,7 +16,17 @@ import {
     Activity
 } from 'lucide-react';
 
-const INITIAL_CWV_METRICS = [
+interface CWVMetric {
+    id: string;
+    name: string;
+    description: string;
+    icon: React.ElementType;
+    value: string;
+    status: 'good' | 'needs_improvement' | 'poor';
+    distribution: { good: number, needs_improvement: number, poor: number };
+}
+
+const INITIAL_CWV_METRICS: CWVMetric[] = [
     {
         id: 'lcp',
         name: 'Largest Contentful Paint (LCP)',
@@ -105,12 +115,12 @@ export default function CoreWebVitalsPage() {
 
                     setMetrics(prev => prev.map(m => {
                         if (m.id === 'lcp') {
-                            const status = lcp <= 2.5 ? 'good' : lcp <= 4.0 ? 'needs_improvement' : 'poor';
-                            return { ...m, value: `${lcp}s`, status: status as any };
+                            const status: 'good' | 'needs_improvement' | 'poor' = lcp <= 2.5 ? 'good' : lcp <= 4.0 ? 'needs_improvement' : 'poor';
+                            return { ...m, value: `${lcp}s`, status };
                         }
                         if (m.id === 'cls') {
-                            const status = cls <= 0.1 ? 'good' : cls <= 0.25 ? 'needs_improvement' : 'poor';
-                            return { ...m, value: cls.toString(), status: status as any };
+                            const status: 'good' | 'needs_improvement' | 'poor' = cls <= 0.1 ? 'good' : cls <= 0.25 ? 'needs_improvement' : 'poor';
+                            return { ...m, value: cls.toString(), status };
                         }
                         return m;
                     }));

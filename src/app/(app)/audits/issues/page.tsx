@@ -10,22 +10,13 @@ import {
     AlertCircle,
     Info,
     Clock,
-    ArrowRight,
     Filter,
     ArrowUpRight,
     Play,
     Download
 } from 'lucide-react';
 
-// MOCK DATA
-const CRAWL_STATS = {
-    healthScore: 84,
-    crawledPages: 12450,
-    healthyPages: 11200,
-    brokenPages: 150,
-    redirects: 1100,
-    blocked: 0,
-};
+// MOCK DATA REMOVED
 
 const ISSUE_CATEGORIES = [
     { id: 'errors', label: 'Errors', count: 0, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: AlertCircle },
@@ -54,13 +45,23 @@ const apiSeverityToIssueSeverity = (sev: string) => {
     }
 };
 
+interface AuditIssue {
+    id: string;
+    severity: 'error' | 'warning' | 'notice';
+    title: string;
+    description: string;
+    urlsAffected: number;
+    trend: string;
+    discovered: Date;
+}
+
 export default function CrawlIssuesPage() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<'all' | 'errors' | 'warnings' | 'notices'>('all');
     const [search, setSearch] = useState('');
 
     const [loading, setLoading] = useState(true);
-    const [issues, setIssues] = useState<any[]>([]);
+    const [issues, setIssues] = useState<AuditIssue[]>([]);
     const [stats, setStats] = useState({ healthScore: 0, crawledPages: 1, healthyPages: 1, brokenPages: 0, redirects: 0, blocked: 0 });
     const [urlChecked, setUrlChecked] = useState<string | null>(null);
 
@@ -81,11 +82,11 @@ export default function CrawlIssuesPage() {
                 const json = await res.json();
                 if (json.ok && json.data) {
                     const apiIssues = json.data.issues || [];
-                    const mappedIssues = apiIssues.map((apiIssue: any, index: number) => ({
+                    const mappedIssues: AuditIssue[] = apiIssues.map((apiIssue: { id?: string; severity: string; title?: string; suggestedFix?: string; msg?: string }, index: number) => ({
                         id: apiIssue.id || index.toString(),
                         severity: apiSeverityToIssueSeverity(apiIssue.severity),
-                        title: apiIssue.title || apiIssue.id,
-                        description: apiIssue.suggestedFix || apiIssue.msg || apiIssue.title,
+                        title: apiIssue.title || apiIssue.id || 'Unknown Issue',
+                        description: apiIssue.suggestedFix || apiIssue.msg || apiIssue.title || '',
                         urlsAffected: 1,
                         trend: '0',
                         discovered: new Date(),
@@ -186,7 +187,7 @@ export default function CrawlIssuesPage() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 + (i + 1) * 0.05 }}
-                            onClick={() => setActiveTab(cat.id as any)}
+                            onClick={() => setActiveTab(cat.id as 'errors' | 'warnings' | 'notices')}
                             className={`p-5 rounded-2xl border cursor-pointer transition-all relative overflow-hidden ${activeTab === cat.id || activeTab === 'all'
                                 ? 'bg-[#13161f] border-white/[0.12] shadow-sm'
                                 : 'bg-white/[0.02] border-white/[0.04] opacity-70 hover:opacity-100'
