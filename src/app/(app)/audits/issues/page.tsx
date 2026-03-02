@@ -65,41 +65,43 @@ export default function CrawlIssuesPage() {
     const [stats, setStats] = useState({ healthScore: 0, crawledPages: 1, healthyPages: 1, brokenPages: 0, redirects: 0, blocked: 0 });
     const [urlChecked, setUrlChecked] = useState<string | null>(null);
 
-    useEffect(() => {
-        async function fetchAudit() {
-            try {
-                const lastUrl = localStorage.getItem('rankypulse_last_url');
-                if (!lastUrl) {
-                    setLoading(false);
-                    return;
-                }
-                setUrlChecked(lastUrl);
-                const res = await fetch('/api/audit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: lastUrl }),
-                });
-                const json = await res.json();
-                if (json.ok && json.data) {
-                    const apiIssues = json.data.issues || [];
-                    const mappedIssues: AuditIssue[] = apiIssues.map((apiIssue: { id?: string; severity: string; title?: string; suggestedFix?: string; msg?: string }, index: number) => ({
-                        id: apiIssue.id || index.toString(),
-                        severity: apiSeverityToIssueSeverity(apiIssue.severity),
-                        title: apiIssue.title || apiIssue.id || 'Unknown Issue',
-                        description: apiIssue.suggestedFix || apiIssue.msg || apiIssue.title || '',
-                        urlsAffected: 1,
-                        trend: '0',
-                        discovered: new Date(),
-                    }));
-                    setIssues(mappedIssues);
-                    setStats(prev => ({ ...prev, healthScore: Math.round(json.data.scores?.seo || 0) }));
-                }
-            } catch (err) {
-                console.error("Failed to fetch audit for crawl issues", err);
-            } finally {
+    const fetchAudit = async (forceUrl?: string) => {
+        setLoading(true);
+        try {
+            const lastUrl = forceUrl || localStorage.getItem('rankypulse_last_url');
+            if (!lastUrl) {
                 setLoading(false);
+                return;
             }
+            setUrlChecked(lastUrl);
+            const res = await fetch('/api/audit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: lastUrl }),
+            });
+            const json = await res.json();
+            if (json.ok && json.data) {
+                const apiIssues = json.data.issues || [];
+                const mappedIssues: AuditIssue[] = apiIssues.map((apiIssue: { id?: string; severity: string; title?: string; suggestedFix?: string; msg?: string }, index: number) => ({
+                    id: apiIssue.id || index.toString(),
+                    severity: apiSeverityToIssueSeverity(apiIssue.severity),
+                    title: apiIssue.title || apiIssue.id || 'Unknown Issue',
+                    description: apiIssue.suggestedFix || apiIssue.msg || apiIssue.title || '',
+                    urlsAffected: 1,
+                    trend: '0',
+                    discovered: new Date(),
+                }));
+                setIssues(mappedIssues);
+                setStats(prev => ({ ...prev, healthScore: Math.round(json.data.scores?.seo || 0) }));
+            }
+        } catch (err) {
+            console.error("Failed to fetch audit for crawl issues", err);
+        } finally {
+            setLoading(false);
         }
+    };
+
+    useEffect(() => {
         fetchAudit();
     }, []);
 
@@ -156,9 +158,18 @@ export default function CrawlIssuesPage() {
                             <Download size={14} />
                             Export CSV
                         </button>
-                        <button className="px-4 py-2.5 bg-red-500 text-white rounded-xl font-['DM_Sans'] font-semibold text-sm hover:bg-red-400 transition-all flex items-center gap-2 shadow-lg shadow-red-500/20">
+                        <button
+                            onClick={() => {
+                                if (urlChecked) {
+                                    fetchAudit(urlChecked);
+                                } else {
+                                    router.push('/audits');
+                                }
+                            }}
+                            className="px-4 py-2.5 bg-red-500 text-white rounded-xl font-['DM_Sans'] font-semibold text-sm hover:bg-red-400 transition-all flex items-center gap-2 shadow-lg shadow-red-500/20"
+                        >
                             <Play size={14} fill="currentColor" />
-                            Re-Crawl Site
+                            {urlChecked ? "Re-Crawl Site" : "Run Audit"}
                         </button>
                     </div>
                 </motion.div>

@@ -95,42 +95,44 @@ export default function CoreWebVitalsPage() {
     const [loading, setLoading] = useState(true);
     const [urlChecked, setUrlChecked] = useState<string | null>(null);
 
-    useEffect(() => {
-        async function fetchVitals() {
-            try {
-                const lastUrl = localStorage.getItem('rankypulse_last_url');
-                if (!lastUrl) {
-                    setLoading(false);
-                    return;
-                }
-                const hostname = new URL(lastUrl).hostname;
-                setUrlChecked(hostname);
-
-                const res = await fetch(`/api/crawl?domain=${hostname}`);
-                const json = await res.json();
-
-                if (json._raw) {
-                    const lcp = json._raw.lcpSeconds || 0;
-                    const cls = json._raw.cls || 0;
-
-                    setMetrics(prev => prev.map(m => {
-                        if (m.id === 'lcp') {
-                            const status: 'good' | 'needs_improvement' | 'poor' = lcp <= 2.5 ? 'good' : lcp <= 4.0 ? 'needs_improvement' : 'poor';
-                            return { ...m, value: `${lcp}s`, status };
-                        }
-                        if (m.id === 'cls') {
-                            const status: 'good' | 'needs_improvement' | 'poor' = cls <= 0.1 ? 'good' : cls <= 0.25 ? 'needs_improvement' : 'poor';
-                            return { ...m, value: cls.toString(), status };
-                        }
-                        return m;
-                    }));
-                }
-            } catch (err) {
-                console.error("Failed to fetch CWV data", err);
-            } finally {
+    const fetchVitals = async (forceUrl?: string) => {
+        setLoading(true);
+        try {
+            const lastUrl = forceUrl || localStorage.getItem('rankypulse_last_url');
+            if (!lastUrl) {
                 setLoading(false);
+                return;
             }
+            const hostname = new URL(lastUrl).hostname;
+            setUrlChecked(hostname);
+
+            const res = await fetch(`/api/crawl?domain=${hostname}`);
+            const json = await res.json();
+
+            if (json._raw) {
+                const lcp = json._raw.lcpSeconds || 0;
+                const cls = json._raw.cls || 0;
+
+                setMetrics(prev => prev.map(m => {
+                    if (m.id === 'lcp') {
+                        const status: 'good' | 'needs_improvement' | 'poor' = lcp <= 2.5 ? 'good' : lcp <= 4.0 ? 'needs_improvement' : 'poor';
+                        return { ...m, value: `${lcp}s`, status };
+                    }
+                    if (m.id === 'cls') {
+                        const status: 'good' | 'needs_improvement' | 'poor' = cls <= 0.1 ? 'good' : cls <= 0.25 ? 'needs_improvement' : 'poor';
+                        return { ...m, value: cls.toString(), status };
+                    }
+                    return m;
+                }));
+            }
+        } catch (err) {
+            console.error("Failed to fetch CWV data", err);
+        } finally {
+            setLoading(false);
         }
+    };
+
+    useEffect(() => {
         fetchVitals();
     }, []);
 
@@ -176,9 +178,18 @@ export default function CoreWebVitalsPage() {
                             <Download size={14} />
                             Export Report
                         </button>
-                        <button className="px-4 py-2.5 bg-amber-500 text-black rounded-xl font-['DM_Sans'] font-semibold text-sm hover:bg-amber-400 transition-all flex items-center gap-2 shadow-lg shadow-amber-500/20">
+                        <button
+                            onClick={() => {
+                                if (urlChecked) {
+                                    fetchVitals(urlChecked);
+                                } else {
+                                    router.push('/audits');
+                                }
+                            }}
+                            className="px-4 py-2.5 bg-amber-500 text-black rounded-xl font-['DM_Sans'] font-semibold text-sm hover:bg-amber-400 transition-all flex items-center gap-2 shadow-lg shadow-amber-500/20"
+                        >
                             <Play size={14} fill="currentColor" />
-                            Analyze Lab Data
+                            {urlChecked ? "Analyze Lab Data" : "Run Audit"}
                         </button>
                     </div>
                 </motion.div>
