@@ -7,6 +7,7 @@ import { signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, Menu, X, LogOut } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 const NAV_LINKS = [
   { label: "Dashboard", href: "/dashboard" },
@@ -120,6 +121,7 @@ export function AppNavbar() {
 
           {/* Desktop auth buttons */}
           <div className="hidden items-center gap-3 md:flex">
+            <ThemeToggle />
             {status === "authenticated" ? (
               <button
                 type="button"
@@ -255,6 +257,9 @@ export function AppNavbar() {
                 />
 
                 <div className="space-y-3">
+                  <div className="flex justify-center mb-4">
+                    <ThemeToggle />
+                  </div>
                   {status === "authenticated" ? (
                     <button
                       type="button"

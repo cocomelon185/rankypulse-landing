@@ -3,37 +3,40 @@
 @import "tailwindcss";
 
 :root {
+  /* Ahrefs-inspired Light Theme (Default) */
   --background: #ffffff;
-  --foreground: #1a202c;
-  --brand-primary: #4318ff;
-  --brand-secondary: #7551ff;
-  --brand-accent: #06b6d4;
+  --foreground: #1c2128;
+  --brand-primary: #1255e8; /* Ahrefs vibrant blue */
+  --brand-secondary: #0c3ca6;
+  --brand-accent: #ff851b; /* Vibrant orange secondary */
   --brand-warning: #f59e0b;
   --gradient-hero: linear-gradient(135deg, #f6f8fb 0%, #e9ecf5 50%, #f0f4ff 100%);
-  --gradient-cta: linear-gradient(135deg, #4318ff 0%, #7551ff 50%, #a78bfa 100%);
+  --gradient-cta: linear-gradient(135deg, #1255e8 0%, #0c3ca6 50%, #2f6bf0 100%);
   --gradient-card: linear-gradient(135deg, #ffffff 0%, #fafbff 100%);
-  --bg-subtle: #f8fafc;
-  --bg-dotted: radial-gradient(circle at 1px 1px, rgba(67, 24, 255, 0.06) 1px, transparent 0);
+  --bg-subtle: #f8f9fa;
+  --bg-dotted: radial-gradient(circle at 1px 1px, rgba(18, 85, 232, 0.05) 1px, transparent 0);
   --bg-dotted-size: 24px;
-  --card-shadow: 14px 17px 40px 4px rgba(112, 144, 176, 0.08);
-  --card-shadow-hover: 14px 17px 40px 4px rgba(112, 144, 176, 0.15);
+  --card-shadow: 0 4px 12px rgba(0,0,0,0.03), 0 1px 3px rgba(0,0,0,0.02);
+  --card-shadow-hover: 0 8px 24px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
   --spacing-section: 4rem;
   --spacing-section-md: 6rem;
-  --radius-card: 1.25rem;
-  --radius-button: 0.75rem;
+  --radius-card: 1rem;
+  --radius-button: 0.5rem;
+  --border: #e1e4e8;
+  --text-muted: #5e6b7c;
 
-  /* Premium Dashboard Tokens */
-  --bg-primary: #0c0e14;
-  --bg-secondary: #12151e;
-  --bg-card: #171b26;
-  --bg-card-hover: #1c2130;
-  --bg-sidebar: #0f1119;
-  --bg-topbar: #0c0e14;
-  --border: #1e2336;
-  --border-light: #252a3e;
-  --text-primary: #e8eaf0;
-  --text-secondary: #8b91a8;
-  --text-muted: #545a72;
+
+  /* Internal tokens mapped from existing dashboard logic */
+  --bg-primary: var(--background);
+  --bg-secondary: var(--bg-subtle);
+  --bg-card: #ffffff;
+  --bg-card-hover: #fafafa;
+  --bg-sidebar: #ffffff;
+  --bg-topbar: #ffffff;
+  --border-light: #eaedf1;
+  --text-primary: var(--foreground);
+  --text-secondary: var(--text-muted);
+  
   --accent-orange: #f97316;
   --accent-orange-glow: rgba(249, 115, 22, 0.15);
   --accent-green: #22c55e;
@@ -48,11 +51,40 @@
   --accent-red-dim: rgba(239, 68, 68, 0.12);
   --accent-yellow: #eab308;
   --accent-yellow-dim: rgba(234, 179, 8, 0.12);
+  
   --sidebar-width: 250px;
   --topbar-height: 56px;
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+.dark {
+  --background: #0d0f14;
+  --foreground: #f1f5f9;
+  --brand-primary: #6366f1;
+  --brand-secondary: #818cf8;
+  --brand-accent: #f97316;
+  --brand-warning: #f59e0b;
+  --gradient-hero: linear-gradient(135deg, #0d0f14 0%, #13161f 50%, #1a1e2e 100%);
+  --gradient-cta: linear-gradient(135deg, #6366f1 0%, #818cf8 50%, #a78bfa 100%);
+  --gradient-card: linear-gradient(135deg, #13161f 0%, #1a1e2e 100%);
+  --bg-subtle: #0a0c10;
+  --bg-dotted: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
+  --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --border: #1e2336;
+  --text-muted: #94a3b8;
+
+  --bg-primary: #0d0f14;
+  --bg-secondary: #0a0c10;
+  --bg-card: #13161f;
+  --bg-card-hover: #1a1e2e;
+  --bg-sidebar: #0f1119;
+  --bg-topbar: #0d0f14;
+  --border-light: #252a3e;
+  --text-primary: #e8eaf0;
+  --text-secondary: #8b91a8;
 }
 
 @theme inline {
@@ -114,12 +146,11 @@ body {
 }
 
 .card-surface {
-  background: var(--gradient-card);
-  border: 1px solid rgba(112, 144, 176, 0.08);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: var(--radius-card);
   box-shadow: var(--card-shadow);
-  /* Only box-shadow — no transform to prevent "breathing" on scroll */
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
 }
 
 .card-surface:hover {

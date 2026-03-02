@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { Fraunces, DM_Sans, DM_Mono, Inter_Tight } from "next/font/google";
 import { SessionProvider } from "@/components/providers/SessionProvider";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import "./globals.css";
 import { AnalyticsClient } from "@/components/AnalyticsClient";
 
@@ -146,11 +147,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         ></script>
         <SessionProvider>
-          {children}
-          <Toaster position="bottom-center" richColors closeButton />
-          <Suspense fallback={null}>
-            <AnalyticsClient />
-          </Suspense>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+            {children}
+            <Toaster position="bottom-center" richColors closeButton />
+            <Suspense fallback={null}>
+              <AnalyticsClient />
+            </Suspense>
+          </ThemeProvider>
         </SessionProvider>
       </body>
     </html>

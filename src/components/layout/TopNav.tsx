@@ -7,6 +7,7 @@ import { Search, Bell, Settings, User as UserIcon, ChevronDown, LogOut, Crown, S
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export function TopNav({ onMenuClick }: { onMenuClick?: () => void } = {}) {
     const { data: session } = useSession();
@@ -73,7 +74,8 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void } = {}) {
 
             {/* Right section: Action Icons + User */}
             <div className="flex items-center gap-2 sm:gap-4">
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
+                    <ThemeToggle />
                     <button className="p-2 text-[#545a72] hover:text-[#e8eaf0] hover:bg-[#171b26] rounded-lg transition-all relative group">
                         <Bell size={18} />
                         <span className="absolute top-2 right-2.5 w-1.5 h-1.5 bg-[#f97316] rounded-full border border-[#0c0e14] group-hover:scale-125 transition-transform"></span>
