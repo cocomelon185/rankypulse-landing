@@ -2,27 +2,18 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Suspense } from "react";
 import { Toaster } from "sonner";
-import { Fraunces, DM_Sans, DM_Mono, Inter_Tight } from "next/font/google";
+import { Inter, DM_Mono } from "next/font/google";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import "./globals.css";
 import { AnalyticsClient } from "@/components/AnalyticsClient";
 
-// Self-hosted, preloaded fonts — eliminates external CDN request and layout shift
-const fraunces = Fraunces({
+// Inter — industry standard for professional SaaS dashboards (SEMrush, Linear, Vercel, Ahrefs)
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
-  variable: "--font-fraunces",
-  preload: true,
-});
-
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-  variable: "--font-dm-sans",
+  variable: "--font-inter",
   preload: true,
 });
 
@@ -32,14 +23,6 @@ const dmMono = DM_Mono({
   display: "swap",
   variable: "--font-dm-mono",
   preload: false, // secondary font — don't block LCP
-});
-
-const interTight = Inter_Tight({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  display: "swap",
-  variable: "--font-inter-tight",
-  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -81,7 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${fraunces.variable} ${dmSans.variable} ${dmMono.variable} ${interTight.variable}`}
+      className={`${inter.variable} ${dmMono.variable}`}
     >
       <head>
         {GA_ID ? (

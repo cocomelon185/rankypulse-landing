@@ -29,34 +29,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Show nothing while loading / redirecting
   if (!isMounted || status === "loading" || status === "unauthenticated") {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0d0f14]">
+      <div className="flex items-center justify-center min-h-screen" style={{ background: "#0E1117" }}>
         <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 rounded-full border-4 border-indigo-500/30 border-t-indigo-500 animate-spin" />
-          <span className="text-xs text-gray-500 tracking-widest uppercase">Loading...</span>
+          <div
+            className="w-10 h-10 rounded-full border-4 animate-spin"
+            style={{ borderColor: "rgba(255,100,45,0.25)", borderTopColor: "#FF642D" }}
+          />
+          <span className="text-xs tracking-widest uppercase" style={{ color: "#4A5568" }}>
+            Loading...
+          </span>
         </div>
       </div>
     );
   }
 
-  const isAdmin = session?.user?.role === "admin";
-
   return (
-    <div className="flex flex-col min-h-screen bg-[#0c0e14] overflow-hidden">
+    <div className="flex flex-col min-h-screen overflow-hidden" style={{ background: "#0E1117" }}>
       {/* Global Top Navbar */}
       <TopNav onMenuClick={() => setMobileMenuOpen(true)} />
 
-      <div className="flex flex-1 overflow-hidden h-[calc(100vh-56px)]">
-        {/* Sidebar */}
+      <div className="flex flex-1 overflow-hidden" style={{ height: "calc(100vh - 64px)" }}>
+        {/* Desktop Sidebar */}
         <Sidebar hFull />
         <MobileSidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto custom-scrollbar">
-          <main className="flex-1 flex flex-col pt-0">
-            <div className="flex-1 max-w-[1600px] w-full mx-auto p-4 md:p-6 lg:p-10 animate-in fade-in duration-700">
+          <main className="flex-1 flex flex-col">
+            <div className="flex-1 w-full max-w-[1600px] mx-auto p-5 md:p-7">
               {children}
             </div>
-            {/* Global Footer */}
             <Footer />
           </main>
         </div>
