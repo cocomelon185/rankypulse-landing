@@ -67,7 +67,6 @@ const SIDEBAR_STRUCTURE: SidebarSection[] = [
         category: "Site Audit",
         items: [
             { label: "Full Site Audit", href: "/audits/full", icon: Star, pro: true },
-            { label: "Site Audit", href: "/audits", icon: BarChart3 },
             { label: "Crawl Issues", href: "/audits/issues", icon: AlertTriangle },
             { label: "Core Web Vitals", href: "/audits/vitals", icon: ZapIcon },
             { label: "Internal Linking", href: "/audits/links", icon: LinkIcon },
