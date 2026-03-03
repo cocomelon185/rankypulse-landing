@@ -28,6 +28,7 @@ const PUBLIC_PATHS = [
   "/privacy",
   "/blog",
   "/audit",
+  "/dashboard-preview",
 ];
 
 const AUTH_PAGES = ["/auth/signin", "/auth/signup"];
