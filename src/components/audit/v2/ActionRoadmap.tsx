@@ -29,6 +29,7 @@ interface StepProps {
 }
 
 function RoadmapStep({ issue, order, isLocked, status, isLast, onOpenFix, onSkip }: StepProps) {
+  const router = useRouter();
   const icons = {
     done: <Check className="h-4 w-4" />,
     next: <Play className="h-4 w-4" />,
@@ -153,6 +154,7 @@ function RoadmapStep({ issue, order, isLocked, status, isLast, onOpenFix, onSkip
             </div>
             <button
               type="button"
+              onClick={() => router.push("/pricing")}
               className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent-primary)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--accent-primary)]/90 hover:-translate-y-px active:translate-y-0"
             >
               <Zap className="h-3.5 w-3.5" /> Unlock with Pro
@@ -195,15 +197,15 @@ function UpgradePaywallBanner({
           <div className="mb-1 flex items-center gap-2">
             <span className="text-base">🔒</span>
             <p className="font-display text-[15px] font-bold text-white">
-              {lockedIssues.length} more{" "}
-              {lockedIssues.length === 1 ? "fix" : "fixes"} available with Pro
+              {lockedIssues.length}{" "}
+              {lockedIssues.length === 1 ? "fix" : "fixes"} locked — unlock{" "}
+              <span style={{ color: "#6ee7b7" }}>+{extraMin}–{extraMax} visits/mo</span>
             </p>
           </div>
           <p className="mb-3 text-[12px] text-[var(--text-secondary)]">
-            Fix {lockedIssues.length === 1 ? "it" : "them"} to unlock an additional{" "}
-            <span className="font-semibold" style={{ color: "#6ee7b7" }}>
-              +{extraMin}–{extraMax} visits/mo
-            </span>
+            Pro members resolve{" "}
+            {lockedIssues.length === 1 ? "this" : "these"} in under 20 min on average.{" "}
+            <span className="font-semibold text-white">7-day free trial</span> — no card required.
           </p>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
             {[
@@ -232,10 +234,10 @@ function UpgradePaywallBanner({
               ((e.currentTarget as HTMLElement).style.background = "#6366f1")
             }
           >
-            Upgrade to Pro →
+            Start Free Trial →
           </button>
           <span className="text-[10px] text-[var(--text-muted)]">
-            From $29/mo · Cancel anytime
+            From $9/mo · Cancel anytime
           </span>
         </div>
       </div>
@@ -246,6 +248,8 @@ function UpgradePaywallBanner({
 export function ActionRoadmap({ onScrollToIssue }: { onScrollToIssue: (id: string) => void }) {
   const data = useAuditStore((s) => s.data);
   const completedFixIds = useAuditStore((s) => s.completedFixIds);
+  const skippedIds = useAuditStore((s) => s.skippedIds);
+  const skipIssue = useAuditStore((s) => s.skipIssue);
   const setExpandedIssue = useAuditStore((s) => s.setExpandedIssue);
   const { handleFixAction } = useFixGate();
   const [showQuotaModal, setShowQuotaModal] = useState(false);
@@ -310,53 +314,98 @@ export function ActionRoadmap({ onScrollToIssue }: { onScrollToIssue: (id: strin
       {/* Steps — with paywall banner inserted between free and locked */}
       <div>
         {(() => {
-          const firstLockedIdx = sortedRoadmap.findIndex((s) => s.isLocked);
+          // Exclude skipped issues from the active roadmap display
+          const activeRoadmap = sortedRoadmap.filter(
+            (s) => !skippedIds.includes(s.issueId)
+          );
+          const skippedSteps = sortedRoadmap.filter(
+            (s) => !s.isLocked && skippedIds.includes(s.issueId)
+          );
+          const firstLockedIdx = activeRoadmap.findIndex((s) => s.isLocked);
           const lockedIssues = data.issues.filter((i) => i.status === "locked");
 
-          return sortedRoadmap.map((step, idx) => {
-            const issue = data.issues.find((i) => i.id === step.issueId);
-            if (!issue) return null;
+          return (
+            <>
+              {activeRoadmap.map((step, idx) => {
+                const issue = data.issues.find((i) => i.id === step.issueId);
+                if (!issue) return null;
 
-            let status: "done" | "next" | "todo" | "locked";
-            if (step.isLocked) {
-              status = "locked";
-            } else if (completedFixIds.includes(step.issueId)) {
-              status = "done";
-            } else {
-              const firstUnfinished = sortedRoadmap.find(
-                (s) => !s.isLocked && !completedFixIds.includes(s.issueId)
-              );
-              status = firstUnfinished?.issueId === step.issueId ? "next" : "todo";
-            }
+                let status: "done" | "next" | "todo" | "locked";
+                if (step.isLocked) {
+                  status = "locked";
+                } else if (completedFixIds.includes(step.issueId)) {
+                  status = "done";
+                } else {
+                  const firstUnfinished = activeRoadmap.find(
+                    (s) => !s.isLocked && !completedFixIds.includes(s.issueId)
+                  );
+                  status = firstUnfinished?.issueId === step.issueId ? "next" : "todo";
+                }
 
-            // Insert paywall banner once, just before the first locked step
-            const showBanner =
-              lockedIssues.length > 0 && idx === firstLockedIdx;
+                // Insert paywall banner once, just before the first locked step
+                const showBanner =
+                  lockedIssues.length > 0 && idx === firstLockedIdx;
 
-            return (
-              <div key={step.issueId}>
-                {showBanner && (
-                  <UpgradePaywallBanner lockedIssues={lockedIssues} />
-                )}
-                <RoadmapStep
-                  issue={issue}
-                  order={step.order}
-                  isLocked={step.isLocked}
-                  status={status}
-                  isLast={idx === sortedRoadmap.length - 1}
-                  onOpenFix={() => {
-                    void handleFixAction(issue.id, () => {
-                      onScrollToIssue(issue.id);
-                      setExpandedIssue(issue.id);
-                    }).then((result) => {
-                      if (result === "quota_exceeded") setShowQuotaModal(true);
-                    });
-                  }}
-                  onSkip={() => {}}
-                />
-              </div>
-            );
-          });
+                return (
+                  <div key={step.issueId}>
+                    {showBanner && (
+                      <UpgradePaywallBanner lockedIssues={lockedIssues} />
+                    )}
+                    <RoadmapStep
+                      issue={issue}
+                      order={step.order}
+                      isLocked={step.isLocked}
+                      status={status}
+                      isLast={idx === activeRoadmap.length - 1 && skippedSteps.length === 0}
+                      onOpenFix={() => {
+                        void handleFixAction(issue.id, () => {
+                          onScrollToIssue(issue.id);
+                          setExpandedIssue(issue.id);
+                        }).then((result) => {
+                          if (result === "quota_exceeded") setShowQuotaModal(true);
+                        });
+                      }}
+                      onSkip={() => skipIssue(issue.id)}
+                    />
+                  </div>
+                );
+              })}
+
+              {/* Skipped issues — collapsed at the bottom */}
+              {skippedSteps.length > 0 && (
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition select-none">
+                    {skippedSteps.length} skipped {skippedSteps.length === 1 ? "fix" : "fixes"} — click to review
+                  </summary>
+                  <div className="mt-2 space-y-0 opacity-50">
+                    {skippedSteps.map((step, idx) => {
+                      const issue = data.issues.find((i) => i.id === step.issueId);
+                      if (!issue) return null;
+                      return (
+                        <RoadmapStep
+                          key={step.issueId}
+                          issue={issue}
+                          order={step.order}
+                          isLocked={false}
+                          status="todo"
+                          isLast={idx === skippedSteps.length - 1}
+                          onOpenFix={() => {
+                            void handleFixAction(issue.id, () => {
+                              onScrollToIssue(issue.id);
+                              setExpandedIssue(issue.id);
+                            }).then((result) => {
+                              if (result === "quota_exceeded") setShowQuotaModal(true);
+                            });
+                          }}
+                          onSkip={() => {}}
+                        />
+                      );
+                    })}
+                  </div>
+                </details>
+              )}
+            </>
+          );
         })()}
       </div>
 

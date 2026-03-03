@@ -74,9 +74,9 @@ export function StickyUpgradeBar() {
 
             <p className="whitespace-nowrap text-[13px] text-[var(--text-secondary)]">
               <span className="font-semibold text-white">
-                {lockedCount} {lockedCount === 1 ? "fix" : "fixes"} locked
+                🔒 {lockedCount} {lockedCount === 1 ? "fix" : "fixes"} still locked
               </span>
-              {" · "}Unlock +{extraMin}–{extraMax} more visits/mo
+              {" — "}fix {lockedCount === 1 ? "it" : "them"} to gain +{extraMin}–{extraMax} visits/mo
             </p>
 
             <button
@@ -85,7 +85,7 @@ export function StickyUpgradeBar() {
               className="flex-shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold text-white transition-all duration-150 hover:scale-105 hover:opacity-90 active:scale-100"
               style={{ background: "#6366f1" }}
             >
-              Upgrade →
+              Start Free Trial →
             </button>
 
             {/* Dismiss */}

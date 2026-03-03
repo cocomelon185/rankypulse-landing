@@ -7,6 +7,7 @@ import { MOCK_AUDIT } from "./audit-data";
 interface AuditState {
   data: AuditData;
   completedFixIds: string[];
+  skippedIds: string[];
   activeIssueId: string | null;
   expandedIssueId: string | null;
   isLoading: boolean;
@@ -16,6 +17,7 @@ interface AuditState {
   setLoading: (loading: boolean) => void;
   setLoadError: (err: string | null) => void;
   markFixed: (issueId: string) => void;
+  skipIssue: (issueId: string) => void;
   setActiveIssue: (issueId: string | null) => void;
   setExpandedIssue: (issueId: string | null) => void;
 
@@ -31,15 +33,23 @@ interface AuditState {
 
 export const useAuditStore = create<AuditState>((set, get) => ({
   data: MOCK_AUDIT,
-  completedFixIds: ["redirect-chain"],
+  completedFixIds: [],
+  skippedIds: [],
   activeIssueId: null,
   expandedIssueId: null,
   isLoading: false,
   loadError: null,
 
-  setData: (data) => set({ data, completedFixIds: [], loadError: null, isLoading: false }),
+  setData: (data) => set({ data, completedFixIds: [], skippedIds: [], loadError: null, isLoading: false }),
   setLoading: (loading) => set({ isLoading: loading }),
   setLoadError: (err) => set({ loadError: err, isLoading: false }),
+
+  skipIssue: (issueId) =>
+    set((state) => ({
+      skippedIds: state.skippedIds.includes(issueId)
+        ? state.skippedIds
+        : [...state.skippedIds, issueId],
+    })),
 
   markFixed: (issueId) => {
     set((state) => {
@@ -74,9 +84,10 @@ export const useAuditStore = create<AuditState>((set, get) => ({
     const issues = get().data.issues;
     const road = get().data.roadmap;
     const completed = get().completedFixIds;
+    const skipped = get().skippedIds;
     const sorted = [...road].sort((a, b) => a.order - b.order);
     for (const step of sorted) {
-      if (!completed.includes(step.issueId) && !step.isLocked) {
+      if (!completed.includes(step.issueId) && !skipped.includes(step.issueId) && !step.isLocked) {
         return issues.find((i) => i.id === step.issueId) ?? null;
       }
     }

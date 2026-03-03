@@ -7,7 +7,6 @@ import { ScoreGauge } from "../ScoreGauge";
 import { ScoreHistory } from "../ScoreHistory";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useAuditStore } from "@/lib/use-audit";
-import { MOCK_AUDIT } from "@/lib/audit-data";
 import { ShareScoreCard } from "./ShareScoreCard";
 import { ReauditButton } from "./ReauditButton";
 
@@ -48,6 +47,7 @@ function MetricCard({
 export function AuditHero() {
   const data = useAuditStore((s) => s.data);
   const completedFixIds = useAuditStore((s) => s.completedFixIds);
+  const setData = useAuditStore((s) => s.setData);
 
   const openIssuesCount = useMemo(
     () =>
@@ -170,7 +170,7 @@ export function AuditHero() {
             <ScoreHistory history={data.scoreHistory} />
           )}
           {/* Re-audit button */}
-          <ReauditButton />
+          <ReauditButton domain={data.domain} onComplete={setData} />
         </div>
       </div>
 
@@ -277,7 +277,14 @@ export function AuditHero() {
                 </div>
               </div>
               <span className="text-center text-[11px] font-medium leading-tight text-[var(--text-secondary)]">{report.label}</span>
-              <button className="mt-auto rounded-lg bg-white/[0.05] px-3 py-1 text-[10px] font-semibold text-[var(--text-primary)] hover:bg-white/10 transition">
+              <button
+                onClick={() => {
+                  document
+                    .getElementById("findings-section")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="mt-auto rounded-lg bg-white/[0.05] px-3 py-1 text-[10px] font-semibold text-[var(--text-primary)] hover:bg-white/10 transition"
+              >
                 Details
               </button>
             </div>

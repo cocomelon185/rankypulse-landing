@@ -269,17 +269,19 @@ function SaveDomainTracker({ domain }: { domain: string }) {
 
   const handleSave = async () => {
     if (!isAuthenticated) {
-      // Prompt user to sign in
+      // Redirect to sign-in and return here after
       window.location.href = `/auth/signin?callbackUrl=/report/${domain}`;
       return;
     }
 
     setStatus("loading");
     try {
-      // In a real implementation this hits an API to do the Supabase insert
-      // MOCK implementation for scaffolding phase:
-      await new Promise(res => setTimeout(res, 800));
-      setStatus("saved");
+      const res = await fetch("/api/save-domain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain }),
+      });
+      setStatus(res.ok ? "saved" : "error");
     } catch {
       setStatus("error");
     }
@@ -287,9 +289,15 @@ function SaveDomainTracker({ domain }: { domain: string }) {
 
   if (status === "saved") {
     return (
-      <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6 text-center">
+      <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6">
         <p className="font-['DM_Sans'] text-sm text-emerald-400">
-          ✓ Domain saved! You'll receive weekly SEO progress reports for <strong>{domain}</strong>.
+          ✓ Domain saved! You&apos;ll receive weekly SEO progress reports for <strong>{domain}</strong>.
+        </p>
+        <p className="mt-2 font-['DM_Sans'] text-xs text-[var(--text-muted)]">
+          Pro members also get keyword ranking alerts and competitor diff reports.{" "}
+          <a href="/pricing" className="text-[var(--accent-primary)] hover:underline">
+            Upgrade to Pro →
+          </a>
         </p>
       </div>
     );
