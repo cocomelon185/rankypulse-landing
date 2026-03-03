@@ -15,6 +15,8 @@ import {
     Play,
     Download
 } from 'lucide-react';
+import { useAuditStore } from '@/lib/use-audit';
+import { extractAuditDomain } from '@/lib/url-validation';
 
 // MOCK DATA REMOVED
 
@@ -64,35 +66,69 @@ export default function CrawlIssuesPage() {
     const [issues, setIssues] = useState<AuditIssue[]>([]);
     const [stats, setStats] = useState({ healthScore: 0, crawledPages: 1, healthyPages: 1, brokenPages: 0, redirects: 0, blocked: 0 });
     const [urlChecked, setUrlChecked] = useState<string | null>(null);
+    const auditData = useAuditStore(state => state.data);
 
     const fetchAudit = async (forceUrl?: string) => {
         setLoading(true);
         try {
             const lastUrl = forceUrl || localStorage.getItem('rankypulse_last_url');
-            if (!lastUrl) {
-                setLoading(false);
-                return;
+            let dbData: any = null;
+
+            let apiUrl = '/api/audits/data?type=issues';
+            let hostnameFallback = "";
+            if (lastUrl) {
+                const hostname = extractAuditDomain(lastUrl);
+                if (hostname) {
+                    hostnameFallback = hostname;
+                    setUrlChecked(hostname);
+                    apiUrl += `&domain=${encodeURIComponent(hostname)}`;
+                }
             }
-            setUrlChecked(lastUrl);
-            const res = await fetch('/api/audit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: lastUrl }),
-            });
-            const json = await res.json();
-            if (json.ok && json.data) {
-                const apiIssues = json.data.issues || [];
-                const mappedIssues: AuditIssue[] = apiIssues.map((apiIssue: { id?: string; severity: string; title?: string; suggestedFix?: string; msg?: string }, index: number) => ({
-                    id: apiIssue.id || index.toString(),
-                    severity: apiSeverityToIssueSeverity(apiIssue.severity),
-                    title: apiIssue.title || apiIssue.id || 'Unknown Issue',
-                    description: apiIssue.suggestedFix || apiIssue.msg || apiIssue.title || '',
-                    urlsAffected: 1,
-                    trend: '0',
-                    discovered: new Date(),
-                }));
-                setIssues(mappedIssues);
-                setStats(prev => ({ ...prev, healthScore: Math.round(json.data.scores?.seo || 0) }));
+
+            // Only fetch database if we're authenticated / have an endpoint hit
+            if (apiUrl) {
+
+                const res = await fetch(apiUrl);
+                if (res.ok) {
+                    const result = await res.json();
+                    if (!Array.isArray(result) && result.data) {
+                        dbData = result.data;
+                        if (result.hostname) setUrlChecked(result.hostname);
+                    }
+                }
+
+                if (dbData && dbData.length > 0) {
+                    const apiIssues = dbData[0].issues || []; // issues JSONB array
+
+                    const mappedIssues: AuditIssue[] = apiIssues.map((apiIssue: any, index: number) => ({
+                        id: apiIssue.id || index.toString(),
+                        severity: apiSeverityToIssueSeverity(apiIssue.priority || apiIssue.severity || apiIssue.type),
+                        title: apiIssue.title || apiIssue.id || 'Unknown Issue',
+                        description: apiIssue.description || apiIssue.suggestedFix || apiIssue.message || apiIssue.title || '',
+                        urlsAffected: 1,
+                        trend: '0',
+                        discovered: new Date(),
+                    }));
+                    setIssues(mappedIssues);
+                    setStats(prev => ({ ...prev, healthScore: Math.round(dbData[0].score || 0) }));
+                } else if (lastUrl && auditData && auditData.domain === hostnameFallback) {
+                    // Fallback to stateless Zustand store if running a free audit!
+                    setUrlChecked(auditData.domain);
+                    const mappedIssues: AuditIssue[] = auditData.issues.map((apiIssue: any, index: number) => ({
+                        id: apiIssue.id || index.toString(),
+                        severity: apiSeverityToIssueSeverity(apiIssue.priority || apiIssue.severity || apiIssue.type),
+                        title: apiIssue.title || apiIssue.id || 'Unknown Issue',
+                        description: apiIssue.description || apiIssue.suggestedFix || apiIssue.message || apiIssue.title || '',
+                        urlsAffected: 1,
+                        trend: '1',
+                        discovered: new Date(),
+                    }));
+                    setIssues(mappedIssues);
+                    setStats(prev => ({ ...prev, healthScore: Math.round(auditData.score || 0) }));
+                } else {
+                    setIssues([]);
+                    setStats(prev => ({ ...prev, healthScore: 0 }));
+                }
             }
         } catch (err) {
             console.error("Failed to fetch audit for crawl issues", err);

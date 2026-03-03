@@ -58,10 +58,10 @@ export function AuditSidebar({
     const base = data.score;
     const extraFixes = completedFixIds.filter(
       (id) =>
-        !MOCK_AUDIT.issues.find((i) => i.id === id && i.status === "fixed")
+        !data.issues.find((i) => i.id === id && i.status === "fixed")
     ).length;
     return Math.min(100, base + extraFixes * 3);
-  }, [data.score, completedFixIds]);
+  }, [data.score, completedFixIds, data.issues]);
 
   const openIssuesCount = useMemo(
     () =>

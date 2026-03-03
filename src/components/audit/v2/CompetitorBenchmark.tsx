@@ -6,7 +6,6 @@ import { Lock } from "lucide-react";
 import { useAuditStore } from "@/lib/use-audit";
 import { useAuth } from "@/hooks/useAuth";
 import { useSession } from "next-auth/react";
-import { MOCK_AUDIT } from "@/lib/audit-data";
 import { SectionHeading } from "./SectionHeading";
 
 function BenchmarkBar({
@@ -34,8 +33,8 @@ function BenchmarkBar({
     >
       <span
         className={`w-40 shrink-0 truncate text-sm ${isYou
-            ? "font-semibold text-[var(--text-primary)]"
-            : "text-[var(--text-secondary)]"
+          ? "font-semibold text-[var(--text-primary)]"
+          : "text-[var(--text-secondary)]"
           }`}
       >
         {domain}
@@ -79,10 +78,10 @@ export function CompetitorBenchmark() {
     const base = data.score;
     const extraFixes = completedFixIds.filter(
       (id) =>
-        !MOCK_AUDIT.issues.find((i) => i.id === id && i.status === "fixed")
+        !data.issues.find((i) => i.id === id && i.status === "fixed")
     ).length;
     return Math.min(100, base + extraFixes * 3);
-  }, [data.score, completedFixIds]);
+  }, [data.score, completedFixIds, data.issues]);
 
   const all = [
     { domain: data.domain, score: adjustedScore, isYou: true },

@@ -39,6 +39,19 @@ export interface AuditIssueData {
   category: string;
 }
 
+export const EMPTY_AUDIT: AuditData = {
+  domain: "",
+  score: 0,
+  scoreHistory: [],
+  lastScanned: new Date().toISOString(),
+  estimatedTrafficLoss: { min: 0, max: 0 },
+  confidence: "Low",
+  categories: [],
+  issues: [],
+  competitors: [],
+  roadmap: [],
+};
+
 export const MOCK_AUDIT: AuditData = {
   domain: "example.com",
   score: 75,

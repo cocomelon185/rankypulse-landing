@@ -3,7 +3,6 @@
 import { useState, useRef } from "react";
 import { Share2, Check } from "lucide-react";
 import { useAuditStore } from "@/lib/use-audit";
-import { MOCK_AUDIT } from "@/lib/audit-data";
 
 function getScoreColor(score: number) {
   if (score >= 70) return "#10b981";
@@ -22,7 +21,7 @@ export function ShareScoreCard() {
     100,
     data.score +
     completedFixIds.filter(
-      (id) => !MOCK_AUDIT.issues.find((i) => i.id === id && i.status === "fixed")
+      (id) => !data.issues.find((i) => i.id === id && i.status === "fixed")
     ).length *
     3
   );

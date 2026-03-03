@@ -7,7 +7,6 @@ import { ScoreGauge } from "../ScoreGauge";
 import { ScoreHistory } from "../ScoreHistory";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useAuditStore } from "@/lib/use-audit";
-import { MOCK_AUDIT } from "@/lib/audit-data";
 import { ShareScoreCard } from "./ShareScoreCard";
 import { ReauditButton } from "./ReauditButton";
 

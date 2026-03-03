@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import type { AuditData, AuditIssueData } from "./audit-data";
-import { MOCK_AUDIT } from "./audit-data";
+import { EMPTY_AUDIT } from "./audit-data";
 
 interface AuditState {
   data: AuditData;
@@ -30,8 +30,8 @@ interface AuditState {
 }
 
 export const useAuditStore = create<AuditState>((set, get) => ({
-  data: MOCK_AUDIT,
-  completedFixIds: ["redirect-chain"],
+  data: EMPTY_AUDIT,
+  completedFixIds: [],
   activeIssueId: null,
   expandedIssueId: null,
   isLoading: false,

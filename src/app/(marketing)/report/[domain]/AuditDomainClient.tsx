@@ -24,7 +24,6 @@ import {
 import { useAuditStore } from "@/lib/use-audit";
 import { useAuth } from "@/hooks/useAuth";
 import { incrementAuditsUsed } from "@/lib/billing-store";
-import { MOCK_AUDIT } from "@/lib/audit-data";
 import { ExportPdfButton } from "@/components/audit/ExportPdfButton";
 import { PdfCoverPage } from "@/components/audit/PdfCoverPage";
 
@@ -152,7 +151,6 @@ export function AuditDomainClient({ domain: rawDomain }: { domain: string }) {
   useEffect(() => {
     if (fetchedDomain.current === domain) return;
     fetchedDomain.current = domain;
-    setData({ ...MOCK_AUDIT, domain });
     runCrawl(domain);
     return () => {
       controllerRef.current?.abort();

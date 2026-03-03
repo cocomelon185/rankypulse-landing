@@ -25,6 +25,19 @@ export function FullAuditProgress({ domain }: { domain: string }) {
 
     const crawlRef = useRef(false);
 
+    useEffect(() => {
+        try {
+            if (localStorage.getItem('rankypulse_trigger_full') === '1') {
+                localStorage.removeItem('rankypulse_trigger_full');
+                if (isAuthenticated) {
+                    startCrawl();
+                } else {
+                    window.location.href = `/auth/signin?callbackUrl=/report/${domain}`;
+                }
+            }
+        } catch { }
+    }, [isAuthenticated, domain]);
+
     const startCrawl = async () => {
         if (!isAuthenticated) {
             window.location.href = `/auth/signin?callbackUrl=/report/${domain}`;
