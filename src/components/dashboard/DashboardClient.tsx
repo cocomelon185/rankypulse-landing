@@ -88,9 +88,9 @@ interface DashboardClientProps {
   errorsTrend: Array<{ month: string; count: number }>;
   crawlTrend: Array<{ month: string; pages: number }>;
   crawlDistribution: Array<{ name: string; value: number; color: string }>;
-  recentAudits: Array<{ domain: string; date: string; issuesFound: number; status: string; pages: number; score: number }>;
+  recentAudits: Array<{ domain: string; score: number; issues: number; status: string; updated: string }>;
   competitors: Array<{ domain: string; traffic: string; keywords: string; score: number }>;
-  keywordDist?: Array<{ range: string; keywords: number; color: string }>;
+  keywordDist?: Array<{ label: string; count: number; delta: string; pct: number; color: string }>;
   priorityIssues: Array<{
     rank: number;
     label: string;

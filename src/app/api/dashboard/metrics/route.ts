@@ -110,30 +110,9 @@ export async function GET(req: NextRequest) {
         { name: "Blocked", value: 7, color: "#C8D0E0" },
       ],
       recentAudits: [
-        {
-          domain: domain,
-          date: "2 hours ago",
-          issuesFound: 16,
-          status: "complete",
-          pages: 324,
-          score: 88,
-        },
-        {
-          domain: domain,
-          date: "2 days ago",
-          issuesFound: 22,
-          status: "complete",
-          pages: 312,
-          score: 82,
-        },
-        {
-          domain: domain,
-          date: "7 days ago",
-          issuesFound: 34,
-          status: "complete",
-          pages: 305,
-          score: 75,
-        },
+        { domain: domain,          score: 88, issues: 16, status: "Completed",   updated: "2h ago" },
+        { domain: "clientsite.io", score: 82, issues: 22, status: "Completed",   updated: "2d ago" },
+        { domain: "newproject.com",score: 75, issues: 34, status: "In Progress", updated: "7d ago" },
       ],
       competitors: [
         { domain: "ahrefs.com", traffic: "5.2M", keywords: "142K", score: 98 },
@@ -141,9 +120,9 @@ export async function GET(req: NextRequest) {
         { domain: "ahrefs.com", traffic: "2.8M", keywords: "218K", score: 94 },
       ],
       keywordDist: [
-        { range: "Top 3", keywords: 38, color: "#FF642D" },
-        { range: "Top 10", keywords: 82, color: "#7B5CF5" },
-        { range: "Top 100", keywords: 158, color: "#1E4D8C" },
+        { label: "Top 3",   count: 35,  delta: "+4",  pct: 26,  color: "#FF642D" },
+        { label: "Top 10",  count: 68,  delta: "+12", pct: 51,  color: "#7B5CF5" },
+        { label: "Top 100", count: 134, delta: "+33", pct: 100, color: "#4A6FA5" },
       ],
       priorityIssues: [
         {
