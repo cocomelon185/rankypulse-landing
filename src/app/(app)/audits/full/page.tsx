@@ -148,6 +148,35 @@ function MiniGauge({ score, size = 80 }: { score: number; size?: number }) {
   );
 }
 
+// ─── Thematic Ring Gauge ─────────────────────────────────────────────────────
+
+function ThematicRing({ value, size = 52 }: { value: number; size?: number }) {
+  const r = size * 0.38;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - value / 100);
+  const color = scoreColor(value);
+  const cx = size / 2;
+  const cy = size / 2;
+  return (
+    <div className="relative flex shrink-0 items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90" viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={cx} cy={cy} r={r} stroke="rgba(255,255,255,0.07)" strokeWidth="4" fill="none" />
+        <circle
+          cx={cx} cy={cy} r={r}
+          stroke={color} strokeWidth="4" fill="none"
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          style={{ transition: "stroke-dashoffset 1s ease-out" }}
+        />
+      </svg>
+      <span className="absolute text-[10px] font-bold tabular-nums" style={{ color }}>
+        {value}%
+      </span>
+    </div>
+  );
+}
+
 // ─── Card wrapper ────────────────────────────────────────────────────────────
 
 function Card({
@@ -159,7 +188,7 @@ function Card({
 }) {
   return (
     <div
-      className={`rounded-2xl border border-white/[0.07] bg-[var(--bg-elevated)] p-5 ${className}`}
+      className={`rounded-2xl border border-white/[0.07] bg-[#151B27] p-5 ${className}`}
     >
       {children}
     </div>
@@ -176,7 +205,7 @@ function SiteHealthCard({ score, prevScore }: { score: number; prevScore: number
 
   return (
     <Card>
-      <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+      <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#64748B]">
         Site Health
       </p>
       <div className="flex flex-col items-center">
@@ -190,7 +219,7 @@ function SiteHealthCard({ score, prevScore }: { score: number; prevScore: number
           </span>
         </div>
         {delta !== null && (
-          <p className="mt-2 text-xs text-[var(--text-muted)]">
+          <p className="mt-2 text-xs text-[#64748B]">
             <span style={{ color: delta >= 0 ? "#10b981" : "#ef4444" }}>
               {delta >= 0 ? "▲" : "▼"} {Math.abs(delta)} pts
             </span>{" "}
@@ -199,12 +228,12 @@ function SiteHealthCard({ score, prevScore }: { score: number; prevScore: number
         )}
         <div className="mt-3 w-full border-t border-white/[0.05] pt-3">
           <div className="flex items-center justify-between text-[11px]">
-            <span className="text-[var(--text-muted)]">Your site</span>
+            <span className="text-[#64748B]">Your site</span>
             <span className="font-semibold" style={{ color }}>{score}%</span>
           </div>
           <div className="flex items-center justify-between text-[11px] mt-1">
-            <span className="text-[var(--text-muted)]">Top-10% websites</span>
-            <span className="font-semibold text-[var(--text-secondary)]">92%</span>
+            <span className="text-[#64748B]">Top-10% websites</span>
+            <span className="font-semibold text-[#94A3B8]">92%</span>
           </div>
         </div>
       </div>
@@ -236,12 +265,12 @@ function CrawledPagesCard({
 
   return (
     <Card>
-      <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+      <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-[#64748B]">
         Crawled Pages
       </p>
       <div className="flex items-baseline gap-2 mb-3">
-        <span className="text-3xl font-bold text-[var(--text-primary)]">{total}</span>
-        <span className="text-xs text-[var(--text-muted)]">of {limit} limit</span>
+        <span className="text-3xl font-bold text-white">{total}</span>
+        <span className="text-xs text-[#64748B]">of {limit} limit</span>
       </div>
 
       {/* Stacked bar */}
@@ -263,11 +292,11 @@ function CrawledPagesCard({
       <div className="flex flex-col gap-1.5">
         {rows.map((row) => (
           <div key={row.label} className="flex items-center justify-between text-xs">
-            <span className="flex items-center gap-1.5 text-[var(--text-secondary)]">
+            <span className="flex items-center gap-1.5 text-[#94A3B8]">
               <span className="h-2 w-2 rounded-full" style={{ background: row.color }} />
               {row.label}
             </span>
-            <span className="font-semibold text-[var(--text-primary)]">{row.count}</span>
+            <span className="font-semibold text-white">{row.count}</span>
           </div>
         ))}
       </div>
@@ -291,8 +320,8 @@ function AISearchHealthCard({
   return (
     <Card>
       <div className="flex items-center gap-1.5 mb-3">
-        <Bot className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-        <p className="text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+        <Bot className="h-3.5 w-3.5 text-[#64748B]" />
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#64748B]">
           AI Search Health
           <span className="ml-1.5 rounded-full bg-purple-500/20 px-2 py-0.5 text-[9px] font-bold uppercase text-purple-400">
             beta
@@ -301,7 +330,7 @@ function AISearchHealthCard({
       </div>
       <div className="flex flex-col items-center">
         <MiniGauge score={score} size={110} />
-        <p className="mt-3 text-center text-[11px] text-[var(--text-secondary)] leading-snug max-w-[140px]">
+        <p className="mt-3 text-center text-[11px] text-[#94A3B8] leading-snug max-w-[140px]">
           {message}
         </p>
         {issues > 0 && (
@@ -320,19 +349,19 @@ function BlockedBotsCard({ bots }: { bots: { name: string; status: BotStatus }[]
   return (
     <Card>
       <div className="flex items-center gap-1.5 mb-3">
-        <Shield className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-        <p className="text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+        <Shield className="h-3.5 w-3.5 text-[#64748B]" />
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#64748B]">
           Blocked from AI Search
         </p>
       </div>
-      <p className="mb-3 text-xs text-[var(--text-muted)]">
+      <p className="mb-3 text-xs text-[#64748B]">
         Pages crawled: —
       </p>
       <div className="flex flex-col gap-2">
         {bots.map((bot) => (
           <div key={bot.name} className="flex items-center justify-between text-xs">
-            <span className="flex items-center gap-2 text-[var(--text-secondary)]">
-              <Bot className="h-3 w-3 text-[var(--text-muted)]" />
+            <span className="flex items-center gap-2 text-[#94A3B8]">
+              <Bot className="h-3 w-3 text-[#64748B]" />
               {bot.name}
             </span>
             {bot.status === "ok" ? (
@@ -349,7 +378,7 @@ function BlockedBotsCard({ bots }: { bots: { name: string; status: BotStatus }[]
       </div>
       <a
         href="#"
-        className="mt-3 block text-[11px] text-[var(--accent-primary)] hover:underline"
+        className="mt-3 block text-[11px] text-[#FF642D] hover:underline"
       >
         How to unblock pages ↗
       </a>
@@ -408,7 +437,7 @@ function IssuesOverviewSection({
                 />
               </svg>
             </div>
-            <p className="mt-0.5 text-xs font-medium text-[var(--text-secondary)]">
+            <p className="mt-0.5 text-xs font-medium text-[#94A3B8]">
               {stat.label}
             </p>
           </div>
@@ -420,7 +449,7 @@ function IssuesOverviewSection({
         {topIssues.length === 0 ? (
           <div className="flex items-center gap-3 px-6 py-5">
             <CheckCircle2 className="h-4 w-4 text-[#10b981]" />
-            <span className="text-sm text-[var(--text-secondary)]">No issues found — your site looks great!</span>
+            <span className="text-sm text-[#94A3B8]">No issues found — your site looks great!</span>
           </div>
         ) : (
           topIssues.map((issue) => (
@@ -430,7 +459,7 @@ function IssuesOverviewSection({
             >
               <div className="flex min-w-0 items-center gap-3">
                 {severityIcon(issue.severity)}
-                <span className="truncate text-sm text-[var(--text-secondary)]">
+                <span className="truncate text-sm text-[#94A3B8]">
                   {issue.title}
                 </span>
                 {isAI(issue) && (
@@ -440,12 +469,12 @@ function IssuesOverviewSection({
                 )}
               </div>
               <div className="flex flex-shrink-0 items-center gap-6 text-xs">
-                <span className="font-semibold text-[var(--text-primary)]">
+                <span className="font-semibold text-white">
                   {issue.affectedPages} {issue.affectedPages === 1 ? "page" : "pages"}
                 </span>
                 <a
                   href={`/audits/issues`}
-                  className="flex items-center gap-1 text-[var(--accent-primary)] hover:underline"
+                  className="flex items-center gap-1 text-[#FF642D] hover:underline"
                 >
                   How to fix <ExternalLink className="h-3 w-3" />
                 </a>
@@ -538,51 +567,47 @@ function ThematicGrid({ thematic }: { thematic: FullReport["thematic"] }) {
 
   return (
     <div>
-      <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+      <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-[#64748B]">
         Thematic Reports
       </h3>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-4">
         {cards.map((card) => {
           const Icon = card.icon;
           const numVal = typeof card.value === "number" ? card.value : null;
-          const color = numVal !== null ? scoreColor(numVal) : "var(--text-muted)";
-          const bg = numVal !== null ? scoreBg(numVal) : "transparent";
-          const border = numVal !== null ? scoreBorder(numVal) : "rgba(255,255,255,0.07)";
 
           return (
             <div
               key={card.label}
-              className="rounded-xl border p-4 transition hover:border-white/20 hover:bg-white/[0.03]"
-              style={{ borderColor: border, background: bg }}
+              className="rounded-xl border p-4 flex flex-col gap-3 transition hover:border-white/20"
+              style={{ background: "#151B27", borderColor: "rgba(255,255,255,0.07)" }}
             >
-              <div className="mb-2 flex items-center gap-1.5">
-                <Icon className="h-3.5 w-3.5" style={{ color }} />
-                <span className="text-[11px] font-semibold text-[var(--text-secondary)]">
-                  {card.label}
-                </span>
-              </div>
-
-              {numVal !== null ? (
-                <div className="flex items-end gap-1.5">
-                  <span className="text-2xl font-bold tabular-nums" style={{ color }}>
-                    {numVal}%
+              {/* Top row: icon + label | ring (or status) */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Icon className="h-3.5 w-3.5 shrink-0 text-[#64748B]" />
+                  <span className="text-[11px] font-semibold text-[#94A3B8] leading-tight">
+                    {card.label}
                   </span>
                 </div>
-              ) : (
-                <p className="text-[11px] text-[var(--text-muted)]">
-                  {card.statusText ?? "—"}
-                </p>
-              )}
+                {numVal !== null ? (
+                  <ThematicRing value={numVal} />
+                ) : (
+                  <span className="text-[11px] text-[#64748B] mt-0.5 shrink-0">
+                    {card.statusText ?? "—"}
+                  </span>
+                )}
+              </div>
 
+              {/* Bottom: View details button */}
               {card.href ? (
                 <a
                   href={card.href}
-                  className="mt-3 flex items-center gap-1 text-[10px] font-semibold text-[var(--accent-primary)] hover:underline"
+                  className="mt-auto inline-flex w-fit items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1 text-[11px] font-semibold text-[#94A3B8] hover:bg-white/[0.04] transition"
                 >
                   View details <ChevronRight className="h-3 w-3" />
                 </a>
               ) : (
-                <div className="mt-3 h-4" />
+                <div className="h-5" />
               )}
             </div>
           );
@@ -600,27 +625,27 @@ function UpgradeBanner() {
     <div
       className="relative overflow-hidden rounded-2xl p-6"
       style={{
-        background: "linear-gradient(135deg, rgba(99,102,241,0.10) 0%, rgba(139,92,246,0.06) 100%)",
-        border: "1px solid rgba(99,102,241,0.2)",
+        background: "linear-gradient(135deg, rgba(255,100,45,0.10) 0%, rgba(255,100,45,0.06) 100%)",
+        border: "1px solid rgba(255,100,45,0.2)",
       }}
     >
       {/* Decorative glow */}
       <div
         className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full opacity-30"
-        style={{ background: "#6366f1", filter: "blur(50px)" }}
+        style={{ background: "#FF642D", filter: "blur(50px)" }}
       />
       <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-base font-bold text-white">You&apos;re only seeing part of the picture</p>
-          <p className="mt-1 text-sm text-[var(--text-secondary)] max-w-md">
+          <p className="mt-1 text-sm text-[#94A3B8] max-w-md">
             Audit more pages and fix how your site appears to both Google and AI tools like
             ChatGPT — upgrade to Starter and access all features.
           </p>
         </div>
         <button
           onClick={() => router.push("/pricing")}
-          className="flex-shrink-0 rounded-xl px-6 py-2.5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(99,102,241,0.45)]"
-          style={{ background: "#6366f1" }}
+          className="flex-shrink-0 rounded-xl px-6 py-2.5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(255,100,45,0.45)]"
+          style={{ background: "#FF642D" }}
         >
           Get free trial
         </button>
@@ -657,8 +682,8 @@ function IssuesTab({ issues }: { issues: TopIssue[] }) {
             onClick={() => setFilter(f.key)}
             className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
               filter === f.key
-                ? "bg-[var(--accent-primary)] text-white"
-                : "bg-white/[0.04] text-[var(--text-secondary)] hover:bg-white/[0.08]"
+                ? "bg-[#FF642D] text-white"
+                : "bg-white/[0.04] text-[#94A3B8] hover:bg-white/[0.08]"
             }`}
           >
             {f.label}
@@ -667,14 +692,14 @@ function IssuesTab({ issues }: { issues: TopIssue[] }) {
       </div>
 
       <Card className="p-0 overflow-hidden">
-        <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-4 border-b border-white/[0.05] px-6 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+        <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-4 border-b border-white/[0.05] px-6 py-3 text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">
           <span>Severity</span>
           <span>Issue</span>
           <span>Pages</span>
           <span>Action</span>
         </div>
         {filtered.length === 0 ? (
-          <div className="px-6 py-8 text-center text-sm text-[var(--text-muted)]">
+          <div className="px-6 py-8 text-center text-sm text-[#64748B]">
             No {filter === "all" ? "" : filter} issues found.
           </div>
         ) : (
@@ -684,13 +709,13 @@ function IssuesTab({ issues }: { issues: TopIssue[] }) {
               className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-4 border-b border-white/[0.04] px-6 py-3.5 hover:bg-white/[0.02] transition last:border-0"
             >
               <span>{sevIcon(issue.severity)}</span>
-              <span className="text-sm text-[var(--text-secondary)]">{issue.title}</span>
-              <span className="text-xs font-semibold text-[var(--text-primary)]">
+              <span className="text-sm text-[#94A3B8]">{issue.title}</span>
+              <span className="text-xs font-semibold text-white">
                 {issue.affectedPages}
               </span>
               <a
                 href="/audits/issues"
-                className="flex items-center gap-1 text-xs text-[var(--accent-primary)] hover:underline"
+                className="flex items-center gap-1 text-xs text-[#FF642D] hover:underline"
               >
                 Fix <ChevronRight className="h-3 w-3" />
               </a>
@@ -713,20 +738,20 @@ function EmptyState({
 }) {
   return (
     <div className="flex min-h-[400px] flex-col items-center justify-center gap-6 rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.01] p-12 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--accent-primary)]/10">
-        <FileSearch className="h-8 w-8 text-[var(--accent-primary)]" />
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FF642D]/10">
+        <FileSearch className="h-8 w-8 text-[#FF642D]" />
       </div>
       <div>
-        <h3 className="text-lg font-bold text-[var(--text-primary)]">
-          No audit data for <span className="text-[var(--accent-primary)]">{domain}</span>
+        <h3 className="text-lg font-bold text-white">
+          No audit data for <span className="text-[#FF642D]">{domain}</span>
         </h3>
-        <p className="mt-2 text-sm text-[var(--text-secondary)]">
+        <p className="mt-2 text-sm text-[#94A3B8]">
           Run a full site crawl to get your Site Health score, issue breakdown, and thematic reports.
         </p>
       </div>
       <button
         onClick={onStartCrawl}
-        className="flex items-center gap-2 rounded-xl bg-[var(--accent-primary)] px-6 py-3 text-sm font-bold text-white transition hover:opacity-90"
+        className="flex items-center gap-2 rounded-xl bg-[#FF642D] px-6 py-3 text-sm font-bold text-white transition hover:opacity-90"
       >
         <Play className="h-4 w-4" /> Start Site Audit
       </button>
@@ -807,7 +832,7 @@ export default function FullSiteAuditPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-display text-xl font-semibold text-[var(--text-primary)]">
+              <h1 className="font-display text-xl font-semibold text-white">
                 Site Audit:
               </h1>
               {domain ? (
@@ -815,18 +840,18 @@ export default function FullSiteAuditPage() {
                   href={`https://${domain}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 font-display text-xl font-semibold text-[var(--accent-primary)] hover:underline"
+                  className="flex items-center gap-1 font-display text-xl font-semibold text-[#FF642D] hover:underline"
                 >
                   {domain} <ExternalLink className="h-4 w-4" />
                 </a>
               ) : (
-                <span className="font-display text-xl font-semibold text-[var(--text-muted)]">
+                <span className="font-display text-xl font-semibold text-[#64748B]">
                   —
                 </span>
               )}
             </div>
             {report && !report.noData && (
-              <p className="mt-1 text-xs text-[var(--text-muted)]">
+              <p className="mt-1 text-xs text-[#64748B]">
                 Updated: {formatDate(report.crawledAt)} · Desktop · JS rendering: Disabled ·
                 Pages crawled: {report.pagesCrawled}/{report.pagesLimit}
               </p>
@@ -835,18 +860,18 @@ export default function FullSiteAuditPage() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleRerun}
-              className="flex items-center gap-1.5 rounded-lg bg-[var(--accent-primary)] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+              className="flex items-center gap-1.5 rounded-lg bg-[#FF642D] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
             >
               <RefreshCw className="h-3.5 w-3.5" /> Rerun Campaign
             </button>
             <button
               onClick={handleShareCopy}
-              className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-[var(--text-secondary)] transition hover:bg-white/[0.07]"
+              className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-[#94A3B8] transition hover:bg-white/[0.07]"
             >
               <Share2 className="h-3.5 w-3.5" />
               {copied ? "Copied!" : "Share"}
             </button>
-            <button className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-[var(--text-secondary)] transition hover:bg-white/[0.07]">
+            <button className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-[#94A3B8] transition hover:bg-white/[0.07]">
               <Download className="h-3.5 w-3.5" /> Export
             </button>
           </div>
@@ -860,15 +885,15 @@ export default function FullSiteAuditPage() {
               onClick={() => setActiveTab(tab.key)}
               className={`relative px-5 py-3 text-sm font-medium transition ${
                 activeTab === tab.key
-                  ? "text-[var(--accent-primary)]"
-                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  ? "text-[#FF642D]"
+                  : "text-[#94A3B8] hover:text-white"
               }`}
             >
               {tab.label}
               {activeTab === tab.key && (
                 <motion.div
                   layoutId="tab-underline"
-                  className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-[var(--accent-primary)]"
+                  className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-[#FF642D]"
                 />
               )}
             </button>
@@ -964,11 +989,11 @@ export default function FullSiteAuditPage() {
                       onStartCrawl={() => setActiveTab("progress")}
                     />
                   ) : (
-                    <div className="text-sm text-[var(--text-muted)] text-center py-12">
+                    <div className="text-sm text-[#64748B] text-center py-12">
                       Run a new crawl from the{" "}
                       <button
                         onClick={() => setActiveTab("progress")}
-                        className="text-[var(--accent-primary)] hover:underline"
+                        className="text-[#FF642D] hover:underline"
                       >
                         Progress tab
                       </button>{" "}
@@ -983,7 +1008,7 @@ export default function FullSiteAuditPage() {
                 <FullAuditProgress domain={domain} />
               )}
               {activeTab === "progress" && !domain && (
-                <div className="rounded-2xl border border-dashed border-white/[0.08] p-12 text-center text-sm text-[var(--text-muted)]">
+                <div className="rounded-2xl border border-dashed border-white/[0.08] p-12 text-center text-sm text-[#64748B]">
                   No domain selected. Run an audit first from the report page.
                 </div>
               )}

@@ -24,16 +24,31 @@ interface NavItem {
   icon: React.ElementType;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard",        href: "/dashboard",                  icon: LayoutDashboard },
-  { label: "Site Audits",      href: "/audits/full",                icon: Search },
-  { label: "Rank Tracking",    href: "/position-tracking",          icon: TrendingUp },
-  { label: "Keyword Research", href: "/features/keyword-explorer",  icon: FileSearch },
-  { label: "Backlinks",        href: "/features/backlink-audit",    icon: LinkIcon },
-  { label: "Competitors",      href: "/features/competitors",       icon: Users },
-  { label: "Reports",          href: "/reports",                    icon: FileText },
-  { label: "Integrations",     href: "/integrations",               icon: Puzzle },
-  { label: "Settings",         href: "/settings",                   icon: Settings },
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    label: "SEO TOOLS",
+    items: [
+      { label: "Dashboard",        href: "/dashboard",                 icon: LayoutDashboard },
+      { label: "Site Audits",      href: "/audits/full",               icon: Search },
+      { label: "Rank Tracking",    href: "/position-tracking",         icon: TrendingUp },
+      { label: "Keyword Research", href: "/features/keyword-explorer", icon: FileSearch },
+      { label: "Backlinks",        href: "/features/backlink-audit",   icon: LinkIcon },
+      { label: "Competitors",      href: "/features/competitors",      icon: Users },
+    ],
+  },
+  {
+    label: "WORKSPACE",
+    items: [
+      { label: "Reports",      href: "/reports",      icon: FileText },
+      { label: "Integrations", href: "/integrations", icon: Puzzle },
+      { label: "Settings",     href: "/settings",     icon: Settings },
+    ],
+  },
 ];
 
 // ── Logo ─────────────────────────────────────────────────────────────────────
@@ -69,7 +84,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
         "relative flex items-center gap-3 px-4 py-2.5 rounded-lg text-[13.5px] font-medium transition-all duration-150 overflow-hidden",
         active
           ? "text-[#FF642D]"
-          : "text-[#6B7A99] hover:text-[#C8D0E0] hover:bg-white/[0.04]"
+          : "text-[#8B9BB4] hover:text-[#C8D0E0] hover:bg-white/[0.04]"
       )}
       style={active ? { background: "rgba(255,100,45,0.08)" } : {}}
     >
@@ -80,7 +95,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
         size={17}
         className={cn(
           "shrink-0 transition-colors",
-          active ? "text-[#FF642D]" : "text-[#4A5568]"
+          active ? "text-[#FF642D]" : "text-[#64748B]"
         )}
       />
       {item.label}
@@ -138,9 +153,18 @@ export function Sidebar({ hFull }: { hFull?: boolean } = {}) {
         <SidebarLogo />
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar space-y-0.5">
-        {NAV_ITEMS.map((item) => (
-          <NavLink key={item.href} item={item} active={isActive(item.href)} />
+      <nav className="flex-1 overflow-y-auto py-2 px-3 custom-scrollbar">
+        {NAV_GROUPS.map((group) => (
+          <div key={group.label} className="mb-1">
+            <p className="px-4 pt-4 pb-1.5 text-[10px] font-bold tracking-widest uppercase" style={{ color: "#2E4166" }}>
+              {group.label}
+            </p>
+            <div className="space-y-0.5">
+              {group.items.map((item) => (
+                <NavLink key={item.href} item={item} active={isActive(item.href)} />
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 
@@ -198,9 +222,18 @@ export function MobileSidebar({
               </button>
             </div>
 
-            <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5" onClick={onClose}>
-              {NAV_ITEMS.map((item) => (
-                <NavLink key={item.href} item={item} active={isActive(item.href)} />
+            <nav className="flex-1 overflow-y-auto py-2 px-3" onClick={onClose}>
+              {NAV_GROUPS.map((group) => (
+                <div key={group.label} className="mb-1">
+                  <p className="px-4 pt-4 pb-1.5 text-[10px] font-bold tracking-widest uppercase" style={{ color: "#2E4166" }}>
+                    {group.label}
+                  </p>
+                  <div className="space-y-0.5">
+                    {group.items.map((item) => (
+                      <NavLink key={item.href} item={item} active={isActive(item.href)} />
+                    ))}
+                  </div>
+                </div>
               ))}
             </nav>
 

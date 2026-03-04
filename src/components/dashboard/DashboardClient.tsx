@@ -67,103 +67,42 @@ import { useState, useEffect, useRef } from "react";
 import { normalizeUrl, isValidAuditUrl, extractAuditDomain } from "@/lib/url-validation";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Static Data
+// Types & Props
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SPARK: Record<string, number[]> = {
-  seo: [68, 72, 70, 75, 78, 80, 92],
-  traffic: [120, 135, 128, 148, 160, 172, 187],
-  keywords: [13200, 13400, 13100, 12900, 12700, 12500, 12450],
-  backlinks: [3300, 3420, 3500, 3600, 3700, 3820, 3892],
-};
-
-const METRICS = [
-  { label: "Organic Traffic", value: "187.3K", suffix: "", delta: "+12.8%", context: "Last 30 days", trend: "up" as const, sparkKey: "traffic", deltaColor: "#00C853", icon: TrendingUp },
-  { label: "Keywords Ranking", value: "12,450", suffix: "", delta: "+340", context: "in top 100", trend: "up" as const, sparkKey: "keywords", deltaColor: "#00C853", icon: Search },
-  { label: "Indexed Pages", value: "324", suffix: "", delta: "+18", context: "total pages", trend: "up" as const, sparkKey: "seo", deltaColor: "#00C853", icon: FileText },
-  { label: "Backlinks", value: "3,892", suffix: "", delta: "+6.4%", context: "referring domains", trend: "up" as const, sparkKey: "backlinks", deltaColor: "#00C853", icon: LinkIcon },
-];
-
-const TRAFFIC_DATA = [
-  { month: "Oct", organic: 141, paid: 14, direct: 28 },
-  { month: "Nov", organic: 155, paid: 18, direct: 31 },
-  { month: "Dec", organic: 148, paid: 22, direct: 27 },
-  { month: "Jan", organic: 162, paid: 25, direct: 34 },
-  { month: "Feb", organic: 170, paid: 21, direct: 36 },
-  { month: "Mar", organic: 180, paid: 28, direct: 39 },
-  { month: "Apr", organic: 187, paid: 30, direct: 42 },
-];
-
-const RANKINGS_DATA = [
-  { month: "Jan", top3: 18, top10: 42, top100: 95 },
-  { month: "Feb", top3: 22, top10: 50, top100: 108 },
-  { month: "Mar", top3: 28, top10: 58, top100: 120 },
-  { month: "Apr", top3: 35, top10: 68, top100: 134 },
-];
-
-const HEALTH_TREND = [
-  { month: "Oct", score: 74 },
-  { month: "Nov", score: 78 },
-  { month: "Dec", score: 76 },
-  { month: "Jan", score: 82 },
-  { month: "Feb", score: 88 },
-  { month: "Mar", score: 92 },
-];
-
-const ERRORS_TREND = [
-  { month: "Oct", errors: 28 },
-  { month: "Nov", errors: 24 },
-  { month: "Dec", errors: 21 },
-  { month: "Jan", errors: 18 },
-  { month: "Feb", errors: 15 },
-  { month: "Mar", errors: 12 },
-];
-
-const CRAWL_TREND = [
-  { month: "Oct", pages: 280 },
-  { month: "Nov", pages: 290 },
-  { month: "Dec", pages: 298 },
-  { month: "Jan", pages: 305 },
-  { month: "Feb", pages: 315 },
-  { month: "Mar", pages: 324 },
-];
-
-const CRAWL_DISTRIBUTION = [
-  { name: "Healthy", value: 280, color: "#00C853" },
-  { name: "Broken", value: 9, color: "#FF3D3D" },
-  { name: "Redirects", value: 18, color: "#FF9800" },
-  { name: "Blocked", value: 17, color: "#6B7A99" },
-];
-
-const AUDITS = [
-  { domain: "rankypulse.com", score: 92, issues: 44, status: "Completed", updated: "2h ago" },
-  { domain: "clientsite.io",  score: 88, issues: 23, status: "Completed", updated: "1d ago" },
-  { domain: "newproject.com", score: 74, issues: 61, status: "In Progress", updated: "3d ago" },
-];
-
-const COMPETITORS = [
-  { domain: "semrush.com", traffic: "4.2M", keywords: "342K", score: 97 },
-  { domain: "ahrefs.com", traffic: "2.8M", keywords: "218K", score: 94 },
-  { domain: "moz.com", traffic: "1.1M", keywords: "98K", score: 89 },
-];
-
-const KEYWORD_DIST = [
-  { label: "Top 3", count: 35, delta: "+4", pct: 26, color: "#FF642D" },
-  { label: "Top 10", count: 68, delta: "+12", pct: 51, color: "#7B5CF5" },
-  { label: "Top 100", count: 134, delta: "+33", pct: 100, color: "#4A6FA5" },
-];
-
-const PRIORITY_ISSUES = [
-  { rank: 1, icon: FileText,    label: "Missing Meta Descriptions",  pages: 25, impact: "high",   action: "Fix Now",   actionHref: "/audits/issues", gain: "+3–5 ranking positions" },
-  { rank: 2, icon: LinkIcon,    label: "Broken Internal Links",      pages: 12, impact: "high",   action: "View URLs", actionHref: "/audits/links",  gain: "+2–4 authority pages" },
-  { rank: 3, icon: Zap,         label: "Large Images Slowing Pages", pages: 18, impact: "medium", action: "Optimize",  actionHref: "/audits/speed",  gain: null },
-  { rank: 4, icon: AlertCircle, label: "Duplicate Title Tags",       pages: 8,  impact: "medium", action: "Fix Now",   actionHref: "/audits/issues", gain: null },
-  { rank: 5, icon: Eye,         label: "Images Missing Alt Text",    pages: 34, impact: "low",    action: "Fix Now",   actionHref: "/audits/issues", gain: null },
-];
-
-const STACKED_CRAWL_DATA = [
-  { name: "Mar", healthy: 280, broken: 9, redirects: 18, blocked: 17 },
-];
+interface DashboardClientProps {
+  spark: Record<string, number[]>;
+  kpis: Array<{
+    label: string;
+    value: string;
+    suffix: string;
+    delta: string;
+    context: string;
+    trend: "up" | "down";
+    sparkKey: string;
+    deltaColor: string;
+  }>;
+  trafficData: Array<{ month: string; organic: number; paid: number; direct: number }>;
+  rankingsData: Array<{ month: string; top3: number; top10: number; top100: number }>;
+  healthTrend: Array<{ month: string; score: number }>;
+  errorsTrend: Array<{ month: string; count: number }>;
+  crawlTrend: Array<{ month: string; pages: number }>;
+  crawlDistribution: Array<{ name: string; value: number; color: string }>;
+  recentAudits: Array<{ domain: string; date: string; issuesFound: number; status: string; pages: number; score: number }>;
+  competitors: Array<{ domain: string; traffic: string; keywords: string; score: number }>;
+  keywordDist?: Array<{ range: string; keywords: number; color: string }>;
+  priorityIssues: Array<{
+    rank: number;
+    label: string;
+    pages: number;
+    impact: "high" | "medium" | "low";
+    action: string;
+    actionHref: string;
+    gain: string | null;
+  }>;
+  projectDomains: string[];
+  currentDomain: string;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Animated Counter
@@ -253,11 +192,9 @@ function ChartTooltip({ active, payload, label }: any) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Section 1 – Header / Project Control Bar
 // ─────────────────────────────────────────────────────────────────────────────
-function ProjectControlBar({ onRunAudit }: { onRunAudit: () => void }) {
+function ProjectControlBar({ onRunAudit, domains, currentDomain, onDomainChange }: { onRunAudit: () => void; domains: string[]; currentDomain: string; onDomainChange: (domain: string) => void }) {
   const [crawlDone, setCrawlDone] = useState(false);
   const [domainOpen, setDomainOpen] = useState(false);
-  const [selectedDomain, setSelectedDomain] = useState("rankypulse.com");
-  const domains = ["rankypulse.com", "clientsite.io", "newproject.com"];
 
   const handleRunAudit = () => {
     setCrawlDone(false);
@@ -288,7 +225,7 @@ function ProjectControlBar({ onRunAudit }: { onRunAudit: () => void }) {
           {/* favicon placeholder */}
           <div className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold text-white shrink-0"
             style={{ background: "linear-gradient(135deg,#FF642D,#E85420)" }}>R</div>
-          <span className="text-sm font-semibold text-white">{selectedDomain}</span>
+          <span className="text-sm font-semibold text-white">{currentDomain}</span>
           {/* status dot */}
           <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: "#00C853" }} />
           <ChevronDown size={13} style={{ color: "#6B7A99" }} />
@@ -306,13 +243,13 @@ function ProjectControlBar({ onRunAudit }: { onRunAudit: () => void }) {
               {domains.map((d) => (
                 <button
                   key={d}
-                  onClick={() => { setSelectedDomain(d); setDomainOpen(false); }}
-                  className={cn("w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm transition-colors hover:bg-white/[0.04] text-left", selectedDomain === d ? "text-white font-semibold" : "text-[#8B9BB4]")}
+                  onClick={() => { onDomainChange(d); setDomainOpen(false); }}
+                  className={cn("w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm transition-colors hover:bg-white/[0.04] text-left", currentDomain === d ? "text-white font-semibold" : "text-[#8B9BB4]")}
                 >
                   <div className="w-4 h-4 rounded flex items-center justify-center text-[9px] font-bold text-white shrink-0"
                     style={{ background: "linear-gradient(135deg,#FF642D,#E85420)" }}>{d[0].toUpperCase()}</div>
                   {d}
-                  {selectedDomain === d && <Check size={12} className="ml-auto" style={{ color: "#FF642D" }} />}
+                  {currentDomain === d && <Check size={12} className="ml-auto" style={{ color: "#FF642D" }} />}
                 </button>
               ))}
               <div className="border-t mx-2" style={{ borderColor: "#1E2940" }} />
@@ -615,7 +552,7 @@ function CrawlOverviewPanel() {
             <ResponsiveContainer width="100%" height={140}>
               <PieChart>
                 <Pie
-                  data={CRAWL_DISTRIBUTION}
+                  data={props.crawlDistribution}
                   cx="50%"
                   cy="50%"
                   innerRadius={42}
@@ -624,7 +561,7 @@ function CrawlOverviewPanel() {
                   dataKey="value"
                   stroke="none"
                 >
-                  {CRAWL_DISTRIBUTION.map((entry, index) => (
+                  {props.crawlDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -642,7 +579,7 @@ function CrawlOverviewPanel() {
 
           {/* Legend */}
           <div className="grid grid-cols-2 gap-1.5">
-            {CRAWL_DISTRIBUTION.map((d) => (
+            {props.crawlDistribution.map((d) => (
               <div key={d.name} className="flex items-center gap-1.5 text-[11px]" style={{ color: "#8B9BB4" }}>
                 <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: d.color }} />
                 {d.name}: <span className="font-bold text-white ml-0.5">{d.value}</span>
@@ -747,7 +684,7 @@ function FixTheseFirst({ onNavigate }: { onNavigate: (path: string) => void }) {
         Fix These First
       </SectionTitle>
       <div className="space-y-0">
-        {PRIORITY_ISSUES.map((issue, i) => {
+        {props.priorityIssues.map((issue, i) => {
           const cfg = impactConfig[issue.impact];
           return (
             <motion.div
@@ -755,8 +692,8 @@ function FixTheseFirst({ onNavigate }: { onNavigate: (path: string) => void }) {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.05 + i * 0.06 }}
-              className={cn("flex items-center gap-3 py-3.5 cursor-pointer group", i < PRIORITY_ISSUES.length - 1 ? "border-b" : "")}
-              style={i < PRIORITY_ISSUES.length - 1 ? { borderColor: "#1a2236" } : {}}
+              className={cn("flex items-center gap-3 py-3.5 cursor-pointer group", i < props.priorityIssues.length - 1 ? "border-b" : "")}
+              style={i < props.priorityIssues.length - 1 ? { borderColor: "#1a2236" } : {}}
               onClick={() => onNavigate(issue.actionHref)}
             >
               {/* rank */}
@@ -766,7 +703,11 @@ function FixTheseFirst({ onNavigate }: { onNavigate: (path: string) => void }) {
               </div>
               {/* icon */}
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: cfg.bg }}>
-                <issue.icon size={15} style={{ color: cfg.color }} />
+                {issue.rank === 1 ? <FileText size={15} style={{ color: cfg.color }} /> :
+                 issue.rank === 2 ? <LinkIcon size={15} style={{ color: cfg.color }} /> :
+                 issue.rank === 3 ? <Zap size={15} style={{ color: cfg.color }} /> :
+                 issue.rank === 4 ? <AlertCircle size={15} style={{ color: cfg.color }} /> :
+                                    <Eye size={15} style={{ color: cfg.color }} />}
               </div>
               {/* text */}
               <div className="flex-1 min-w-0">
@@ -818,7 +759,7 @@ function SEOTrendCharts() {
   const charts = [
     {
       title: "Site Health Trend",
-      data: HEALTH_TREND,
+      data: props.healthTrend,
       key: "score",
       color: "#FF642D",
       gradId: "healthGrad",
@@ -827,7 +768,7 @@ function SEOTrendCharts() {
     },
     {
       title: "Errors Trend",
-      data: ERRORS_TREND,
+      data: props.errorsTrend,
       key: "errors",
       color: "#FF3D3D",
       gradId: "errorsGrad",
@@ -836,7 +777,7 @@ function SEOTrendCharts() {
     },
     {
       title: "Pages Crawled",
-      data: CRAWL_TREND,
+      data: props.crawlTrend,
       key: "pages",
       color: "#7B5CF5",
       gradId: "crawlGrad",
@@ -1272,10 +1213,11 @@ function SEORoadmap({ onNavigate }: { onNavigate: (path: string) => void }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Dashboard Component
 // ─────────────────────────────────────────────────────────────────────────────
-export function DashboardClient() {
+export function DashboardClient(props: DashboardClientProps) {
   const router = useRouter();
   const [trafficTab, setTrafficTab] = useState<"rankypulse" | "google">("rankypulse");
   const [trafficPeriod, setTrafficPeriod] = useState<"7D"|"30D"|"90D"|"12M">("30D");
+  const [selectedDomain, setSelectedDomain] = useState(props.projectDomains[0]);
 
   const navigate = (path: string) => router.push(path);
 
@@ -1283,7 +1225,12 @@ export function DashboardClient() {
     <div className="flex flex-col gap-5 w-full">
 
       {/* ── 1. Project Control Bar ─────────────────────────────────────────── */}
-      <ProjectControlBar onRunAudit={() => router.push("/audits/full")} />
+      <ProjectControlBar
+        onRunAudit={() => router.push("/audits/full")}
+        domains={props.projectDomains}
+        currentDomain={selectedDomain}
+        onDomainChange={setSelectedDomain}
+      />
 
       {/* ── Audit CTA Widget ───────────────────────────────────────────────── */}
       <AuditCTAWidget />
@@ -1301,7 +1248,7 @@ export function DashboardClient() {
 
           {/* ── 4. SEO Performance Snapshot (4 KPI cards) */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {METRICS.map((m, i) => (
+            {props.kpis.map((m, i) => (
               <motion.div
                 key={m.label}
                 initial={{ opacity: 0, y: 16 }}
@@ -1314,7 +1261,10 @@ export function DashboardClient() {
                   style={{ background: "radial-gradient(circle at top left, rgba(255,100,45,0.06) 0%, transparent 70%)" }} />
                 <div className="flex items-start justify-between mb-3">
                   <p className="text-xs font-semibold" style={{ color: "#6B7A99" }}>{m.label}</p>
-                  <m.icon size={14} style={{ color: "#4A5568" }} />
+                  {m.sparkKey === "traffic" ? <TrendingUp size={14} style={{ color: "#4A5568" }} /> :
+                   m.sparkKey === "keywords" ? <Search size={14} style={{ color: "#4A5568" }} /> :
+                   m.sparkKey === "backlinks" ? <LinkIcon size={14} style={{ color: "#4A5568" }} /> :
+                   <FileText size={14} style={{ color: "#4A5568" }} />}
                 </div>
                 <div className="flex items-end justify-between gap-2">
                   <div>
@@ -1328,7 +1278,7 @@ export function DashboardClient() {
                     </div>
                     <p className="text-[10px] mt-0.5" style={{ color: "#4A5568" }}>{m.context}</p>
                   </div>
-                  <Sparkline data={SPARK[m.sparkKey]} color={m.deltaColor} />
+                  <Sparkline data={props.spark[m.sparkKey]} color={m.deltaColor} />
                 </div>
               </motion.div>
             ))}
@@ -1388,7 +1338,7 @@ export function DashboardClient() {
 
         <div className="min-h-[180px]">
           <ResponsiveContainer width="100%" height={180}>
-            <AreaChart data={TRAFFIC_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+            <AreaChart data={props.trafficData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
               <defs>
                 <linearGradient id="tgOrganic" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#FF642D" stopOpacity={0.25} />
@@ -1440,9 +1390,9 @@ export function DashboardClient() {
             <SectionTitle>Quick Insights</SectionTitle>
             <div className="space-y-3">
               {[
-                { icon: TrendingUp, label: "New Keywords Ranked",  value: "+35",   color: "#00C853", cta: { text: "View keywords",  href: "/features/keyword-explorer" } },
+                { icon: TrendingUp, label: "New Keywords Ranked",  value: "+35",   color: "#00C853", cta: { text: "View keywords",  href: "/features/keyword-gap" } },
                 { icon: AlertTriangle, label: "Issues Detected",   value: "16",    color: "#FF3D3D", cta: { text: "Fix now",        href: "/audits/issues" } },
-                { icon: LinkIcon, label: "Backlinks Gained",       value: "2.1K",  color: "#7B5CF5", cta: { text: "See backlinks",  href: "/features/backlink-audit" } },
+                { icon: LinkIcon, label: "Backlinks Gained",       value: "2.1K",  color: "#7B5CF5", cta: { text: "See backlinks",  href: "/features/backlink-gap" } },
                 { icon: Calendar, label: "Next Audit in",          value: "3 days", color: "#C8D0E0", cta: null },
               ].map((ins, idx, arr) => (
                 <div key={ins.label}>
@@ -1475,7 +1425,7 @@ export function DashboardClient() {
             <SectionTitle>Keyword Rankings</SectionTitle>
             <div className="min-h-[120px] mb-4">
               <ResponsiveContainer width="100%" height={120}>
-                <AreaChart data={RANKINGS_DATA} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                <AreaChart data={props.rankingsData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
                   <defs>
                     <linearGradient id="g3b" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#FF642D" stopOpacity={0.3} /><stop offset="95%" stopColor="#FF642D" stopOpacity={0} />
@@ -1494,7 +1444,7 @@ export function DashboardClient() {
               </ResponsiveContainer>
             </div>
             <div className="space-y-2">
-              {KEYWORD_DIST.map((kd) => (
+              {props.keywordDist?.map((kd) => (
                 <div key={kd.label} className="flex items-center gap-3">
                   <span className="w-14 text-[11px] font-medium shrink-0 flex items-center gap-1.5" style={{ color: "#8B9BB4" }}>
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: kd.color }} />{kd.label}
@@ -1532,11 +1482,11 @@ export function DashboardClient() {
           <div className="grid grid-cols-5 px-6 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "#4A5568", borderBottom: "1px solid #1E2940" }}>
             <span className="col-span-2">Website</span><span>Score</span><span>Issues</span><span>Status</span>
           </div>
-          {AUDITS.map((audit, i) => (
+          {props.recentAudits.map((audit, i) => (
             <div
               key={audit.domain}
-              className={cn("grid grid-cols-5 px-6 py-4 items-center cursor-pointer transition-colors hover:bg-white/[0.025]", i < AUDITS.length - 1 ? "border-b" : "")}
-              style={i < AUDITS.length - 1 ? { borderColor: "#1E2940" } : {}}
+              className={cn("grid grid-cols-5 px-6 py-4 items-center cursor-pointer transition-colors hover:bg-white/[0.025]", i < props.recentAudits.length - 1 ? "border-b" : "")}
+              style={i < props.recentAudits.length - 1 ? { borderColor: "#1E2940" } : {}}
               onClick={() => router.push(`/report/${audit.domain}`)}
             >
               <div className="col-span-2 flex items-center gap-2.5">
@@ -1596,7 +1546,7 @@ export function DashboardClient() {
           <span className="col-span-2">Domain</span><span>Traffic</span><span>Score</span>
         </div>
         <div className="space-y-0">
-          {COMPETITORS.map((comp, i) => (
+          {props.competitors.map((comp, i) => (
             <div key={comp.domain} className={cn("grid grid-cols-4 py-3 items-center", i < COMPETITORS.length - 1 ? "border-b" : "")} style={i < COMPETITORS.length - 1 ? { borderColor: "#1a2236" } : {}}>
               <div className="col-span-2 flex items-center gap-2">
                 <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 text-[10px] font-bold text-white" style={{ background: `hsl(${i * 80 + 220}, 60%, 35%)` }}>
@@ -1623,7 +1573,7 @@ export function DashboardClient() {
             <h2 className="text-sm font-bold text-white mb-0.5">Organic Research</h2>
             <p className="text-xs" style={{ color: "#6B7A99" }}>Top performing keywords driving organic traffic</p>
           </div>
-          <button onClick={() => router.push("/features/keyword-explorer")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors hover:bg-white/[0.04]" style={{ borderColor: "#1E2940", color: "#FF642D" }}>
+          <button onClick={() => router.push("/features/keyword-gap")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors hover:bg-white/[0.04]" style={{ borderColor: "#1E2940", color: "#FF642D" }}>
             <Zap size={12} /> Explore Keywords
           </button>
         </div>
