@@ -48,6 +48,9 @@ export interface DashboardData {
   }>;
   projectDomains: string[];
   currentDomain: string;
+  errorCount: number;
+  warningCount: number;
+  noticeCount: number;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -198,11 +201,17 @@ export async function getDashboardData(userId: string, domain: string): Promise<
 
   // ── 6. Build priorityIssues — aggregate issues across all pages ───────────
   const issueCountMap: Record<string, number> = {};
+  // Also track severity per issue ID (to compute error/warning/notice totals)
+  const issueSevMap: Record<string, string> = {};
   for (const page of auditPages) {
     for (const issue of page.issues) {
       issueCountMap[issue.id] = (issueCountMap[issue.id] ?? 0) + 1;
+      issueSevMap[issue.id] = issue.sev;
     }
   }
+  const errorCount   = Object.values(issueSevMap).filter((s) => s === "HIGH").length;
+  const warningCount = Object.values(issueSevMap).filter((s) => s === "MED").length;
+  const noticeCount  = Object.values(issueSevMap).filter((s) => s === "LOW").length;
 
   // Sort: HIGH first, then by page count
   const impactOrder = { high: 0, medium: 1, low: 2 };
@@ -372,5 +381,8 @@ export async function getDashboardData(userId: string, domain: string): Promise<
     priorityIssues: finalPriorityIssues,
     projectDomains: projectDomains.length > 0 ? projectDomains : [domain],
     currentDomain,
+    errorCount,
+    warningCount,
+    noticeCount,
   };
 }

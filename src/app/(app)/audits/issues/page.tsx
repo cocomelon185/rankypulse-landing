@@ -327,13 +327,37 @@ export default function CrawlIssuesPage() {
                         {loading && (
                             <div className="px-6 py-10 text-center text-gray-500 font-['DM_Sans']">Loading audit data...</div>
                         )}
+
+                        {/* Authenticated but no crawl data → guide them to run a full crawl */}
+                        {!loading && isAuthenticated && issues.length === 0 && (
+                            <div className="py-20 text-center flex flex-col items-center gap-3">
+                                <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-2">
+                                    <Search size={28} className="text-gray-600" />
+                                </div>
+                                <p className="font-['DM_Sans'] text-gray-300 font-semibold text-lg">No crawl data found</p>
+                                <p className="font-['DM_Sans'] text-gray-500 text-sm max-w-sm">
+                                    Run a full site audit to discover all crawl issues, broken links, and SEO errors across your entire site.
+                                </p>
+                                <button
+                                    onClick={() => router.push('/audits/full')}
+                                    className="mt-2 px-5 py-2.5 bg-red-500 hover:bg-red-400 text-white rounded-xl font-['DM_Sans'] font-semibold text-sm transition-all flex items-center gap-2 shadow-lg shadow-red-500/20"
+                                >
+                                    <Play size={14} fill="currentColor" />
+                                    Run Full Site Audit
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Unauthenticated with no URL → send to audit page */}
                         {!loading && !isAuthenticated && !urlChecked && (
                             <div className="px-6 py-10 text-center text-gray-500 font-['DM_Sans']">
                                 Run an audit first to see crawl issues.{' '}
                                 <button onClick={() => router.push('/audits')} className="text-indigo-400 hover:underline">Go to Site Audit</button>
                             </div>
                         )}
-                        {!loading && (isAuthenticated || urlChecked) && filteredIssues.length === 0 && (
+
+                        {/* Results exist but search/filter shows nothing */}
+                        {!loading && issues.length > 0 && filteredIssues.length === 0 && (
                             <div className="py-20 text-center flex flex-col items-center">
                                 <CheckCircle size={32} className="text-gray-700 mb-4" />
                                 <p className="font-['DM_Sans'] text-gray-400">No issues found matching your criteria.</p>

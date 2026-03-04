@@ -29,61 +29,42 @@ export async function GET(req: NextRequest) {
   }
 
   const userId = session.user.id;
-  let targetDomain = req.nextUrl.searchParams.get("domain");
+  const domainParam = req.nextUrl.searchParams.get("domain");
 
   try {
-    // 1. If no domain specified, use user's primary saved domain
-    if (!targetDomain) {
-      const { data: primary } = await supabaseAdmin
-        .from("saved_domains")
-        .select("domain")
-        .eq("user_id", userId)
-        .order("last_scanned_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      targetDomain = primary?.domain ?? null;
-    }
-
-    // No domain at all → return empty
-    if (!targetDomain) {
-      return NextResponse.json({
-        healthScore: 0,
-        errors: 0,
-        warnings: 0,
-        notices: 0,
-        domain: null,
-        crawledAt: null,
-        totalPages: 0,
-        issues: [],
-      });
-    }
-
-    // 2. Latest completed crawl job for that domain
-    const { data: latestJob } = await supabaseAdmin
+    // ── Get the latest completed crawl job (skip saved_domains entirely) ──────
+    // crawl engine writes to crawl_jobs + audit_pages, never to saved_domains
+    const jobQueryBase = supabaseAdmin
       .from("crawl_jobs")
       .select("id, domain, created_at, updated_at, pages_crawled")
       .eq("user_id", userId)
-      .eq("domain", targetDomain)
       .eq("status", "completed")
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
 
-    if (!latestJob?.id) {
-      // Crawl exists but no completed job yet
+    const { data: latestJob } = await (
+      domainParam
+        ? jobQueryBase.eq("domain", domainParam).maybeSingle()
+        : jobQueryBase.maybeSingle()
+    );
+
+    const targetDomain = latestJob?.domain ?? null;
+
+    // No completed crawl job found at all
+    if (!latestJob || !targetDomain) {
       return NextResponse.json({
         healthScore: 0,
         errors: 0,
         warnings: 0,
         notices: 0,
-        domain: targetDomain,
+        domain: domainParam ?? null,
         crawledAt: null,
         totalPages: 0,
         issues: [],
       });
     }
 
-    // 3. All audit pages for that job
+    // ── All audit pages for that job ──────────────────────────────────────────
     const { data: rawPages } = await supabaseAdmin
       .from("audit_pages")
       .select("url, score, issues")
@@ -95,7 +76,7 @@ export async function GET(req: NextRequest) {
       issues: Array.isArray(p.issues) ? (p.issues as RawIssue[]) : [],
     }));
 
-    // 4. Aggregate issues across all pages grouped by issue ID
+    // ── Aggregate issues across all pages grouped by issue ID ─────────────────
     const issueMap: Record<string, { sev: string; count: number }> = {};
     for (const page of pages) {
       for (const issue of page.issues ?? []) {
@@ -106,8 +87,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 5. Map to display format using ISSUE_META
-    const impactOrder = { error: 0, warning: 1, notice: 2 };
+    // ── Map to display format using ISSUE_META ────────────────────────────────
+    const impactOrder: Record<string, number> = { error: 0, warning: 1, notice: 2 };
     const issues = Object.entries(issueMap)
       .map(([id, { sev, count }]) => {
         const meta = ISSUE_META[id] ?? {
@@ -130,12 +111,12 @@ export async function GET(req: NextRequest) {
       })
       .sort(
         (a, b) =>
-          impactOrder[a.severity] - impactOrder[b.severity] ||
+          (impactOrder[a.severity] ?? 2) - (impactOrder[b.severity] ?? 2) ||
           b.urlsAffected - a.urlsAffected
       );
 
-    // 6. Compute summary stats
-    const errors  = issues.filter((i) => i.severity === "error").length;
+    // ── Summary stats ─────────────────────────────────────────────────────────
+    const errors   = issues.filter((i) => i.severity === "error").length;
     const warnings = issues.filter((i) => i.severity === "warning").length;
     const notices  = issues.filter((i) => i.severity === "notice").length;
 

@@ -102,6 +102,9 @@ interface DashboardClientProps {
   }>;
   projectDomains: string[];
   currentDomain: string;
+  errorCount?: number;
+  warningCount?: number;
+  noticeCount?: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -320,7 +323,12 @@ function ProjectControlBar({ onRunAudit, domains, currentDomain, onDomainChange 
 // ─────────────────────────────────────────────────────────────────────────────
 // Section 2 – Site Health Hero + Issue Severity
 // ─────────────────────────────────────────────────────────────────────────────
-function SiteHealthHero({ score = 92 }: { score?: number }) {
+function SiteHealthHero({ score = 92, errorCount = 0, warningCount = 0, noticeCount = 0 }: {
+  score?: number;
+  errorCount?: number;
+  warningCount?: number;
+  noticeCount?: number;
+}) {
   const r = 68;
   const circ = 2 * Math.PI * r;
   const offset = circ * (1 - score / 100);
@@ -378,9 +386,9 @@ function SiteHealthHero({ score = 92 }: { score?: number }) {
       {/* Colored bar breakdown */}
       {(() => {
         const breakdown = [
-          { label: "Errors",   count: 12, color: "#FF3D3D", tooltip: "Critical SEO problems — fix immediately to prevent ranking loss" },
-          { label: "Warnings", count: 37, color: "#FF9800", tooltip: "Important issues that hurt performance but aren't blocking" },
-          { label: "Notices",  count: 54, color: "#00B0FF", tooltip: "Minor improvements for better optimization" },
+          { label: "Errors",   count: errorCount,   color: "#FF3D3D", tooltip: "Critical SEO problems — fix immediately to prevent ranking loss" },
+          { label: "Warnings", count: warningCount, color: "#FF9800", tooltip: "Important issues that hurt performance but aren't blocking" },
+          { label: "Notices",  count: noticeCount,  color: "#00B0FF", tooltip: "Minor improvements for better optimization" },
         ];
         const total = breakdown.reduce((s, r) => s + r.count, 0);
         return (
@@ -413,42 +421,47 @@ function SiteHealthHero({ score = 92 }: { score?: number }) {
   );
 }
 
-function IssueSeverityPanel({ onNavigate }: { onNavigate: (path: string) => void }) {
+function IssueSeverityPanel({ onNavigate, errorCount, warningCount, noticeCount }: {
+  onNavigate: (path: string) => void;
+  errorCount: number;
+  warningCount: number;
+  noticeCount: number;
+}) {
   const issues = [
     {
       label: "Errors",
-      count: 12,
-      delta: -3,
+      count: errorCount,
+      delta: 0,
       color: "#FF3D3D",
       bg: "rgba(255,61,61,0.10)",
       border: "rgba(255,61,61,0.20)",
       icon: XCircle,
       desc: "Critical Issues",
-      bars: [8, 14, 10, 16, 12],
+      bars: [0, 0, 0, 0, errorCount],
       path: "/audits/issues",
     },
     {
       label: "Warnings",
-      count: 37,
-      delta: -8,
+      count: warningCount,
+      delta: 0,
       color: "#FF9800",
       bg: "rgba(255,152,0,0.10)",
       border: "rgba(255,152,0,0.20)",
       icon: AlertTriangle,
       desc: "Important Issues",
-      bars: [42, 38, 45, 40, 37],
+      bars: [0, 0, 0, 0, warningCount],
       path: "/audits/issues",
     },
     {
       label: "Notices",
-      count: 54,
-      delta: +5,
+      count: noticeCount,
+      delta: 0,
       color: "#00B0FF",
       bg: "rgba(0,176,255,0.10)",
       border: "rgba(0,176,255,0.20)",
       icon: AlertCircle,
       desc: "Minor Issues",
-      bars: [50, 52, 48, 54, 54],
+      bars: [0, 0, 0, 0, noticeCount],
       path: "/audits/issues",
     },
   ];
@@ -1239,12 +1252,22 @@ export function DashboardClient(props: DashboardClientProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Site Health Hero – 3 cols */}
         <div className="lg:col-span-3">
-          <SiteHealthHero score={92} />
+          <SiteHealthHero
+            score={92}
+            errorCount={props.errorCount ?? 0}
+            warningCount={props.warningCount ?? 0}
+            noticeCount={props.noticeCount ?? 0}
+          />
         </div>
 
         {/* Right side – Issue Severity + KPI cards stacked – 9 cols */}
         <div className="lg:col-span-9 flex flex-col gap-4">
-          <IssueSeverityPanel onNavigate={navigate} />
+          <IssueSeverityPanel
+            onNavigate={navigate}
+            errorCount={props.errorCount ?? 0}
+            warningCount={props.warningCount ?? 0}
+            noticeCount={props.noticeCount ?? 0}
+          />
 
           {/* ── 4. SEO Performance Snapshot (4 KPI cards) */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
