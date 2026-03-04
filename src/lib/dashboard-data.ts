@@ -70,7 +70,7 @@ function formatNumber(n: number): string {
 
 // ─── ISSUE ID → Label/Impact map ─────────────────────────────────────────────
 
-const ISSUE_META: Record<string, {
+export const ISSUE_META: Record<string, {
   label: string;
   impact: "high" | "medium" | "low";
   action: string;

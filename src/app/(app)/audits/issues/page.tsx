@@ -16,22 +16,21 @@ import {
     Download
 } from 'lucide-react';
 
-// MOCK DATA REMOVED
-
 const ISSUE_CATEGORIES = [
     { id: 'errors', label: 'Errors', count: 0, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: AlertCircle },
     { id: 'warnings', label: 'Warnings', count: 0, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', icon: AlertTriangle },
     { id: 'notices', label: 'Notices', count: 0, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: Info },
 ];
 
-const timeAgo = (date: Date) => {
-    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+const timeAgo = (date: Date | string) => {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    const seconds = Math.floor((Date.now() - d.getTime()) / 1000);
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
     return `${Math.floor(seconds / 86400)}d ago`;
 };
 
-const apiSeverityToIssueSeverity = (sev: string) => {
+const apiSeverityToIssueSeverity = (sev: string): 'error' | 'warning' | 'notice' => {
     switch (sev?.toUpperCase()) {
         case 'HIGH':
         case 'CRITICAL':
@@ -52,7 +51,7 @@ interface AuditIssue {
     description: string;
     urlsAffected: number;
     trend: string;
-    discovered: Date;
+    discovered: Date | string;
 }
 
 export default function CrawlIssuesPage() {
@@ -62,12 +61,45 @@ export default function CrawlIssuesPage() {
 
     const [loading, setLoading] = useState(true);
     const [issues, setIssues] = useState<AuditIssue[]>([]);
-    const [stats, setStats] = useState({ healthScore: 0, crawledPages: 1, healthyPages: 1, brokenPages: 0, redirects: 0, blocked: 0 });
+    const [stats, setStats] = useState({ healthScore: 0, crawledPages: 0, healthyPages: 0, brokenPages: 0, redirects: 0, blocked: 0 });
+
+    // Authenticated Supabase path
+    const [domain, setDomain] = useState<string | null>(null);
+    const [totalPages, setTotalPages] = useState<number>(0);
+    const [crawledAt, setCrawledAt] = useState<string | null>(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+    // Unauthenticated fallback path
     const [urlChecked, setUrlChecked] = useState<string | null>(null);
 
     const fetchAudit = async (forceUrl?: string) => {
         setLoading(true);
         try {
+            // ── Path 1: Authenticated Supabase data ──────────────────────────────
+            const authRes = await fetch('/api/audits/data');
+            if (authRes.ok) {
+                const data = await authRes.json();
+                setIsAuthenticated(true);
+                setIssues(
+                    (data.issues ?? []).map((issue: AuditIssue) => ({
+                        ...issue,
+                        // discovered is an ISO string from the API
+                        discovered: issue.discovered,
+                    }))
+                );
+                setStats(prev => ({
+                    ...prev,
+                    healthScore: data.healthScore ?? 0,
+                    crawledPages: data.totalPages ?? 0,
+                }));
+                setDomain(data.domain ?? null);
+                setTotalPages(data.totalPages ?? 0);
+                setCrawledAt(data.crawledAt ?? null);
+                return; // Done — skip unauthenticated path
+            }
+
+            // ── Path 2: Unauthenticated fallback (localStorage + /api/audit) ────
+            setIsAuthenticated(false);
             const lastUrl = forceUrl || localStorage.getItem('rankypulse_last_url');
             if (!lastUrl) {
                 setLoading(false);
@@ -82,15 +114,17 @@ export default function CrawlIssuesPage() {
             const json = await res.json();
             if (json.ok && json.data) {
                 const apiIssues = json.data.issues || [];
-                const mappedIssues: AuditIssue[] = apiIssues.map((apiIssue: { id?: string; severity: string; title?: string; suggestedFix?: string; msg?: string }, index: number) => ({
-                    id: apiIssue.id || index.toString(),
-                    severity: apiSeverityToIssueSeverity(apiIssue.severity),
-                    title: apiIssue.title || apiIssue.id || 'Unknown Issue',
-                    description: apiIssue.suggestedFix || apiIssue.msg || apiIssue.title || '',
-                    urlsAffected: 1,
-                    trend: '0',
-                    discovered: new Date(),
-                }));
+                const mappedIssues: AuditIssue[] = apiIssues.map(
+                    (apiIssue: { id?: string; severity: string; title?: string; suggestedFix?: string; msg?: string }, index: number) => ({
+                        id: apiIssue.id || index.toString(),
+                        severity: apiSeverityToIssueSeverity(apiIssue.severity),
+                        title: apiIssue.title || apiIssue.id || 'Unknown Issue',
+                        description: apiIssue.suggestedFix || apiIssue.msg || apiIssue.title || '',
+                        urlsAffected: 1,
+                        trend: '0',
+                        discovered: new Date(),
+                    })
+                );
                 setIssues(mappedIssues);
                 setStats(prev => ({ ...prev, healthScore: Math.round(json.data.scores?.seo || 0) }));
             }
@@ -103,6 +137,7 @@ export default function CrawlIssuesPage() {
 
     useEffect(() => {
         fetchAudit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const filteredIssues = issues.filter(issue => {
@@ -115,6 +150,9 @@ export default function CrawlIssuesPage() {
         ...cat,
         count: issues.filter(i => i.severity === (cat.id.endsWith('s') ? cat.id.slice(0, -1) : cat.id)).length
     }));
+
+    // Label shown in breadcrumb / header
+    const domainLabel = domain ?? urlChecked ?? null;
 
     return (
         <main className="min-h-screen bg-[#0d0f14] pt-20 pb-20 px-6">
@@ -144,12 +182,26 @@ export default function CrawlIssuesPage() {
                             <span className="font-['DM_Mono'] text-xs text-red-400 tracking-wider">
                                 CRAWL ISSUES
                             </span>
+                            {domainLabel && (
+                                <>
+                                    <span className="text-gray-700">/</span>
+                                    <span className="font-['DM_Mono'] text-xs text-gray-500 tracking-wider">
+                                        {domainLabel}
+                                    </span>
+                                </>
+                            )}
                         </div>
                         <h1 className="font-['Fraunces'] text-4xl font-bold text-white tracking-tight leading-tight">
                             Crawl Issues
                         </h1>
                         <p className="font-['DM_Sans'] text-gray-400 text-sm mt-2 max-w-2xl">
                             Identify and fix technical SEO errors, warnings, and notices that are preventing search engines from fully crawling and indexing your site.
+                            {totalPages > 0 && (
+                                <span className="ml-2 text-gray-500">
+                                    — {totalPages.toLocaleString()} pages crawled
+                                    {crawledAt && ` · ${timeAgo(crawledAt)}`}
+                                </span>
+                            )}
                         </p>
                     </div>
 
@@ -160,7 +212,9 @@ export default function CrawlIssuesPage() {
                         </button>
                         <button
                             onClick={() => {
-                                if (urlChecked) {
+                                if (isAuthenticated) {
+                                    fetchAudit(); // Re-fetch from Supabase
+                                } else if (urlChecked) {
                                     fetchAudit(urlChecked);
                                 } else {
                                     router.push('/audits');
@@ -169,7 +223,7 @@ export default function CrawlIssuesPage() {
                             className="px-4 py-2.5 bg-red-500 text-white rounded-xl font-['DM_Sans'] font-semibold text-sm hover:bg-red-400 transition-all flex items-center gap-2 shadow-lg shadow-red-500/20"
                         >
                             <Play size={14} fill="currentColor" />
-                            {urlChecked ? "Re-Crawl Site" : "Run Audit"}
+                            {isAuthenticated ? "Refresh Data" : urlChecked ? "Re-Crawl Site" : "Run Audit"}
                         </button>
                     </div>
                 </motion.div>
@@ -271,12 +325,21 @@ export default function CrawlIssuesPage() {
                     {/* List */}
                     <AnimatePresence mode="popLayout">
                         {loading && (
-                            <div className="px-6 py-10 text-center text-gray-500">Loading audit data...</div>
+                            <div className="px-6 py-10 text-center text-gray-500 font-['DM_Sans']">Loading audit data...</div>
                         )}
-                        {!loading && !urlChecked && (
-                            <div className="px-6 py-10 text-center text-gray-500">Run an audit first to see crawl issues. <button onClick={() => router.push('/audits')} className="text-indigo-400 hover:underline">Go to Site Audit</button></div>
+                        {!loading && !isAuthenticated && !urlChecked && (
+                            <div className="px-6 py-10 text-center text-gray-500 font-['DM_Sans']">
+                                Run an audit first to see crawl issues.{' '}
+                                <button onClick={() => router.push('/audits')} className="text-indigo-400 hover:underline">Go to Site Audit</button>
+                            </div>
                         )}
-                        {!loading && urlChecked && filteredIssues.map((issue) => {
+                        {!loading && (isAuthenticated || urlChecked) && filteredIssues.length === 0 && (
+                            <div className="py-20 text-center flex flex-col items-center">
+                                <CheckCircle size={32} className="text-gray-700 mb-4" />
+                                <p className="font-['DM_Sans'] text-gray-400">No issues found matching your criteria.</p>
+                            </div>
+                        )}
+                        {!loading && filteredIssues.map((issue) => {
                             const categoryInfo = categoriesWithCounts.find(c => c.id.toLowerCase() === issue.severity + 's');
                             const Icon = categoryInfo?.icon || Info;
 
@@ -330,13 +393,6 @@ export default function CrawlIssuesPage() {
                             );
                         })}
                     </AnimatePresence>
-
-                    {!loading && urlChecked && filteredIssues.length === 0 && (
-                        <div className="py-20 text-center flex flex-col items-center">
-                            <CheckCircle size={32} className="text-gray-700 mb-4" />
-                            <p className="font-['DM_Sans'] text-gray-400">No issues found matching your criteria.</p>
-                        </div>
-                    )}
                 </motion.div>
 
             </div>
