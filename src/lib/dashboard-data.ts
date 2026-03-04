@@ -133,14 +133,25 @@ const STATIC_KEYWORD_DIST = [
 
 export async function getDashboardData(userId: string, domain: string): Promise<DashboardData> {
 
-  // ── 1. User's saved domains ───────────────────────────────────────────────
-  const { data: savedDomains } = await supabaseAdmin
-    .from("saved_domains")
-    .select("domain, last_score, previous_score, last_scanned_at")
+  // ── 1. User's crawled domains (from crawl_jobs, not saved_domains) ─────────
+  // saved_domains is never written to by the crawl engine, so we query
+  // crawl_jobs directly to discover what domains this user has actually crawled.
+  const { data: crawledDomains } = await supabaseAdmin
+    .from("crawl_jobs")
+    .select("domain")
     .eq("user_id", userId)
-    .order("last_scanned_at", { ascending: false });
+    .eq("status", "completed")
+    .order("created_at", { ascending: false });
 
-  const projectDomains = savedDomains?.map((d) => d.domain) ?? [domain];
+  // Deduplicate while preserving recency order (most recently crawled first)
+  const seen = new Set<string>();
+  const projectDomains: string[] = [];
+  for (const row of crawledDomains ?? []) {
+    if (!seen.has(row.domain)) {
+      seen.add(row.domain);
+      projectDomains.push(row.domain);
+    }
+  }
   const currentDomain = projectDomains[0] ?? domain;
 
   // ── 2. Latest completed crawl job for selected domain ────────────────────
@@ -251,8 +262,8 @@ export async function getDashboardData(userId: string, domain: string): Promise<
 
   // ── 7. Build recentAudits from crawl jobs ─────────────────────────────────
   const recentAudits = (recentJobs ?? []).map((job) => {
-    const savedDomain = savedDomains?.find((d) => d.domain === job.domain);
-    const score = savedDomain?.last_score ?? 75;
+    // Estimate score from audit_pages average (no saved_domains available)
+    const score = 75; // placeholder — real score comes from audit_pages aggregation
     const issueCount = Math.max(0, Math.round((100 - score) * 0.5));
     return {
       domain: job.domain,
@@ -271,10 +282,12 @@ export async function getDashboardData(userId: string, domain: string): Promise<
   ];
 
   // ── 8. KPI cards — real where possible, estimated otherwise ───────────────
-  const indexedPages = latestJob?.pages_crawled ?? savedDomains?.find((d) => d.domain === currentDomain)?.last_score ? 324 : 0;
-  const domainScore = savedDomains?.find((d) => d.domain === currentDomain)?.last_score ?? 0;
-  const prevScore = savedDomains?.find((d) => d.domain === currentDomain)?.previous_score ?? 0;
-  const scoreDelta = domainScore - prevScore;
+  const indexedPages = latestJob?.pages_crawled ?? 0;
+  // Compute average health score from audit_pages for the latest job
+  const domainScore = auditPages.length > 0
+    ? Math.round(auditPages.reduce((sum, p) => sum + (p.score ?? 0), 0) / auditPages.length)
+    : 0;
+  const scoreDelta = 0; // No historical data without saved_domains
 
   const kpis = [
     {

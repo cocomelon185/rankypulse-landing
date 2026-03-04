@@ -62,7 +62,7 @@ export default async function DashboardPage() {
 
   return (
     <Suspense fallback={<DashboardSkeleton />}>
-      <DashboardContent userId={userId} domain="rankypulse.com" />
+      <DashboardContent userId={userId} domain="" />
     </Suspense>
   );
 }
