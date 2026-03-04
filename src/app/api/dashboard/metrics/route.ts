@@ -1,179 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getDashboardData } from "@/lib/dashboard-data";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const domain = req.nextUrl.searchParams.get("domain") || "rankypulse.com";
 
-    // TODO: Replace mock data with actual Supabase queries
-    // For now, return the same structure as the hardcoded constants in DashboardClient
-
-    const metrics = {
-      spark: {
-        seo: [68, 72, 70, 75, 78, 80, 92],
-        traffic: [120, 135, 128, 148, 160, 172, 187],
-        keywords: [13200, 13400, 13100, 12900, 12700, 12500, 12450],
-        backlinks: [3300, 3420, 3500, 3600, 3700, 3820, 3892],
-      },
-      kpis: [
-        {
-          label: "Organic Traffic",
-          value: "187.3K",
-          suffix: "",
-          delta: "+12.8%",
-          context: "Last 30 days",
-          trend: "up" as const,
-          sparkKey: "traffic",
-          deltaColor: "#00C853",
-        },
-        {
-          label: "Keywords Ranking",
-          value: "12,450",
-          suffix: "",
-          delta: "+340",
-          context: "in top 100",
-          trend: "up" as const,
-          sparkKey: "keywords",
-          deltaColor: "#00C853",
-        },
-        {
-          label: "Indexed Pages",
-          value: "324",
-          suffix: "",
-          delta: "+18",
-          context: "total pages",
-          trend: "up" as const,
-          sparkKey: "seo",
-          deltaColor: "#00C853",
-        },
-        {
-          label: "Backlinks",
-          value: "3,892",
-          suffix: "",
-          delta: "+6.4%",
-          context: "referring domains",
-          trend: "up" as const,
-          sparkKey: "backlinks",
-          deltaColor: "#00C853",
-        },
-      ],
-      trafficData: [
-        { month: "Oct", organic: 141, paid: 14, direct: 28 },
-        { month: "Nov", organic: 155, paid: 18, direct: 31 },
-        { month: "Dec", organic: 148, paid: 22, direct: 27 },
-        { month: "Jan", organic: 162, paid: 25, direct: 34 },
-        { month: "Feb", organic: 170, paid: 21, direct: 36 },
-        { month: "Mar", organic: 180, paid: 28, direct: 39 },
-        { month: "Apr", organic: 187, paid: 30, direct: 42 },
-      ],
-      rankingsData: [
-        { month: "Jan", top3: 18, top10: 42, top100: 95 },
-        { month: "Feb", top3: 22, top10: 50, top100: 108 },
-        { month: "Mar", top3: 28, top10: 58, top100: 120 },
-        { month: "Apr", top3: 32, top10: 68, top100: 135 },
-        { month: "May", top3: 35, top10: 75, top100: 145 },
-        { month: "Jun", top3: 38, top10: 82, top100: 158 },
-      ],
-      healthTrend: [
-        { month: "Jan", score: 72 },
-        { month: "Feb", score: 75 },
-        { month: "Mar", score: 80 },
-        { month: "Apr", score: 82 },
-        { month: "May", score: 85 },
-        { month: "Jun", score: 88 },
-      ],
-      errorsTrend: [
-        { month: "Jan", count: 128 },
-        { month: "Feb", count: 115 },
-        { month: "Mar", count: 98 },
-        { month: "Apr", count: 87 },
-        { month: "May", count: 72 },
-        { month: "Jun", count: 58 },
-      ],
-      crawlTrend: [
-        { month: "Jan", pages: 285 },
-        { month: "Feb", pages: 291 },
-        { month: "Mar", pages: 305 },
-        { month: "Apr", pages: 312 },
-        { month: "May", pages: 318 },
-        { month: "Jun", pages: 324 },
-      ],
-      crawlDistribution: [
-        { name: "Healthy", value: 287, color: "#00C853" },
-        { name: "Broken", value: 18, color: "#FF3D3D" },
-        { name: "Redirects", value: 12, color: "#FF9800" },
-        { name: "Blocked", value: 7, color: "#C8D0E0" },
-      ],
-      recentAudits: [
-        { domain: domain,          score: 88, issues: 16, status: "Completed",   updated: "2h ago" },
-        { domain: "clientsite.io", score: 82, issues: 22, status: "Completed",   updated: "2d ago" },
-        { domain: "newproject.com",score: 75, issues: 34, status: "In Progress", updated: "7d ago" },
-      ],
-      competitors: [
-        { domain: "ahrefs.com", traffic: "5.2M", keywords: "142K", score: 98 },
-        { domain: "semrush.com", traffic: "3.8M", keywords: "98K", score: 96 },
-        { domain: "ahrefs.com", traffic: "2.8M", keywords: "218K", score: 94 },
-      ],
-      keywordDist: [
-        { label: "Top 3",   count: 35,  delta: "+4",  pct: 26,  color: "#FF642D" },
-        { label: "Top 10",  count: 68,  delta: "+12", pct: 51,  color: "#7B5CF5" },
-        { label: "Top 100", count: 134, delta: "+33", pct: 100, color: "#4A6FA5" },
-      ],
-      priorityIssues: [
-        {
-          rank: 1,
-          label: "Missing Meta Descriptions",
-          pages: 25,
-          impact: "high",
-          action: "Fix Now",
-          actionHref: "/audits/issues",
-          gain: "+3–5 ranking positions",
-        },
-        {
-          rank: 2,
-          label: "Broken Internal Links",
-          pages: 12,
-          impact: "high",
-          action: "View URLs",
-          actionHref: "/audits/links",
-          gain: "+2–4 authority pages",
-        },
-        {
-          rank: 3,
-          label: "Large Images Slowing Pages",
-          pages: 18,
-          impact: "medium",
-          action: "Optimize",
-          actionHref: "/audits/speed",
-          gain: null,
-        },
-        {
-          rank: 4,
-          label: "Duplicate Title Tags",
-          pages: 8,
-          impact: "medium",
-          action: "Fix Now",
-          actionHref: "/audits/issues",
-          gain: null,
-        },
-        {
-          rank: 5,
-          label: "Images Missing Alt Text",
-          pages: 34,
-          impact: "low",
-          action: "Fix Now",
-          actionHref: "/audits/issues",
-          gain: null,
-        },
-      ],
-      projectDomains: ["rankypulse.com", "clientsite.io", "newproject.com"],
-      currentDomain: domain,
-    };
+    const metrics = await getDashboardData(session.user.id, domain);
 
     return NextResponse.json(metrics);
   } catch (err) {
