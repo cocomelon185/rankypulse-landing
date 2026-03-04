@@ -504,7 +504,7 @@ function IssueSeverityPanel({ onNavigate }: { onNavigate: (path: string) => void
 // ─────────────────────────────────────────────────────────────────────────────
 // Section 5 – Crawl Overview Panel
 // ─────────────────────────────────────────────────────────────────────────────
-function CrawlOverviewPanel() {
+function CrawlOverviewPanel({ crawlDistribution }: { crawlDistribution: Array<{ name: string; value: number; color: string }> }) {
   const stats = [
     { label: "Pages Crawled", value: 324, color: "#C8D0E0", icon: Globe },
     { label: "Healthy Pages", value: 280, color: "#00C853", icon: CheckCircle },
@@ -552,7 +552,7 @@ function CrawlOverviewPanel() {
             <ResponsiveContainer width="100%" height={140}>
               <PieChart>
                 <Pie
-                  data={props.crawlDistribution}
+                  data={crawlDistribution}
                   cx="50%"
                   cy="50%"
                   innerRadius={42}
@@ -561,7 +561,7 @@ function CrawlOverviewPanel() {
                   dataKey="value"
                   stroke="none"
                 >
-                  {props.crawlDistribution.map((entry, index) => (
+                  {crawlDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -579,7 +579,7 @@ function CrawlOverviewPanel() {
 
           {/* Legend */}
           <div className="grid grid-cols-2 gap-1.5">
-            {props.crawlDistribution.map((d) => (
+            {crawlDistribution.map((d) => (
               <div key={d.name} className="flex items-center gap-1.5 text-[11px]" style={{ color: "#8B9BB4" }}>
                 <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: d.color }} />
                 {d.name}: <span className="font-bold text-white ml-0.5">{d.value}</span>
@@ -666,7 +666,7 @@ function CoreWebVitalsPanel() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Section 7 – "Fix These First" Priority List
 // ─────────────────────────────────────────────────────────────────────────────
-function FixTheseFirst({ onNavigate }: { onNavigate: (path: string) => void }) {
+function FixTheseFirst({ onNavigate, priorityIssues }: { onNavigate: (path: string) => void; priorityIssues: DashboardClientProps["priorityIssues"] }) {
   const impactConfig: Record<string, { color: string; bg: string; label: string }> = {
     high:   { color: "#FF642D", bg: "rgba(255,100,45,0.12)", label: "High Impact" },
     medium: { color: "#FF9800", bg: "rgba(255,152,0,0.12)",  label: "Medium Impact" },
@@ -684,7 +684,7 @@ function FixTheseFirst({ onNavigate }: { onNavigate: (path: string) => void }) {
         Fix These First
       </SectionTitle>
       <div className="space-y-0">
-        {props.priorityIssues.map((issue, i) => {
+        {priorityIssues.map((issue, i) => {
           const cfg = impactConfig[issue.impact];
           return (
             <motion.div
@@ -692,8 +692,8 @@ function FixTheseFirst({ onNavigate }: { onNavigate: (path: string) => void }) {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.05 + i * 0.06 }}
-              className={cn("flex items-center gap-3 py-3.5 cursor-pointer group", i < props.priorityIssues.length - 1 ? "border-b" : "")}
-              style={i < props.priorityIssues.length - 1 ? { borderColor: "#1a2236" } : {}}
+              className={cn("flex items-center gap-3 py-3.5 cursor-pointer group", i < priorityIssues.length - 1 ? "border-b" : "")}
+              style={i < priorityIssues.length - 1 ? { borderColor: "#1a2236" } : {}}
               onClick={() => onNavigate(issue.actionHref)}
             >
               {/* rank */}
@@ -755,11 +755,11 @@ function FixTheseFirst({ onNavigate }: { onNavigate: (path: string) => void }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Section 8 – SEO Trend Charts
 // ─────────────────────────────────────────────────────────────────────────────
-function SEOTrendCharts() {
+function SEOTrendCharts({ healthTrend, errorsTrend, crawlTrend }: { healthTrend: DashboardClientProps["healthTrend"]; errorsTrend: DashboardClientProps["errorsTrend"]; crawlTrend: DashboardClientProps["crawlTrend"] }) {
   const charts = [
     {
       title: "Site Health Trend",
-      data: props.healthTrend,
+      data: healthTrend,
       key: "score",
       color: "#FF642D",
       gradId: "healthGrad",
@@ -768,7 +768,7 @@ function SEOTrendCharts() {
     },
     {
       title: "Errors Trend",
-      data: props.errorsTrend,
+      data: errorsTrend,
       key: "errors",
       color: "#FF3D3D",
       gradId: "errorsGrad",
@@ -777,7 +777,7 @@ function SEOTrendCharts() {
     },
     {
       title: "Pages Crawled",
-      data: props.crawlTrend,
+      data: crawlTrend,
       key: "pages",
       color: "#7B5CF5",
       gradId: "crawlGrad",
@@ -1375,14 +1375,14 @@ export function DashboardClient(props: DashboardClientProps) {
 
       {/* ── 5+6. Crawl Overview + Core Web Vitals ─────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <CrawlOverviewPanel />
+        <CrawlOverviewPanel crawlDistribution={props.crawlDistribution} />
         <CoreWebVitalsPanel />
       </div>
 
       {/* ── 7. Fix These First + 8. SEO Trend Charts ──────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-7">
-          <FixTheseFirst onNavigate={navigate} />
+          <FixTheseFirst onNavigate={navigate} priorityIssues={props.priorityIssues} />
         </div>
         <div className="lg:col-span-5 flex flex-col gap-4">
           {/* Compact site health + keywords */}
@@ -1467,7 +1467,7 @@ export function DashboardClient(props: DashboardClientProps) {
       <SEOOpportunityScore onNavigate={navigate} />
 
       {/* ── 8. SEO Trend Charts ────────────────────────────────────────────── */}
-      <SEOTrendCharts />
+      <SEOTrendCharts healthTrend={props.healthTrend} errorsTrend={props.errorsTrend} crawlTrend={props.crawlTrend} />
 
       {/* ── 9. Internal Linking Snapshot ──────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1547,7 +1547,7 @@ export function DashboardClient(props: DashboardClientProps) {
         </div>
         <div className="space-y-0">
           {props.competitors.map((comp, i) => (
-            <div key={comp.domain} className={cn("grid grid-cols-4 py-3 items-center", i < COMPETITORS.length - 1 ? "border-b" : "")} style={i < COMPETITORS.length - 1 ? { borderColor: "#1a2236" } : {}}>
+            <div key={comp.domain} className={cn("grid grid-cols-4 py-3 items-center", i < props.competitors.length - 1 ? "border-b" : "")} style={i < props.competitors.length - 1 ? { borderColor: "#1a2236" } : {}}>
               <div className="col-span-2 flex items-center gap-2">
                 <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 text-[10px] font-bold text-white" style={{ background: `hsl(${i * 80 + 220}, 60%, 35%)` }}>
                   {comp.domain[0].toUpperCase()}
