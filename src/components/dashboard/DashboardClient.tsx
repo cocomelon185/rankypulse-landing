@@ -224,7 +224,7 @@ function Card({ children, className, style }: { children: React.ReactNode; class
   return (
     <div
       className={cn("rounded-xl border p-6 flex flex-col transition-transform duration-200 hover:-translate-y-0.5", className)}
-      style={{ background: "#151B27", borderColor: "#1E2940", ...style }}
+      style={{ background: "#151B27", borderColor: "#1E2940", boxShadow: "0 1px 2px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.2)", ...style }}
     >
       {children}
     </div>
@@ -486,7 +486,7 @@ function IssueSeverityPanel({ onNavigate }: { onNavigate: (path: string) => void
       bg: "rgba(255,61,61,0.10)",
       border: "rgba(255,61,61,0.20)",
       icon: XCircle,
-      desc: "Critical",
+      desc: "Critical Issues",
       bars: [8, 14, 10, 16, 12],
       path: "/audits/issues",
     },
@@ -498,7 +498,7 @@ function IssueSeverityPanel({ onNavigate }: { onNavigate: (path: string) => void
       bg: "rgba(255,152,0,0.10)",
       border: "rgba(255,152,0,0.20)",
       icon: AlertTriangle,
-      desc: "Important",
+      desc: "Important Issues",
       bars: [42, 38, 45, 40, 37],
       path: "/audits/issues",
     },
@@ -510,7 +510,7 @@ function IssueSeverityPanel({ onNavigate }: { onNavigate: (path: string) => void
       bg: "rgba(0,176,255,0.10)",
       border: "rgba(0,176,255,0.20)",
       icon: AlertCircle,
-      desc: "Minor",
+      desc: "Minor Issues",
       bars: [50, 52, 48, 54, 54],
       path: "/audits/issues",
     },
@@ -909,14 +909,14 @@ function InternalLinkingSnapshot({ onNavigate }: { onNavigate: (path: string) =>
 
   // Simple mini network visualization (SVG nodes)
   const nodes = [
-    { x: 50, y: 30, r: 10, color: "#FF642D", label: "Home" },
-    { x: 20, y: 65, r: 7, color: "#7B5CF5", label: "" },
-    { x: 80, y: 65, r: 7, color: "#7B5CF5", label: "" },
-    { x: 10, y: 90, r: 5, color: "#1E4D8C", label: "" },
-    { x: 35, y: 90, r: 5, color: "#FF3D3D", label: "!" },
-    { x: 65, y: 90, r: 5, color: "#1E4D8C", label: "" },
-    { x: 90, y: 90, r: 5, color: "#FF3D3D", label: "!" },
-    { x: 50, y: 90, r: 4, color: "#4A5568", label: "" },
+    { x: 50, y: 30, r: 10, color: "#FF642D", label: "Home", tooltip: "Homepage\nDepth: 1 · Links: 3" },
+    { x: 20, y: 65, r: 7,  color: "#7B5CF5", label: "",     tooltip: "/blog\nDepth: 2 · Links: 2" },
+    { x: 80, y: 65, r: 7,  color: "#7B5CF5", label: "",     tooltip: "/features\nDepth: 2 · Links: 2" },
+    { x: 10, y: 90, r: 5,  color: "#1E4D8C", label: "",     tooltip: "/blog/seo-guide\nDepth: 3 · Links: 1" },
+    { x: 35, y: 90, r: 5,  color: "#FF3D3D", label: "!",    tooltip: "/blog/old-post\nBroken link" },
+    { x: 65, y: 90, r: 5,  color: "#1E4D8C", label: "",     tooltip: "/features/audit\nDepth: 3 · Links: 1" },
+    { x: 90, y: 90, r: 5,  color: "#FF3D3D", label: "!",    tooltip: "/page-404\nBroken link" },
+    { x: 50, y: 90, r: 4,  color: "#4A5568", label: "",     tooltip: "/pricing\nDepth: 2 · Links: 0" },
   ];
   const edges = [
     [0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6], [0, 7],
@@ -962,7 +962,7 @@ function InternalLinkingSnapshot({ onNavigate }: { onNavigate: (path: string) =>
         </div>
         {/* Mini network graph */}
         <div className="flex items-center justify-center">
-          <svg viewBox="0 0 100 110" className="w-full max-w-[180px] opacity-80">
+          <svg viewBox="0 0 100 110" className="w-full max-w-[220px] opacity-80">
             {edges.map(([from, to], i) => (
               <line
                 key={i}
@@ -972,7 +972,8 @@ function InternalLinkingSnapshot({ onNavigate }: { onNavigate: (path: string) =>
               />
             ))}
             {nodes.map((node, i) => (
-              <g key={i}>
+              <g key={i} style={{ cursor: "pointer" }}>
+                <title>{node.tooltip}</title>
                 <circle cx={node.x} cy={node.y} r={node.r + 2} fill={`${node.color}15`} />
                 <circle cx={node.x} cy={node.y} r={node.r} fill={node.color} opacity="0.85" />
                 {node.label && (
@@ -1012,7 +1013,7 @@ function QuickActionsPanel({ onNavigate }: { onNavigate: (path: string) => void 
             onClick={() => onNavigate(act.path)}
             className={cn(
               "flex flex-col items-start gap-3 p-4 rounded-xl border transition-all hover:scale-[1.02] active:scale-[0.98] text-left group",
-              act.primary ? "text-white" : ""
+              act.primary ? "text-white sm:col-span-2 lg:col-span-2" : ""
             )}
             style={{
               background: act.primary ? act.bg : act.bg,
@@ -1020,9 +1021,9 @@ function QuickActionsPanel({ onNavigate }: { onNavigate: (path: string) => void 
               boxShadow: act.primary ? "0 0 24px rgba(255,100,45,0.2)" : "none",
             }}
           >
-            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", act.primary ? "bg-white/20" : "")}
+            <div className={cn(act.primary ? "w-12 h-12" : "w-10 h-10", "rounded-xl flex items-center justify-center", act.primary ? "bg-white/20" : "")}
               style={!act.primary ? { background: act.bg } : {}}>
-              <act.icon size={18} style={{ color: act.primary ? "#fff" : act.color }} className={act.primary ? "fill-white" : ""} />
+              <act.icon size={act.primary ? 22 : 18} style={{ color: act.primary ? "#fff" : act.color }} className={act.primary ? "fill-white" : ""} />
             </div>
             <div>
               <p className={cn("text-sm font-bold", act.primary ? "text-white" : "text-white")}>{act.label}</p>
@@ -1038,10 +1039,18 @@ function QuickActionsPanel({ onNavigate }: { onNavigate: (path: string) => void 
 // ─────────────────────────────────────────────────────────────────────────────
 // Audit CTA Widget — top-of-dashboard conversion card
 // ─────────────────────────────────────────────────────────────────────────────
+const EXAMPLE_DOMAINS = ["example.com", "shopify-store.com", "localbusiness.com", "yourbrand.com"];
+
 function AuditCTAWidget() {
   const router = useRouter();
   const [domain, setDomain] = useState("");
   const [error, setError] = useState("");
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setPlaceholderIdx(i => (i + 1) % EXAMPLE_DOMAINS.length), 2500);
+    return () => clearInterval(id);
+  }, []);
 
   const checks = [
     "Find broken links",
@@ -1106,7 +1115,7 @@ function AuditCTAWidget() {
               type="text"
               value={domain}
               onChange={(e) => { setDomain(e.target.value); setError(""); }}
-              placeholder="yourwebsite.com"
+              placeholder={EXAMPLE_DOMAINS[placeholderIdx]}
               className="flex-1 px-4 py-2.5 rounded-lg border text-sm text-white outline-none transition-all focus:border-[#FF642D]/50"
               style={{ background: "#0D1424", borderColor: "#1E2940", color: "white" }}
             />
@@ -1162,11 +1171,111 @@ function AuditCTAWidget() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SEO Opportunity Score
+// ─────────────────────────────────────────────────────────────────────────────
+function SEOOpportunityScore({ onNavigate }: { onNavigate: (path: string) => void }) {
+  return (
+    <div className="rounded-xl border p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 relative overflow-hidden"
+      style={{ background: "linear-gradient(135deg,rgba(255,100,45,0.12) 0%,rgba(13,20,36,0.98) 100%)", borderColor: "rgba(255,100,45,0.25)" }}>
+      <div className="absolute top-0 right-0 w-48 h-48 rounded-full blur-3xl opacity-10 pointer-events-none"
+        style={{ background: "#FF642D", transform: "translate(30%,-30%)" }} />
+      <div className="relative flex-1">
+        <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: "#FF642D" }}>SEO Opportunity Score</p>
+        <p className="text-white font-extrabold text-lg leading-tight">
+          Fixing detected issues could increase traffic by{" "}
+          <span style={{ color: "#FF642D" }}>+12%</span>
+        </p>
+        <p className="text-xs mt-1" style={{ color: "#6B7A99" }}>
+          Based on 5 open issues · Estimated +1,840 monthly visits
+        </p>
+      </div>
+      <div className="flex items-center gap-3 shrink-0 relative">
+        <div className="text-center">
+          <div className="text-3xl font-black" style={{ color: "#FF642D" }}>+12%</div>
+          <div className="text-[10px]" style={{ color: "#4A5568" }}>Traffic</div>
+        </div>
+        <div className="w-px h-10" style={{ background: "rgba(255,100,45,0.2)" }} />
+        <div className="text-center">
+          <div className="text-3xl font-black" style={{ color: "#7B5CF5" }}>+38</div>
+          <div className="text-[10px]" style={{ color: "#4A5568" }}>Keywords</div>
+        </div>
+        <button
+          onClick={() => onNavigate("/audits/issues")}
+          className="ml-3 px-4 py-2 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90 active:scale-[0.97]"
+          style={{ background: "linear-gradient(135deg,#FF642D,#E85420)" }}>
+          Start Fixing →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SEO Roadmap Panel
+// ─────────────────────────────────────────────────────────────────────────────
+function SEORoadmap({ onNavigate }: { onNavigate: (path: string) => void }) {
+  const steps = [
+    { step: 1, title: "Fix Broken Links",           desc: "12 internal links returning 4xx errors", status: "urgent",  href: "/audits/links",  color: "#FF3D3D" },
+    { step: 2, title: "Optimize Meta Descriptions", desc: "25 pages missing meta descriptions",      status: "next",    href: "/audits/issues", color: "#FF9800" },
+    { step: 3, title: "Improve Core Web Vitals",    desc: "INP 210ms — Needs Improvement",           status: "planned", href: "/audits/speed",  color: "#00B0FF" },
+  ];
+  const statusLabel: Record<string, string> = { urgent: "Do Now", next: "Up Next", planned: "Planned" };
+
+  return (
+    <Card>
+      <SectionTitle action={
+        <button onClick={() => onNavigate("/audits/issues")} className="text-xs font-semibold flex items-center gap-1" style={{ color: "#FF642D" }}>
+          View Full Plan <ArrowRight size={11} />
+        </button>
+      }>
+        Your SEO Roadmap
+      </SectionTitle>
+      <p className="text-xs mb-4 -mt-1" style={{ color: "#4A5568" }}>
+        Prioritized action plan to improve your rankings
+      </p>
+      <div className="relative">
+        <div className="absolute left-[19px] top-6 bottom-6 w-px" style={{ background: "#1E2940" }} />
+        <div className="space-y-3">
+          {steps.map((s, i) => (
+            <motion.div
+              key={s.step}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.06 * i }}
+              className="flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-all hover:bg-white/[0.03]"
+              style={{ border: "1px solid #1a2236" }}
+              onClick={() => onNavigate(s.href)}
+            >
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm font-black relative z-10"
+                style={{ background: `${s.color}18`, color: s.color, border: `2px solid ${s.color}40` }}>
+                {s.step}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-white">{s.title}</p>
+                <p className="text-[11px] mt-0.5 truncate" style={{ color: "#6B7A99" }}>{s.desc}</p>
+              </div>
+              <div className="shrink-0 flex items-center gap-2">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                  style={{ background: `${s.color}15`, color: s.color }}>
+                  {statusLabel[s.status]}
+                </span>
+                <ArrowRight size={13} style={{ color: "#4A5568" }} />
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main Dashboard Component
 // ─────────────────────────────────────────────────────────────────────────────
 export function DashboardClient() {
   const router = useRouter();
   const [trafficTab, setTrafficTab] = useState<"rankypulse" | "google">("rankypulse");
+  const [trafficPeriod, setTrafficPeriod] = useState<"7D"|"30D"|"90D"|"12M">("30D");
 
   const navigate = (path: string) => router.push(path);
 
@@ -1246,6 +1355,15 @@ export function DashboardClient() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 rounded-lg overflow-hidden border" style={{ borderColor: "#1E2940" }}>
+              {(["7D","30D","90D","12M"] as const).map((p) => (
+                <button key={p} onClick={() => setTrafficPeriod(p)}
+                  className="px-2.5 py-1 text-[11px] font-semibold transition-colors"
+                  style={trafficPeriod === p ? { background: "#FF642D", color: "white" } : { background: "#0D1424", color: "#6B7A99" }}>
+                  {p}
+                </button>
+              ))}
+            </div>
             <span className="text-xs px-2 py-1 rounded-lg" style={{ color: "#6B7A99", background: "#1E2940" }}>Scope: Root Domain</span>
           </div>
         </div>
@@ -1395,6 +1513,9 @@ export function DashboardClient() {
         </div>
       </div>
 
+      {/* ── SEO Opportunity Score ──────────────────────────────────────────── */}
+      <SEOOpportunityScore onNavigate={navigate} />
+
       {/* ── 8. SEO Trend Charts ────────────────────────────────────────────── */}
       <SEOTrendCharts />
 
@@ -1468,6 +1589,9 @@ export function DashboardClient() {
         }>
           Competitor Snapshot
         </SectionTitle>
+        <p className="text-xs mb-4 -mt-1" style={{ color: "#4A5568" }}>
+          Competitors ranking for your target keywords
+        </p>
         <div className="grid grid-cols-4 text-xs font-semibold uppercase tracking-wider pb-2 mb-1" style={{ color: "#4A5568", borderBottom: "1px solid #1E2940" }}>
           <span className="col-span-2">Domain</span><span>Traffic</span><span>Score</span>
         </div>
@@ -1521,6 +1645,9 @@ export function DashboardClient() {
           ))}
         </div>
       </Card>
+
+      {/* ── SEO Roadmap ────────────────────────────────────────────────────── */}
+      <SEORoadmap onNavigate={navigate} />
 
       {/* ── 10. Quick Actions ─────────────────────────────────────────────── */}
       <QuickActionsPanel onNavigate={navigate} />
