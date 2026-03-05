@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ExternalLink, AlertCircle, AlertTriangle, Info } from "lucide-react";
 import { ScoreGauge } from "../ScoreGauge";
 import { ScoreHistory } from "../ScoreHistory";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useAuditStore } from "@/lib/use-audit";
+import { useActiveAudit } from "@/lib/audit-context";
 import { ShareScoreCard } from "./ShareScoreCard";
 import { ReauditButton } from "./ReauditButton";
 
@@ -45,9 +47,23 @@ function MetricCard({
 }
 
 export function AuditHero() {
+  const router = useRouter();
+  const { auditId } = useActiveAudit();
   const data = useAuditStore((s) => s.data);
   const completedFixIds = useAuditStore((s) => s.completedFixIds);
   const setData = useAuditStore((s) => s.setData);
+
+  /** Navigate to the issues page filtered by severity.
+   *  - Full audit (UUID auditId): /audits/{auditId}/issues?severity={sev}
+   *  - Free audit (auditId="local" or null): /audits/issues?severity={sev}
+   */
+  const goToIssues = (severity: "errors" | "warnings" | "notices") => {
+    const isFullAudit = auditId && auditId !== "local";
+    const path = isFullAudit
+      ? `/audits/${auditId}/issues?severity=${severity}`
+      : `/audits/issues?severity=${severity}`;
+    router.push(path);
+  };
 
   const openIssuesCount = useMemo(
     () =>
@@ -185,24 +201,33 @@ export function AuditHero() {
 
         <div className="flex flex-col justify-center gap-4">
           <div className="grid grid-cols-3 gap-3">
-            <div className="flex flex-col items-center justify-center rounded-xl border border-[#ef4444]/20 bg-[#ef4444]/5 p-4 transition hover:bg-[#ef4444]/10">
+            <button
+              onClick={() => goToIssues("errors")}
+              className="flex flex-col items-center justify-center rounded-xl border border-[#ef4444]/20 bg-[#ef4444]/5 p-4 transition hover:bg-[#ef4444]/10 cursor-pointer text-left"
+            >
               <span className="font-display text-2xl font-bold tabular-nums text-[#ef4444]">{errorsCount}</span>
               <span className="mt-1 flex items-center justify-center gap-1 text-xs font-medium text-[var(--text-secondary)]">
                 <AlertCircle className="h-3 w-3 text-[#ef4444]" /> Errors
               </span>
-            </div>
-            <div className="flex flex-col items-center justify-center rounded-xl border border-[#f97316]/20 bg-[#f97316]/5 p-4 transition hover:bg-[#f97316]/10">
+            </button>
+            <button
+              onClick={() => goToIssues("warnings")}
+              className="flex flex-col items-center justify-center rounded-xl border border-[#f97316]/20 bg-[#f97316]/5 p-4 transition hover:bg-[#f97316]/10 cursor-pointer text-left"
+            >
               <span className="font-display text-2xl font-bold tabular-nums text-[#f97316]">{warningsCount}</span>
               <span className="mt-1 flex items-center justify-center gap-1 text-xs font-medium text-[var(--text-secondary)]">
                 <AlertTriangle className="h-3 w-3 text-[#f97316]" /> Warnings
               </span>
-            </div>
-            <div className="flex flex-col items-center justify-center rounded-xl border border-[#3b82f6]/20 bg-[#3b82f6]/5 p-4 transition hover:bg-[#3b82f6]/10">
+            </button>
+            <button
+              onClick={() => goToIssues("notices")}
+              className="flex flex-col items-center justify-center rounded-xl border border-[#3b82f6]/20 bg-[#3b82f6]/5 p-4 transition hover:bg-[#3b82f6]/10 cursor-pointer text-left"
+            >
               <span className="font-display text-2xl font-bold tabular-nums text-[#3b82f6]">{noticesCount}</span>
               <span className="mt-1 flex items-center justify-center gap-1 text-xs font-medium text-[var(--text-secondary)]">
                 <Info className="h-3 w-3 text-[#3b82f6]" /> Notices
               </span>
-            </div>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

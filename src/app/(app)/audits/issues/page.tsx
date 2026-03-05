@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
     AlertTriangle,
     Search,
@@ -56,8 +56,26 @@ interface AuditIssue {
 
 export default function CrawlIssuesPage() {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'all' | 'errors' | 'warnings' | 'notices'>('all');
+    const searchParams = useSearchParams();
+
+    // Pre-select tab from ?severity= query param (e.g. from AuditHero click)
+    const severityParam = searchParams?.get('severity');
+    const initialTab = (
+        severityParam && ['errors', 'warnings', 'notices'].includes(severityParam)
+            ? severityParam
+            : 'all'
+    ) as 'all' | 'errors' | 'warnings' | 'notices';
+
+    const [activeTab, setActiveTab] = useState<'all' | 'errors' | 'warnings' | 'notices'>(initialTab);
     const [search, setSearch] = useState('');
+
+    // Keep tab in sync if URL param changes (e.g. browser back/forward)
+    useEffect(() => {
+        const sp = searchParams?.get('severity');
+        if (sp && ['errors', 'warnings', 'notices'].includes(sp)) {
+            setActiveTab(sp as 'errors' | 'warnings' | 'notices');
+        }
+    }, [searchParams]);
 
     const [loading, setLoading] = useState(true);
     const [issues, setIssues] = useState<AuditIssue[]>([]);

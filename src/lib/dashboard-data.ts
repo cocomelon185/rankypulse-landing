@@ -6,6 +6,7 @@
  */
 
 import { supabaseAdmin } from "./supabase";
+import { calculateSeoScore } from "./seo-score";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,6 +52,8 @@ export interface DashboardData {
   errorCount: number;
   warningCount: number;
   noticeCount: number;
+  /** Real health score averaged from audit_pages (0-100). 0 if no audit data yet. */
+  siteScore: number;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -283,10 +286,8 @@ export async function getDashboardData(userId: string, domain: string): Promise<
 
   // ── 8. KPI cards — real where possible, estimated otherwise ───────────────
   const indexedPages = latestJob?.pages_crawled ?? 0;
-  // Compute average health score from audit_pages for the latest job
-  const domainScore = auditPages.length > 0
-    ? Math.round(auditPages.reduce((sum, p) => sum + (p.score ?? 0), 0) / auditPages.length)
-    : 0;
+  // Compute average health score from audit_pages — shared formula used across all pages
+  const domainScore = calculateSeoScore(auditPages);
   const scoreDelta = 0; // No historical data without saved_domains
 
   const kpis = [
@@ -397,5 +398,6 @@ export async function getDashboardData(userId: string, domain: string): Promise<
     errorCount,
     warningCount,
     noticeCount,
+    siteScore: domainScore,
   };
 }

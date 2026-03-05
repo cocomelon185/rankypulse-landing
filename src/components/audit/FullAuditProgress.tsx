@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { CrawlIssuesDashboard, type CrawlPageIssue } from "./CrawlIssuesDashboard";
+import { setActiveAudit } from "@/lib/audit-context";
 
 interface LogEntry {
     url: string;
@@ -13,6 +15,7 @@ interface LogEntry {
 }
 
 export function FullAuditProgress({ domain }: { domain: string }) {
+    const router = useRouter();
     const { isAuthenticated } = useAuth();
 
     const [jobId, setJobId] = useState<string | null>(null);
@@ -42,6 +45,8 @@ export function FullAuditProgress({ domain }: { domain: string }) {
             if (!res.ok) throw new Error("Failed to start crawl");
             const data = await res.json();
             setJobId(data.jobId);
+            // Persist auditId + domain so all pages know the active full audit
+            setActiveAudit(data.jobId, domain);
             crawlRef.current = true;
             runNextLoop(data.jobId);
         } catch (e: any) {
@@ -80,6 +85,10 @@ export function FullAuditProgress({ domain }: { domain: string }) {
                 setIsCrawling(false);
                 setIsCompleted(true);
                 crawlRef.current = false;
+                // Navigate to the audit overview for this specific job
+                if (id) {
+                    router.push(`/audits/${id}/overview`);
+                }
                 return;
             }
 

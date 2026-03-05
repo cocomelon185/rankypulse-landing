@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { useScrollToIssue } from "@/hooks/useScrollToIssue";
 import { AuditHero } from "@/components/audit/v2/AuditHero";
@@ -24,6 +25,7 @@ import {
 import { useAuditStore } from "@/lib/use-audit";
 import { useAuth } from "@/hooks/useAuth";
 import { incrementAuditsUsed } from "@/lib/billing-store";
+import { setActiveAudit } from "@/lib/audit-context";
 import { MOCK_AUDIT } from "@/lib/audit-data";
 import { ExportPdfButton } from "@/components/audit/ExportPdfButton";
 import { PdfCoverPage } from "@/components/audit/PdfCoverPage";
@@ -31,6 +33,7 @@ import { PdfCoverPage } from "@/components/audit/PdfCoverPage";
 type ErrorKind = "unreachable" | "rate_limited" | "timeout" | "failed";
 
 export function AuditDomainClient({ domain: rawDomain }: { domain: string }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const domain = rawDomain
     .replace(/^https?:\/\//, '')
@@ -130,6 +133,8 @@ export function AuditDomainClient({ domain: rawDomain }: { domain: string }) {
         if (stillRelevant) {
           withMinTime(4_000, () => {
             setData(data);
+            // Persist active audit context so all pages know which domain was just audited
+            setActiveAudit("local", targetDomain);
             if (isAuthenticatedRef.current) incrementAuditsUsed();
             setIsLoading(false);
           });
@@ -221,6 +226,23 @@ export function AuditDomainClient({ domain: rawDomain }: { domain: string }) {
               <ExportPdfButton domain={domain} />
             </div>
             <div id="pdf-hero"><AuditHero /></div>
+
+            {/* Continue Fix CTA — authenticated users only */}
+            {isAuthenticated && (
+              <div className="flex items-center justify-between rounded-2xl border border-indigo-500/20 bg-indigo-500/5 px-6 py-4">
+                <div>
+                  <p className="font-semibold text-white text-sm">Ready to fix these issues?</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Go to your issues dashboard to start resolving them one by one.</p>
+                </div>
+                <button
+                  onClick={() => router.push("/audits/issues")}
+                  className="whitespace-nowrap rounded-lg bg-indigo-500 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-indigo-400"
+                >
+                  Continue Fix →
+                </button>
+              </div>
+            )}
+
             <AhaMomentBanner />
             <SocialProofStrip />
             <IssueRadar />

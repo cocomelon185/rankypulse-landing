@@ -105,6 +105,8 @@ interface DashboardClientProps {
   errorCount?: number;
   warningCount?: number;
   noticeCount?: number;
+  /** Real average health score from Supabase audit_pages (0-100). */
+  siteScore?: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1253,7 +1255,7 @@ export function DashboardClient(props: DashboardClientProps) {
         {/* Site Health Hero – 3 cols */}
         <div className="lg:col-span-3">
           <SiteHealthHero
-            score={92}
+            score={props.siteScore ?? 0}
             errorCount={props.errorCount ?? 0}
             warningCount={props.warningCount ?? 0}
             noticeCount={props.noticeCount ?? 0}
