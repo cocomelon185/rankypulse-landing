@@ -51,6 +51,14 @@ export async function GET(req: NextRequest) {
         if (job.pages_crawled >= job.pages_limit) {
             // Mark as completed
             await supabaseAdmin.from("crawl_jobs").update({ status: "completed" }).eq("id", jobId);
+            try {
+                await supabaseAdmin.from("activity_events").insert({
+                    user_id: session.user.id,
+                    type: "audit_completed",
+                    domain: job.domain,
+                    meta: { jobId, pages_crawled: job.pages_crawled },
+                });
+            } catch { /* non-critical */ }
             return NextResponse.json({
                 done: true,
                 message: "Reached page limit",
@@ -71,6 +79,14 @@ export async function GET(req: NextRequest) {
         if (!queueItems || queueItems.length === 0) {
             // No more pages to crawl
             await supabaseAdmin.from("crawl_jobs").update({ status: "completed" }).eq("id", jobId);
+            try {
+                await supabaseAdmin.from("activity_events").insert({
+                    user_id: session.user.id,
+                    type: "audit_completed",
+                    domain: job.domain,
+                    meta: { jobId, pages_crawled: job.pages_crawled },
+                });
+            } catch { /* non-critical */ }
             return NextResponse.json({
                 done: true,
                 message: "Crawl complete",

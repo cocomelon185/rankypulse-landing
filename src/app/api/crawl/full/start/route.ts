@@ -65,6 +65,32 @@ export async function POST(req: NextRequest) {
             .update({ status: "crawling" })
             .eq("id", job.id);
 
+        // Log activity events (best-effort — ignore if activity_events table not yet created)
+        try {
+            // Check if this is the first job for this domain by this user
+            const { count } = await supabaseAdmin
+                .from("crawl_jobs")
+                .select("id", { count: "exact", head: true })
+                .eq("user_id", session.user.id)
+                .eq("domain", cleanDomain);
+
+            if ((count ?? 0) <= 1) {
+                // First audit = project creation
+                await supabaseAdmin.from("activity_events").insert({
+                    user_id: session.user.id,
+                    type: "project_created",
+                    domain: cleanDomain,
+                    meta: { jobId: job.id },
+                });
+            }
+            await supabaseAdmin.from("activity_events").insert({
+                user_id: session.user.id,
+                type: "audit_started",
+                domain: cleanDomain,
+                meta: { jobId: job.id },
+            });
+        } catch { /* activity_events table may not exist yet */ }
+
         return NextResponse.json({ jobId: job.id, message: "Crawl started" });
 
     } catch (error) {

@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FileText, Download, Calendar, Share2, Lock, Plus } from "lucide-react";
-import { MOCK_PROJECTS } from "@/lib/mock-data";
 
 const REPORT_TEMPLATES = [
     { id: "full", name: "Full SEO Report", desc: "Complete audit with all sections", pages: 12, icon: "📊" },
@@ -13,8 +12,20 @@ const REPORT_TEMPLATES = [
 ];
 
 export function ReportsClient() {
-    const [selectedDomain, setSelectedDomain] = useState(MOCK_PROJECTS[0].domain);
+    const [domains, setDomains] = useState<string[]>([]);
+    const [selectedDomain, setSelectedDomain] = useState("");
     const [isPro] = useState(false); // simulate free tier
+
+    useEffect(() => {
+        fetch("/api/projects")
+            .then(r => r.ok ? r.json() : { domains: [] })
+            .then(d => {
+                const list = (d.domains ?? []).map((p: { domain: string }) => p.domain);
+                setDomains(list);
+                if (list.length > 0) setSelectedDomain(list[0]);
+            })
+            .catch(() => {});
+    }, []);
 
     return (
         <div className="space-y-6">
@@ -39,16 +50,18 @@ export function ReportsClient() {
             <div className="rounded-xl border p-5" style={{ background: "#151B27", borderColor: "#1E2940" }}>
                 <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "#4A5568" }}>Select Website</p>
                 <div className="flex flex-wrap gap-2">
-                    {MOCK_PROJECTS.map(p => (
-                        <button key={p.domain}
-                            onClick={() => setSelectedDomain(p.domain)}
+                    {domains.length === 0 ? (
+                        <p className="text-sm" style={{ color: "#4A5568" }}>No projects yet — add a project first</p>
+                    ) : domains.map(domain => (
+                        <button key={domain}
+                            onClick={() => setSelectedDomain(domain)}
                             className="px-3 py-1.5 rounded-lg text-sm font-semibold transition"
                             style={{
-                                background: selectedDomain === p.domain ? "rgba(255,100,45,0.15)" : "rgba(255,255,255,0.04)",
-                                color: selectedDomain === p.domain ? "#FF642D" : "#8B9BB4",
-                                border: `1px solid ${selectedDomain === p.domain ? "rgba(255,100,45,0.3)" : "#1E2940"}`,
+                                background: selectedDomain === domain ? "rgba(255,100,45,0.15)" : "rgba(255,255,255,0.04)",
+                                color: selectedDomain === domain ? "#FF642D" : "#8B9BB4",
+                                border: `1px solid ${selectedDomain === domain ? "rgba(255,100,45,0.3)" : "#1E2940"}`,
                             }}>
-                            {p.domain}
+                            {domain}
                         </button>
                     ))}
                 </div>

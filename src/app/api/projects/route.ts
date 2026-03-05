@@ -12,22 +12,26 @@ export async function GET() {
 
   const userId = session.user.id;
 
-  // Fetch all crawl jobs for this user
+  // Fetch all crawl jobs for this user (completed + in-progress)
   const { data: jobs, error } = await supabaseAdmin
     .from("crawl_jobs")
     .select("id, domain, status, created_at, updated_at, pages_crawled")
     .eq("user_id", userId)
-    .eq("status", "completed")
+    .in("status", ["completed", "crawling", "pending", "failed"])
     .order("created_at", { ascending: false });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Group by domain — keep only the latest job per domain
+  // Group by domain — prefer the latest completed job, fall back to in-progress
   const domainMap = new Map<string, typeof jobs[number]>();
   for (const job of jobs ?? []) {
-    if (!domainMap.has(job.domain)) {
+    const existing = domainMap.get(job.domain);
+    if (!existing) {
+      domainMap.set(job.domain, job);
+    } else if (existing.status !== "completed" && job.status === "completed") {
+      // Replace in-progress with a completed job
       domainMap.set(job.domain, job);
     }
   }
@@ -72,4 +76,54 @@ export async function GET() {
   );
 
   return NextResponse.json({ domains });
+}
+
+export async function DELETE(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const jobId = searchParams.get("jobId");
+  if (!jobId) {
+    return NextResponse.json({ error: "jobId required" }, { status: 400 });
+  }
+
+  const userId = session.user.id;
+
+  // Fetch the job first to confirm ownership and get domain
+  const { data: job, error: fetchError } = await supabaseAdmin
+    .from("crawl_jobs")
+    .select("id, domain, user_id")
+    .eq("id", jobId)
+    .eq("user_id", userId)
+    .single();
+
+  if (fetchError || !job) {
+    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  }
+
+  // Delete the job (cascade deletes crawl_queue + audit_pages via FK)
+  const { error: deleteError } = await supabaseAdmin
+    .from("crawl_jobs")
+    .delete()
+    .eq("id", jobId)
+    .eq("user_id", userId);
+
+  if (deleteError) {
+    return NextResponse.json({ error: deleteError.message }, { status: 500 });
+  }
+
+  // Log activity event (best-effort)
+  try {
+    await supabaseAdmin.from("activity_events").insert({
+      user_id: userId,
+      type: "project_deleted",
+      domain: job.domain,
+      meta: { jobId },
+    });
+  } catch { /* non-critical */ }
+
+  return NextResponse.json({ success: true });
 }

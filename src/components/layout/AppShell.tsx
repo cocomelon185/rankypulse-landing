@@ -39,7 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex flex-col min-h-screen overflow-hidden" style={{ background: "#0E1117" }}>
+    <div className="flex flex-col min-h-screen" style={{ background: "#0E1117" }}>
       <TopNav onMenuClick={() => setMobileMenuOpen(true)} />
       <div className="flex flex-1 overflow-hidden" style={{ height: "calc(100vh - 64px)" }}>
         <Sidebar hFull />
