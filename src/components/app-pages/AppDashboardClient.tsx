@@ -129,7 +129,11 @@ export function AppDashboardClient({ userName }: { userName: string }) {
         }
         if (actRes?.ok) {
             const d = await actRes.json();
-            setActivity(d.events ?? []);
+            // Filter out events with invalid/missing domains
+            const validEvents = (d.events ?? []).filter(
+                (e: ActivityEvent) => e.domain && e.domain !== "undefined" && e.domain.trim() !== ""
+            );
+            setActivity(validEvents);
         }
         setLoading(false);
     }, []);

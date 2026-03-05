@@ -89,9 +89,21 @@ export async function DELETE(req: Request) {
   }
 
   const { searchParams } = new URL(req.url);
-  const domain = searchParams.get("domain");
-  if (!domain) {
+  const rawDomain = searchParams.get("domain");
+  if (!rawDomain) {
     return NextResponse.json({ error: "domain required" }, { status: 400 });
+  }
+
+  // Normalize domain to match what's stored in crawl_jobs
+  const domain = rawDomain
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .split("/")[0]
+    .toLowerCase()
+    .trim();
+
+  if (!domain || domain === "undefined") {
+    return NextResponse.json({ error: "invalid domain" }, { status: 400 });
   }
 
   const userId = session.user.id;
@@ -107,7 +119,7 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: deleteError.message }, { status: 500 });
   }
 
-  // Log activity event (best-effort)
+  // Log activity event exactly once (best-effort)
   try {
     await supabaseAdmin.from("activity_events").insert({
       user_id: userId,

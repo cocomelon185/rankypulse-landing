@@ -17,6 +17,9 @@ export async function GET() {
         .from("activity_events")
         .select("id, type, domain, meta, created_at")
         .eq("user_id", session.user.id)
+        .not("domain", "is", null)
+        .neq("domain", "")
+        .neq("domain", "undefined")
         .order("created_at", { ascending: false })
         .limit(20);
 
