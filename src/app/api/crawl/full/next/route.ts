@@ -202,8 +202,26 @@ export async function GET(req: NextRequest) {
         let fetchError: string | null = null;
 
         try {
+            // Fetch the specific targetUrl (not just the root domain)
+            const fetchHTMLPromise = async () => {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), 10000);
+                try {
+                    const res = await fetch(targetUrl, {
+                        signal: controller.signal,
+                        headers: { "User-Agent": "Mozilla/5.0 (compatible; RankyPulse/1.0)" },
+                    });
+                    clearTimeout(timer);
+                    if (!res.ok) return "";
+                    return await res.text();
+                } catch {
+                    clearTimeout(timer);
+                    return "";
+                }
+            };
+
             [html, psi] = await Promise.all([
-                withTimeout(fetchHTML(cleanDomain), 10000, ""),
+                withTimeout(fetchHTMLPromise(), 10000, ""),
                 isRoot ? withTimeout(fetchPSI(cleanDomain), 15000, null) : Promise.resolve(null),
             ]);
         } catch (e) {
