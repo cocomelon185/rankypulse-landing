@@ -70,9 +70,19 @@ export const useAuditContext = create<AuditContextState>((set) => ({
   },
 }));
 
-/** Convenience: returns the current {auditId, domain} from the context store */
+/**
+ * Convenience hook: returns the current {auditId, domain}.
+ *
+ * IMPORTANT: select each primitive separately so Zustand's Object.is comparison
+ * works on string | null values rather than a freshly-created object literal.
+ * Returning a plain `{}` from the selector would create a new reference on
+ * every render, making useSyncExternalStore think the value always changed and
+ * triggering React Error #185 (Maximum update depth exceeded).
+ */
 export function useActiveAudit(): ActiveAudit {
-  return useAuditContext((s) => ({ auditId: s.auditId, domain: s.domain }));
+  const auditId = useAuditContext((s) => s.auditId);
+  const domain  = useAuditContext((s) => s.domain);
+  return { auditId, domain };
 }
 
 /** Standalone setter (callable outside React, e.g. in event handlers) */
