@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -68,6 +68,7 @@ export function ProjectsClient() {
     const [adding, setAdding] = useState(false);
     const [runningAudit, setRunningAudit] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const drivingJobIdRef = useRef<string | null>(null);
 
     // ── Fetch projects from real API ─────────────────────────────────────────
     const fetchProjects = useCallback(async () => {
@@ -93,6 +94,38 @@ export function ProjectsClient() {
         if (!hasCrawling) return;
         const id = setInterval(fetchProjects, 8000);
         return () => clearInterval(id);
+    }, [projects, fetchProjects]);
+
+    // ── Crawl driver — drives any active crawl job directly from this page ───
+    useEffect(() => {
+        const activeJob = projects.find(p => (p.status === "crawling" || p.status === "pending") && p.jobId);
+        if (!activeJob?.jobId) return;
+        const jobId = activeJob.jobId;
+
+        if (drivingJobIdRef.current === jobId) return; // already driving this job
+        drivingJobIdRef.current = jobId;
+
+        const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+        const MAX_FAILS = 5;
+        let failCount = 0;
+
+        (async () => {
+            while (drivingJobIdRef.current === jobId && failCount < MAX_FAILS) {
+                try {
+                    const res = await fetch(`/api/crawl/full/next?job_id=${jobId}`);
+                    if (!res.ok) { failCount++; await sleep(3000); continue; }
+                    const data = await res.json();
+                    failCount = 0;
+                    await fetchProjects(); // update card counters live
+                    if (data.done) { drivingJobIdRef.current = null; return; }
+                    await sleep(300);
+                } catch { failCount++; await sleep(3000); }
+            }
+            drivingJobIdRef.current = null;
+            await fetchProjects();
+        })();
+
+        return () => { drivingJobIdRef.current = null; };
     }, [projects, fetchProjects]);
 
     // ── Add new project ──────────────────────────────────────────────────────
