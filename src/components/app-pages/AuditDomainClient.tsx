@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -20,6 +20,8 @@ interface ProjectData {
     pagesCrawled: number;
     lastAuditAt: string;
     status: string;
+    currentUrl?: string | null;
+    lastError?: string | null;
 }
 
 interface IssueItem {
@@ -78,20 +80,28 @@ function computeThematicScores(issues: IssueItem[]) {
 }
 
 // ── ThematicScore mini gauge ──────────────────────────────────────────────────
-function ThematicScore({ label, score, color }: { label: string; score: number; color: string }) {
+function ThematicScore({ label, score, color, loading }: { label: string; score: number; color: string; loading?: boolean }) {
     const r = 28;
     const circ = 2 * Math.PI * r;
     const offset = circ * (1 - score / 100);
     return (
         <div className="flex flex-col items-center gap-2">
             <div className="relative w-16 h-16">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 72 72">
-                    <circle cx="36" cy="36" r={r} fill="none" stroke="#1a2236" strokeWidth="6" />
-                    <circle cx="36" cy="36" r={r} fill="none" stroke={color} strokeWidth="6"
-                        strokeDasharray={`${circ}`} strokeDashoffset={offset} strokeLinecap="round"
-                        style={{ filter: `drop-shadow(0 0 6px ${color}60)` }} />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-[13px] font-black text-white">{score}</span>
+                {loading ? (
+                    <div className="w-full h-full flex items-center justify-center">
+                        <Loader2 size={22} className="animate-spin" style={{ color }} />
+                    </div>
+                ) : (
+                    <>
+                        <svg className="w-full h-full -rotate-90" viewBox="0 0 72 72">
+                            <circle cx="36" cy="36" r={r} fill="none" stroke="#1a2236" strokeWidth="6" />
+                            <circle cx="36" cy="36" r={r} fill="none" stroke={color} strokeWidth="6"
+                                strokeDasharray={`${circ}`} strokeDashoffset={offset} strokeLinecap="round"
+                                style={{ filter: `drop-shadow(0 0 6px ${color}60)` }} />
+                        </svg>
+                        <span className="absolute inset-0 flex items-center justify-center text-[13px] font-black text-white">{score}</span>
+                    </>
+                )}
             </div>
             <span className="text-[10px] font-semibold text-center" style={{ color: "#8B9BB4" }}>{label}</span>
         </div>
@@ -107,6 +117,10 @@ export function AuditDomainClient({ domain }: { domain: string }) {
     const [error, setError] = useState<string | null>(null);
     const [expandedIssue, setExpandedIssue] = useState<string | null>(null);
     const [rerunning, setRerunning] = useState(false);
+
+    // Tracks which jobId the crawl driver is currently running for.
+    // Using a ref avoids triggering re-renders and survives across them.
+    const drivingJobIdRef = useRef<string | null>(null);
 
     const fetchData = useCallback(async () => {
         try {
@@ -133,17 +147,76 @@ export function AuditDomainClient({ domain }: { domain: string }) {
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
-    // Poll every 6s while crawling
+    // Poll every 6s while crawling (refreshes pages_crawled, currentUrl, lastError)
     useEffect(() => {
         if (!jobData) return;
         if (jobData.status !== "crawling" && jobData.status !== "pending") return;
         const id = setInterval(fetchData, 6000);
         return () => clearInterval(id);
-    }, [jobData, fetchData]);
+    }, [jobData?.status, fetchData]);
+
+    // ── Crawl driver ──────────────────────────────────────────────────────────
+    // The frontend drives the crawl by calling /api/crawl/full/next in a loop.
+    // Without this, the crawl queue never processes and pages_crawled stays at 0.
+    useEffect(() => {
+        if (!jobData?.jobId) return;
+        if (jobData.status !== "crawling" && jobData.status !== "pending") return;
+
+        const jobId = jobData.jobId;
+
+        // Guard: one driver per job. drivingJobIdRef persists across re-renders.
+        if (drivingJobIdRef.current === jobId) return;
+        drivingJobIdRef.current = jobId;
+
+        let failCount = 0;
+        const MAX_FAILS = 5;
+        const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+
+        (async () => {
+            console.log(`[CrawlDriver] Starting for job ${jobId}`);
+            while (drivingJobIdRef.current === jobId && failCount < MAX_FAILS) {
+                try {
+                    const res = await fetch(`/api/crawl/full/next?job_id=${jobId}`);
+                    if (!res.ok) {
+                        failCount++;
+                        console.warn(`[CrawlDriver] HTTP ${res.status}, fail ${failCount}/${MAX_FAILS}`);
+                        await sleep(3000);
+                        continue;
+                    }
+                    const data = await res.json();
+                    failCount = 0;
+
+                    if (data.done) {
+                        console.log(`[CrawlDriver] Job ${jobId} complete. Refreshing.`);
+                        drivingJobIdRef.current = null;
+                        fetchData();
+                        return;
+                    }
+
+                    // Brief pause between pages
+                    await sleep(300);
+                } catch (e) {
+                    failCount++;
+                    console.error(`[CrawlDriver] Error:`, e);
+                    await sleep(3000);
+                }
+            }
+
+            if (drivingJobIdRef.current === jobId) {
+                console.error(`[CrawlDriver] Job ${jobId} stopped after ${MAX_FAILS} failures.`);
+                drivingJobIdRef.current = null;
+            }
+        })();
+
+        // No cleanup: drivingJobIdRef controls loop lifetime.
+        // When jobId changes (new re-run), the new effect starts a new driver.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [jobData?.jobId, jobData?.status]);
 
     const handleRerun = async () => {
         if (rerunning) return;
         setRerunning(true);
+        drivingJobIdRef.current = null; // stop any existing driver
         try {
             await fetch("/api/crawl/full/start", {
                 method: "POST",
@@ -280,15 +353,27 @@ export function AuditDomainClient({ domain }: { domain: string }) {
 
             {/* ── Crawling Banner */}
             {isCrawling && (
-                <div className="rounded-xl border px-5 py-4 flex items-center gap-4"
+                <div className="rounded-xl border px-5 py-4 space-y-1"
                     style={{ background: "rgba(255,152,0,0.08)", borderColor: "rgba(255,152,0,0.2)" }}>
-                    <Loader2 size={18} className="animate-spin shrink-0" style={{ color: "#FF9800" }} />
-                    <div>
-                        <p className="text-sm font-semibold" style={{ color: "#FF9800" }}>Audit in progress</p>
-                        <p className="text-xs mt-0.5" style={{ color: "#6B7A99" }}>
-                            {jobData.pagesCrawled} pages crawled so far — results update automatically every 6 seconds
-                        </p>
+                    <div className="flex items-center gap-4">
+                        <Loader2 size={18} className="animate-spin shrink-0" style={{ color: "#FF9800" }} />
+                        <div>
+                            <p className="text-sm font-semibold" style={{ color: "#FF9800" }}>Audit in progress</p>
+                            <p className="text-xs mt-0.5" style={{ color: "#6B7A99" }}>
+                                {jobData.pagesCrawled} page{jobData.pagesCrawled !== 1 ? "s" : ""} crawled — results update automatically
+                            </p>
+                        </div>
                     </div>
+                    {jobData.currentUrl && (
+                        <p className="text-[11px] pl-10 truncate" style={{ color: "#4A5568" }}>
+                            Fetching: <span style={{ color: "#6B7A99" }}>{jobData.currentUrl}</span>
+                        </p>
+                    )}
+                    {jobData.lastError && (
+                        <p className="text-[11px] pl-10" style={{ color: "#FF9800" }}>
+                            Last error: {jobData.lastError}
+                        </p>
+                    )}
                 </div>
             )}
 
@@ -411,7 +496,8 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                         <h2 className="text-sm font-bold text-white mb-5">Thematic Analysis</h2>
                         <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
                             {thematicScores.map(({ label, score: s, color }) => (
-                                <ThematicScore key={label} label={label} score={s} color={color} />
+                                <ThematicScore key={label} label={label} score={s} color={color}
+                                    loading={isCrawling && issues.length === 0} />
                             ))}
                         </div>
                     </div>

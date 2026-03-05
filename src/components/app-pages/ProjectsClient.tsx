@@ -99,7 +99,13 @@ export function ProjectsClient() {
     const handleAdd = async () => {
         if (!newDomain.trim() || adding) return;
         setAdding(true);
-        const domain = newDomain.replace(/^https?:\/\//, "").replace(/\/$/, "").trim();
+        // Normalize exactly like /api/crawl/full/start does so the redirect matches the stored domain
+        const domain = newDomain
+            .replace(/^https?:\/\//, "")
+            .replace(/^www\./, "")
+            .split("/")[0]
+            .toLowerCase()
+            .trim();
         try {
             const res = await fetch("/api/crawl/full/start", {
                 method: "POST",

@@ -15,7 +15,7 @@ export async function GET() {
   // Fetch all crawl jobs for this user (completed + in-progress)
   const { data: jobs, error } = await supabaseAdmin
     .from("crawl_jobs")
-    .select("id, domain, status, created_at, updated_at, pages_crawled")
+    .select("id, domain, status, created_at, updated_at, pages_crawled, current_url, last_error")
     .eq("user_id", userId)
     .in("status", ["completed", "crawling", "pending", "failed"])
     .order("created_at", { ascending: false });
@@ -36,7 +36,7 @@ export async function GET() {
     }
   }
 
-  const latestJobs = Array.from(domainMap.values());
+  const latestJobs = Array.from(domainMap.values()).filter(j => !!j.domain);
 
   // For each domain, fetch score + issue counts from audit_pages
   const domains = await Promise.all(
@@ -50,13 +50,15 @@ export async function GET() {
       let errors = 0, warnings = 0, notices = 0;
 
       for (const page of pages ?? []) {
-        const rawIssues: Array<{ sev?: string }> = Array.isArray(page.issues)
+        const rawIssues: Array<{ sev?: string; priority?: string }> = Array.isArray(page.issues)
           ? page.issues
           : [];
         for (const iss of rawIssues) {
+          // Support both sev (compact format) and priority (legacy action-center format)
           const sev = (iss.sev ?? "").toUpperCase();
-          if (sev === "HIGH" || sev === "CRITICAL") errors++;
-          else if (sev === "MED" || sev === "MEDIUM") warnings++;
+          const priority = (iss.priority ?? "").toLowerCase();
+          if (sev === "HIGH" || priority === "high" || priority === "critical") errors++;
+          else if (sev === "MED" || priority === "medium") warnings++;
           else notices++;
         }
       }
@@ -71,6 +73,8 @@ export async function GET() {
         pagesCrawled: job.pages_crawled ?? (pages?.length ?? 0),
         lastAuditAt: job.updated_at ?? job.created_at,
         status: job.status,
+        currentUrl: (job as Record<string, unknown>).current_url ?? null,
+        lastError: (job as Record<string, unknown>).last_error ?? null,
       };
     })
   );
