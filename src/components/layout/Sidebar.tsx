@@ -5,15 +5,19 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
+  FolderOpen,
   Search,
   TrendingUp,
-  FileSearch,
   Link as LinkIcon,
   Users,
   FileText,
   Puzzle,
   Settings,
+  Zap,
+  BookOpen,
+  BarChart2,
   X,
+  Crown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -22,31 +26,44 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ElementType;
+  badge?: string;
 }
 
 interface NavGroup {
-  label: string;
+  label?: string;
   items: NavItem[];
 }
 
 const NAV_GROUPS: NavGroup[] = [
   {
+    items: [
+      { label: "Dashboard", href: "/app/dashboard", icon: LayoutDashboard },
+      { label: "Projects", href: "/app/projects", icon: FolderOpen },
+    ],
+  },
+  {
     label: "SEO TOOLS",
     items: [
-      { label: "Dashboard",        href: "/dashboard",                 icon: LayoutDashboard },
-      { label: "Site Audits",      href: "/audits/full",               icon: Search },
-      { label: "Rank Tracking",    href: "/position-tracking",         icon: TrendingUp },
-      { label: "Keyword Research", href: "/features/keyword-explorer", icon: FileSearch },
-      { label: "Backlinks",        href: "/features/backlink-audit",   icon: LinkIcon },
-      { label: "Competitors",      href: "/features/competitors",      icon: Users },
+      { label: "Site Audit", href: "/app/audit", icon: Search },
+      { label: "Keyword Research", href: "/app/keywords", icon: BarChart2 },
+      { label: "Rank Tracking", href: "/app/rank-tracking", icon: TrendingUp },
+      { label: "Backlinks", href: "/app/backlinks", icon: LinkIcon },
+      { label: "Competitors", href: "/app/competitors", icon: Users },
+    ],
+  },
+  {
+    label: "OPTIMIZATION",
+    items: [
+      { label: "Action Center", href: "/app/action-center", icon: Zap, badge: "3" },
+      { label: "Content Ideas", href: "/app/content", icon: BookOpen },
     ],
   },
   {
     label: "WORKSPACE",
     items: [
-      { label: "Reports",      href: "/reports",      icon: FileText },
-      { label: "Integrations", href: "/integrations", icon: Puzzle },
-      { label: "Settings",     href: "/settings",     icon: Settings },
+      { label: "Reports", href: "/app/reports", icon: FileText },
+      { label: "Integrations", href: "/app/integrations", icon: Puzzle },
+      { label: "Settings", href: "/app/settings", icon: Settings },
     ],
   },
 ];
@@ -98,7 +115,15 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
           active ? "text-[#FF642D]" : "text-[#64748B]"
         )}
       />
-      {item.label}
+      <span className="flex-1">{item.label}</span>
+      {item.badge && (
+        <span
+          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center"
+          style={{ background: "rgba(255,100,45,0.2)", color: "#FF642D" }}
+        >
+          {item.badge}
+        </span>
+      )}
     </Link>
   );
 }
@@ -107,17 +132,18 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
 function ProPlanBlock({ onUpgrade }: { onUpgrade: () => void }) {
   return (
     <div className="px-4 pb-5 pt-3 border-t" style={{ borderColor: "#1E2940" }}>
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-2">
+        <Crown size={14} style={{ color: "#FF642D" }} />
         <span className="text-sm font-bold text-[#FF642D]">Pro Plan</span>
-        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(0,200,83,0.15)", color: "#00C853" }}>
+        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full ml-auto" style={{ background: "rgba(0,200,83,0.15)", color: "#00C853" }}>
           Active
         </span>
       </div>
-      <p className="text-[11px] mb-2" style={{ color: "#4A5568" }}>Limits</p>
-      <div className="h-1.5 w-full rounded-full overflow-hidden mb-4" style={{ background: "#1E2940" }}>
+      <p className="text-[11px] mb-1.5" style={{ color: "#4A5568" }}>3 of 5 projects used</p>
+      <div className="h-1.5 w-full rounded-full overflow-hidden mb-3" style={{ background: "#1E2940" }}>
         <div
           className="h-full rounded-full"
-          style={{ width: "68%", background: "linear-gradient(90deg, #FF642D, #FF8C5A)" }}
+          style={{ width: "60%", background: "linear-gradient(90deg, #FF642D, #FF8C5A)" }}
         />
       </div>
       <button
@@ -125,9 +151,36 @@ function ProPlanBlock({ onUpgrade }: { onUpgrade: () => void }) {
         className="w-full py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90 active:scale-[0.98]"
         style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)" }}
       >
-        Upgrade
+        Upgrade to Business
       </button>
     </div>
+  );
+}
+
+// ── Shared Nav Content ────────────────────────────────────────────────────────
+function NavContent({ pathname, onClick }: { pathname: string; onClick?: () => void }) {
+  const isActive = (href: string) => {
+    if (href === "/app/dashboard") return pathname === "/app/dashboard";
+    return pathname.startsWith(href);
+  };
+
+  return (
+    <nav className="flex-1 overflow-y-auto py-2 px-3 custom-scrollbar" onClick={onClick}>
+      {NAV_GROUPS.map((group, gi) => (
+        <div key={gi} className="mb-1">
+          {group.label && (
+            <p className="px-4 pt-4 pb-1.5 text-[10px] font-bold tracking-widest uppercase" style={{ color: "#2E4166" }}>
+              {group.label}
+            </p>
+          )}
+          <div className="space-y-0.5">
+            {group.items.map((item) => (
+              <NavLink key={item.href} item={item} active={isActive(item.href)} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </nav>
   );
 }
 
@@ -135,11 +188,6 @@ function ProPlanBlock({ onUpgrade }: { onUpgrade: () => void }) {
 export function Sidebar({ hFull }: { hFull?: boolean } = {}) {
   const pathname = usePathname();
   const router = useRouter();
-
-  const isActive = (href: string) => {
-    if (href === "/dashboard") return pathname === "/dashboard";
-    return pathname.startsWith(href);
-  };
 
   return (
     <aside
@@ -153,20 +201,7 @@ export function Sidebar({ hFull }: { hFull?: boolean } = {}) {
         <SidebarLogo />
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-2 px-3 custom-scrollbar">
-        {NAV_GROUPS.map((group) => (
-          <div key={group.label} className="mb-1">
-            <p className="px-4 pt-4 pb-1.5 text-[10px] font-bold tracking-widest uppercase" style={{ color: "#2E4166" }}>
-              {group.label}
-            </p>
-            <div className="space-y-0.5">
-              {group.items.map((item) => (
-                <NavLink key={item.href} item={item} active={isActive(item.href)} />
-              ))}
-            </div>
-          </div>
-        ))}
-      </nav>
+      <NavContent pathname={pathname} />
 
       <ProPlanBlock onUpgrade={() => router.push("/pricing")} />
     </aside>
@@ -183,11 +218,6 @@ export function MobileSidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-
-  const isActive = (href: string) => {
-    if (href === "/dashboard") return pathname === "/dashboard";
-    return pathname.startsWith(href);
-  };
 
   return (
     <AnimatePresence>
@@ -222,20 +252,7 @@ export function MobileSidebar({
               </button>
             </div>
 
-            <nav className="flex-1 overflow-y-auto py-2 px-3" onClick={onClose}>
-              {NAV_GROUPS.map((group) => (
-                <div key={group.label} className="mb-1">
-                  <p className="px-4 pt-4 pb-1.5 text-[10px] font-bold tracking-widest uppercase" style={{ color: "#2E4166" }}>
-                    {group.label}
-                  </p>
-                  <div className="space-y-0.5">
-                    {group.items.map((item) => (
-                      <NavLink key={item.href} item={item} active={isActive(item.href)} />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </nav>
+            <NavContent pathname={pathname} onClick={onClose} />
 
             <ProPlanBlock onUpgrade={() => { onClose(); router.push("/pricing"); }} />
           </motion.aside>

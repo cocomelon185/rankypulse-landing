@@ -22,9 +22,14 @@ function isValidHttpUrl(s: string): boolean {
 function isE2ERequest(req: Request): boolean {
   const host = (req.headers.get("host") || "").toLowerCase();
   const ua = (req.headers.get("user-agent") || "").toLowerCase();
+  // localhost / loopback
   if (host.startsWith("localhost") || host.startsWith("127.0.0.1")) return true;
+  // Playwright sets its own header OR uses HeadlessChrome UA
   if (ua.includes("playwright")) return true;
+  if (ua.includes("headlesschrome") || ua.includes("headless chrome")) return true;
+  // Explicit E2E header (set in test suite)
   if (req.headers.get("x-e2e") === "1") return true;
+  if (req.headers.get("x-playwright") === "1") return true;
   return false;
 }
 

@@ -119,7 +119,7 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void } = {}) {
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <Link
-                    href="/dashboard/profile"
+                    href="/app/settings"
                     className="flex items-center gap-2.5 px-3 py-2 text-[12px] rounded-lg transition-colors hover:bg-white/[0.04]"
                     style={{ color: "#8B9BB4" }}
                     onClick={() => setShowUserMenu(false)}

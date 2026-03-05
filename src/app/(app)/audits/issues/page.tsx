@@ -15,6 +15,8 @@ import {
     Play,
     Download
 } from 'lucide-react';
+import { useAuditContext } from '@/lib/audit-context';
+import { useAuditStore } from '@/lib/use-audit';
 
 const ISSUE_CATEGORIES = [
     { id: 'errors', label: 'Errors', count: 0, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: AlertCircle },
@@ -44,6 +46,12 @@ const apiSeverityToIssueSeverity = (sev: string): 'error' | 'warning' | 'notice'
     }
 };
 
+const priorityToSeverity = (priority: string): 'error' | 'warning' | 'notice' => {
+    if (priority === 'critical' || priority === 'high') return 'error';
+    if (priority === 'medium') return 'warning';
+    return 'notice';
+};
+
 interface AuditIssue {
     id: string;
     severity: 'error' | 'warning' | 'notice';
@@ -57,6 +65,14 @@ interface AuditIssue {
 export default function CrawlIssuesPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
+
+    // Active audit context — tells us whether this visit is for a free or full audit
+    const activeAuditId = useAuditContext((s) => s.auditId);
+    const activeDomain  = useAuditContext((s) => s.domain);
+
+    // Free audit data from Zustand (used when activeAuditId === "local")
+    const zustandData   = useAuditStore((s) => s.data);
+    const adjustedScore = useAuditStore((s) => s.adjustedScore);
 
     // Pre-select tab from ?severity= query param (e.g. from AuditHero click)
     const severityParam = searchParams?.get('severity');
@@ -93,7 +109,34 @@ export default function CrawlIssuesPage() {
     const fetchAudit = async (forceUrl?: string) => {
         setLoading(true);
         try {
-            // ── Path 1: Authenticated Supabase data ──────────────────────────────
+            // ── Path 0a: Free audit — read from Zustand, skip Supabase entirely ─
+            if (activeAuditId === 'local') {
+                const mapped = zustandData.issues
+                    .filter(i => i.status !== 'fixed')
+                    .map(issue => ({
+                        id: issue.id,
+                        severity: priorityToSeverity(issue.priority),
+                        title: issue.title,
+                        description: issue.description,
+                        urlsAffected: issue.affectedPages?.length ?? 1,
+                        trend: '0',
+                        discovered: new Date(),
+                    }));
+                setIssues(mapped);
+                setStats(prev => ({ ...prev, healthScore: adjustedScore() }));
+                setDomain(activeDomain);
+                setLoading(false);
+                return; // Never call /api/audits/data
+            }
+
+            // ── Path 0b: Full audit by UUID — delegate to [auditId] route ───────
+            if (activeAuditId && activeAuditId !== 'local') {
+                const sp = severityParam ? `?severity=${severityParam}` : '';
+                router.replace(`/audits/${activeAuditId}/issues${sp}`);
+                return;
+            }
+
+            // ── Path 1: Authenticated Supabase data (no active local audit) ──────
             const authRes = await fetch('/api/audits/data');
             if (authRes.ok) {
                 const data = await authRes.json();

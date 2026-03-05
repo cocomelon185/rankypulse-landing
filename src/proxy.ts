@@ -48,6 +48,7 @@ function isAuthPage(pathname: string): boolean {
 
 function isProtectedPath(pathname: string): boolean {
   return (
+    pathname.startsWith("/app") ||
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/audits") ||
     pathname.startsWith("/reports") ||
@@ -76,10 +77,10 @@ export default async function proxy(req: NextRequest) {
     const callbackUrl =
       req.nextUrl.searchParams.get("callbackUrl") ??
       req.nextUrl.searchParams.get("next") ??
-      "/dashboard";
+      "/app/dashboard";
     // Prevent redirect to another auth page (loop prevention)
     const target = callbackUrl.startsWith("/auth")
-      ? "/dashboard"
+      ? "/app/dashboard"
       : callbackUrl;
     return NextResponse.redirect(new URL(target, req.url));
   }
