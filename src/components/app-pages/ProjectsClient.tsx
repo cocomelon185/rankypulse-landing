@@ -106,6 +106,11 @@ export function ProjectsClient() {
             .split("/")[0]
             .toLowerCase()
             .trim();
+        if (!domain || domain === "undefined") {
+            alert("Please enter a valid domain (e.g. example.com)");
+            setAdding(false);
+            return;
+        }
         try {
             const res = await fetch("/api/crawl/full/start", {
                 method: "POST",
@@ -135,10 +140,10 @@ export function ProjectsClient() {
                 body: JSON.stringify({ domain }),
             });
             if (!res.ok) throw new Error("Failed to start re-run");
-            await fetchProjects();
+            // Redirect to audit page — the crawl driver lives there
+            router.push(`/app/audit/${domain}`);
         } catch (e) {
             alert(e instanceof Error ? e.message : "Failed to start audit");
-        } finally {
             setRunningAudit(null);
         }
     };
@@ -148,9 +153,10 @@ export function ProjectsClient() {
         if (!confirm(`Delete project "${domain}"? This will remove all audit data.`)) return;
         setDeletingId(jobId);
         try {
-            const res = await fetch(`/api/projects?jobId=${jobId}`, { method: "DELETE" });
+            // Delete by domain — removes ALL jobs for this domain so it won't reappear
+            const res = await fetch(`/api/projects?domain=${encodeURIComponent(domain)}`, { method: "DELETE" });
             if (!res.ok) throw new Error("Failed to delete project");
-            setProjects(prev => prev.filter(p => p.jobId !== jobId));
+            setProjects(prev => prev.filter(p => p.domain !== domain));
         } catch (e) {
             alert(e instanceof Error ? e.message : "Failed to delete");
         } finally {

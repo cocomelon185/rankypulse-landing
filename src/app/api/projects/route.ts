@@ -36,7 +36,7 @@ export async function GET() {
     }
   }
 
-  const latestJobs = Array.from(domainMap.values()).filter(j => !!j.domain);
+  const latestJobs = Array.from(domainMap.values()).filter(j => !!j.domain && j.domain !== "undefined");
 
   // For each domain, fetch score + issue counts from audit_pages
   const domains = await Promise.all(
@@ -89,30 +89,18 @@ export async function DELETE(req: Request) {
   }
 
   const { searchParams } = new URL(req.url);
-  const jobId = searchParams.get("jobId");
-  if (!jobId) {
-    return NextResponse.json({ error: "jobId required" }, { status: 400 });
+  const domain = searchParams.get("domain");
+  if (!domain) {
+    return NextResponse.json({ error: "domain required" }, { status: 400 });
   }
 
   const userId = session.user.id;
 
-  // Fetch the job first to confirm ownership and get domain
-  const { data: job, error: fetchError } = await supabaseAdmin
-    .from("crawl_jobs")
-    .select("id, domain, user_id")
-    .eq("id", jobId)
-    .eq("user_id", userId)
-    .single();
-
-  if (fetchError || !job) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  }
-
-  // Delete the job (cascade deletes crawl_queue + audit_pages via FK)
+  // Delete ALL crawl jobs for this domain+user (cascade deletes crawl_queue + audit_pages via FK)
   const { error: deleteError } = await supabaseAdmin
     .from("crawl_jobs")
     .delete()
-    .eq("id", jobId)
+    .eq("domain", domain)
     .eq("user_id", userId);
 
   if (deleteError) {
@@ -124,8 +112,8 @@ export async function DELETE(req: Request) {
     await supabaseAdmin.from("activity_events").insert({
       user_id: userId,
       type: "project_deleted",
-      domain: job.domain,
-      meta: { jobId },
+      domain,
+      meta: {},
     });
   } catch { /* non-critical */ }
 
