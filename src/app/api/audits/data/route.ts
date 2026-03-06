@@ -15,6 +15,7 @@ interface PageMetadata {
   title?: string;
   meta_description?: string;
   outbound_links?: string[];
+  depth?: number;
 }
 
 interface AuditPage {
@@ -138,6 +139,13 @@ export async function GET(req: NextRequest) {
       issueUrlMap["orphan_page"]  = [...orphanUrls].slice(0, 10);
     }
 
+    // ── Post-crawl: deep page depth (URL path depth > 3) ─────────────────────
+    const deepPages = pages.filter(p => (p.metadata?.depth ?? 0) > 3);
+    if (deepPages.length > 0) {
+      issueMap["deep_page_depth"] = { sev: "MED", count: deepPages.length };
+      issueUrlMap["deep_page_depth"] = deepPages.map(p => p.url).slice(0, 10);
+    }
+
     // ── Map to display format using ISSUE_META ────────────────────────────────
     const impactOrder: Record<string, number> = { error: 0, warning: 1, notice: 2 };
     const issues = Object.entries(issueMap)
@@ -174,6 +182,13 @@ export async function GET(req: NextRequest) {
 
     const avgScore = calculateSeoScore(pages);
 
+    // ── Crawl stats ────────────────────────────────────────────────────────────
+    const depths = pages.map(p => p.metadata?.depth ?? 0);
+    const avgDepth = depths.length > 0
+      ? Math.round(depths.reduce((a, b) => a + b, 0) / depths.length * 10) / 10
+      : 0;
+    const deepPageCount = depths.filter(d => d > 3).length;
+
     return NextResponse.json({
       healthScore: avgScore,
       errors,
@@ -183,6 +198,7 @@ export async function GET(req: NextRequest) {
       crawledAt: latestJob.updated_at ?? latestJob.created_at,
       totalPages: pages.length || latestJob.pages_crawled || 0,
       issues,
+      crawlStats: { avgDepth, deepPageCount, totalPages: pages.length },
     });
   } catch (err) {
     console.error("Error fetching audit issues data:", err);

@@ -43,6 +43,7 @@ interface AuditData {
     crawledAt: string | null;
     totalPages: number;
     issues: IssueItem[];
+    crawlStats?: { avgDepth: number; deepPageCount: number; totalPages: number };
 }
 
 // ── Thematic score computation ────────────────────────────────────────────────
@@ -62,6 +63,17 @@ const ISSUE_CATEGORY: Record<string, string> = {
     redirect_chain: "Technical",
     orphan_page: "Links",
     multiple_h1: "Content",
+    // Phase 3
+    title_too_long:      "Content",
+    title_too_short:     "Content",
+    meta_desc_too_long:  "Content",
+    meta_desc_too_short: "Content",
+    no_og_tags:          "Content",
+    no_schema:           "Content",
+    canonical_mismatch:  "Technical",
+    low_word_count:      "Content",
+    deep_page_depth:     "Links",
+    robots_txt_blocked:  "Technical",
 };
 
 const THEMATIC_COLORS: Record<string, string> = {
@@ -115,6 +127,32 @@ function ThematicScore({ label, score, color, loading }: { label: string; score:
     );
 }
 
+// ── InsightCard mini summary card ─────────────────────────────────────────────
+function InsightCard({ icon, color, title, value, desc }: {
+    icon: string; color: string; title: string; value: string; desc: string;
+}) {
+    return (
+        <div className="rounded-xl p-3 flex flex-col gap-1 min-w-0"
+            style={{ background: "#0d1526", border: "1px solid #1E2940" }}>
+            <div className="text-[10px] font-semibold uppercase tracking-wider truncate" style={{ color: "#6B7A99" }}>{title}</div>
+            <div className="flex items-baseline gap-1.5">
+                <span className="text-sm font-black" style={{ color }}>{icon}</span>
+                <span className="text-xl font-black text-white leading-none">{value}</span>
+            </div>
+            <div className="text-[10px] truncate" style={{ color: "#4A5568" }}>{desc}</div>
+        </div>
+    );
+}
+
+// ── Insight gain table ────────────────────────────────────────────────────────
+const INSIGHT_GAIN: Record<string, number> = {
+    robots_txt_blocked: 30, robots_noindex: 25, no_title: 15, broken_links: 12,
+    no_meta_description: 10, canonical_mismatch: 8, duplicate_title: 8,
+    orphan_page: 8, redirect_chain: 6, slow_page: 6, no_og_tags: 5,
+    low_word_count: 5, meta_desc_too_long: 5, no_schema: 3, deep_page_depth: 3,
+    no_h1: 3, images_missing_alt: 2,
+};
+
 // ── Main Component ─────────────────────────────────────────────────────────────
 export function AuditDomainClient({ domain }: { domain: string }) {
     const router = useRouter();
@@ -125,9 +163,8 @@ export function AuditDomainClient({ domain }: { domain: string }) {
     const [expandedIssue, setExpandedIssue] = useState<string | null>(null);
     const [rerunning, setRerunning] = useState(false);
 
-    // Tracks which jobId the crawl driver is currently running for.
-    // Using a ref avoids triggering re-renders and survives across them.
-    const drivingJobIdRef = useRef<string | null>(null);
+    // Tracks how many concurrent crawl driver workers are running.
+    const activeDriversRef = useRef<number>(0);
 
     // Write domain to localStorage so audit sub-pages (/audits/speed, /audits/full etc.) can read it
     useEffect(() => {
@@ -170,68 +207,75 @@ export function AuditDomainClient({ domain }: { domain: string }) {
         return () => clearInterval(id);
     }, [jobData?.status, fetchData]);
 
-    // ── Crawl driver ──────────────────────────────────────────────────────────
-    // The frontend drives the crawl by calling /api/crawl/full/next in a loop.
-    // Without this, the crawl queue never processes and pages_crawled stays at 0.
+    // ── Crawl driver (3 concurrent workers) ──────────────────────────────────
+    // Three workers drive the crawl in parallel for ~3x throughput.
     useEffect(() => {
         if (!jobData?.jobId) return;
         if (jobData.status !== "crawling" && jobData.status !== "pending") return;
 
         const jobId = jobData.jobId;
 
-        // Guard: one driver per job. drivingJobIdRef persists across re-renders.
-        if (drivingJobIdRef.current === jobId) return;
-        drivingJobIdRef.current = jobId;
+        // Guard: don't start new workers if they're already running for this job
+        if (activeDriversRef.current > 0) return;
 
-        let failCount = 0;
-        const MAX_FAILS = 5;
+        const CONCURRENCY = 3;
+        activeDriversRef.current = CONCURRENCY;
+
         const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+        let jobDone = false; // shared flag so only one worker triggers fetchData
 
-        (async () => {
-            console.log(`[CrawlDriver] Starting for job ${jobId}`);
-            while (drivingJobIdRef.current === jobId && failCount < MAX_FAILS) {
-                try {
-                    const res = await fetch(`/api/crawl/full/next?job_id=${jobId}`);
-                    if (!res.ok) {
+        const runWorker = async (workerIndex: number) => {
+            let failCount = 0;
+            const MAX_FAILS = 5;
+            console.log(`[CrawlDriver] Worker ${workerIndex + 1} starting for job ${jobId}`);
+            try {
+                while (!jobDone && failCount < MAX_FAILS) {
+                    try {
+                        const res = await fetch(`/api/crawl/full/next?job_id=${jobId}`);
+                        if (!res.ok) {
+                            failCount++;
+                            console.warn(`[CrawlDriver] W${workerIndex + 1}: HTTP ${res.status}, fail ${failCount}/${MAX_FAILS}`);
+                            await sleep(3000);
+                            continue;
+                        }
+                        const data = await res.json();
+                        failCount = 0;
+
+                        if (data.done) {
+                            if (!jobDone) {
+                                jobDone = true;
+                                console.log(`[CrawlDriver] Job ${jobId} complete. Refreshing.`);
+                                fetchData();
+                            }
+                            break;
+                        }
+
+                        // Brief pause between pages
+                        await sleep(200);
+                    } catch (e) {
                         failCount++;
-                        console.warn(`[CrawlDriver] HTTP ${res.status}, fail ${failCount}/${MAX_FAILS}`);
+                        console.error(`[CrawlDriver] W${workerIndex + 1} error:`, e);
                         await sleep(3000);
-                        continue;
                     }
-                    const data = await res.json();
-                    failCount = 0;
-
-                    if (data.done) {
-                        console.log(`[CrawlDriver] Job ${jobId} complete. Refreshing.`);
-                        drivingJobIdRef.current = null;
-                        fetchData();
-                        return;
-                    }
-
-                    // Brief pause between pages
-                    await sleep(300);
-                } catch (e) {
-                    failCount++;
-                    console.error(`[CrawlDriver] Error:`, e);
-                    await sleep(3000);
                 }
+            } finally {
+                activeDriversRef.current = Math.max(0, activeDriversRef.current - 1);
             }
+        };
 
-            if (drivingJobIdRef.current === jobId) {
-                console.error(`[CrawlDriver] Job ${jobId} stopped after ${MAX_FAILS} failures.`);
-                drivingJobIdRef.current = null;
-            }
-        })();
+        // Stagger worker starts to avoid thundering herd on the queue
+        for (let i = 0; i < CONCURRENCY; i++) {
+            setTimeout(() => runWorker(i), i * 400);
+        }
 
-        // No cleanup: drivingJobIdRef controls loop lifetime.
-        // When jobId changes (new re-run), the new effect starts a new driver.
+        // No cleanup: activeDriversRef controls worker lifetime.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [jobData?.jobId, jobData?.status]);
 
     const handleRerun = async () => {
         if (rerunning) return;
         setRerunning(true);
-        drivingJobIdRef.current = null; // stop any existing driver
+        activeDriversRef.current = 0; // allow new workers for the new job
         try {
             await fetch("/api/crawl/full/start", {
                 method: "POST",
@@ -299,7 +343,17 @@ export function AuditDomainClient({ domain }: { domain: string }) {
     const warnings = auditData?.warnings ?? jobData.warnings ?? 0;
     const notices = auditData?.notices ?? jobData.notices ?? 0;
     const issues = auditData?.issues ?? [];
+    const crawlStats = auditData?.crawlStats;
     const thematicScores = computeThematicScores(issues);
+
+    // ── Insight card derivations ───────────────────────────────────────────────
+    const contentIssueIds = ["duplicate_title","duplicate_meta_description","low_word_count","no_og_tags","meta_desc_too_long","meta_desc_too_short","no_schema"];
+    const crawlIssueIds   = ["orphan_page","redirect_chain","deep_page_depth","robots_noindex","robots_txt_blocked","canonical_mismatch"];
+    const contentIssues      = issues.filter(i => contentIssueIds.includes(i.id));
+    const crawlabilityIssues = issues.filter(i => crawlIssueIds.includes(i.id));
+    const contentPages      = contentIssues.reduce((s, i) => s + i.urlsAffected, 0);
+    const crawlabilityPages = crawlabilityIssues.reduce((s, i) => s + i.urlsAffected, 0);
+    const topWin = issues.find(i => INSIGHT_GAIN[i.id]);
 
     const scoreColor = score >= 80 ? "#00C853" : score >= 60 ? "#FF9800" : "#FF3D3D";
     const scoreLabel = score >= 80 ? "Excellent" : score >= 60 ? "Good" : "Poor";
@@ -389,6 +443,47 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                             Last error: {jobData.lastError}
                         </p>
                     )}
+                </div>
+            )}
+
+            {/* ── Insight Cards */}
+            {auditData && !isCrawling && (
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    <InsightCard
+                        icon={score >= 80 ? "✓" : score >= 60 ? "~" : "!"}
+                        color={score >= 80 ? "#22c55e" : score >= 60 ? "#eab308" : "#ef4444"}
+                        title="Site Health"
+                        value={`${score}/100`}
+                        desc={errors > 0 ? `${errors} critical errors` : "No critical errors"}
+                    />
+                    <InsightCard
+                        icon={contentPages > 0 ? "!" : "✓"}
+                        color={contentPages > 0 ? "#f97316" : "#22c55e"}
+                        title="Content Issues"
+                        value={contentPages > 0 ? `${contentPages}` : "Clean"}
+                        desc={contentIssues.length > 0 ? `${contentIssues.length} issue types` : "All content healthy"}
+                    />
+                    <InsightCard
+                        icon={crawlabilityPages > 0 ? "!" : "✓"}
+                        color={crawlabilityPages > 0 ? "#f97316" : "#22c55e"}
+                        title="Crawlability"
+                        value={crawlabilityPages > 0 ? `${crawlabilityPages}` : "Clean"}
+                        desc={crawlabilityPages > 0 ? "pages at risk" : "All pages reachable"}
+                    />
+                    <InsightCard
+                        icon={(crawlStats?.avgDepth ?? 0) > 3 ? "!" : "✓"}
+                        color={(crawlStats?.avgDepth ?? 0) > 3 ? "#f97316" : "#22c55e"}
+                        title="Avg Link Depth"
+                        value={crawlStats ? crawlStats.avgDepth.toFixed(1) : "–"}
+                        desc={`${crawlStats?.deepPageCount ?? 0} deep pages (4+ clicks)`}
+                    />
+                    <InsightCard
+                        icon="→"
+                        color="#6366f1"
+                        title="Quick Win"
+                        value={topWin ? `+${INSIGHT_GAIN[topWin.id]}pts` : "🎉"}
+                        desc={topWin ? topWin.title : "No critical issues!"}
+                    />
                 </div>
             )}
 

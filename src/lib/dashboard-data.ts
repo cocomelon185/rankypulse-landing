@@ -98,6 +98,17 @@ export const ISSUE_META: Record<string, {
   redirect_chain:              { label: "Redirect Chains",               impact: "medium", action: "Fix URL",   actionHref: "/audits/issues", gain: "Faster crawling, fewer wasted hops" },
   orphan_page:                 { label: "Orphan Pages",                  impact: "high",   action: "Add Links", actionHref: "/audits/links",  gain: "Improves crawlability and link equity" },
   multiple_h1:                 { label: "Multiple H1 Tags",              impact: "low",    action: "Fix Now",   actionHref: "/audits/issues", gain: null },
+  // ── Phase 3 new checks ──────────────────────────────────────────────────────
+  title_too_long:      { label: "Title Too Long (>60 chars)",        impact: "medium", action: "Shorten",     actionHref: "/audits/issues", gain: "Better CTR in search results" },
+  title_too_short:     { label: "Title Too Short (<30 chars)",       impact: "low",    action: "Expand",      actionHref: "/audits/issues", gain: null },
+  meta_desc_too_long:  { label: "Meta Description Too Long",         impact: "medium", action: "Trim",        actionHref: "/audits/issues", gain: "Prevents truncation in SERPs" },
+  meta_desc_too_short: { label: "Meta Description Too Short",        impact: "low",    action: "Expand",      actionHref: "/audits/issues", gain: null },
+  no_og_tags:          { label: "Missing Open Graph Tags",           impact: "medium", action: "Add Tags",    actionHref: "/audits/issues", gain: "Better social media previews" },
+  no_schema:           { label: "Missing Structured Data",           impact: "low",    action: "Add Schema",  actionHref: "/audits/issues", gain: "Enables rich results in Google" },
+  canonical_mismatch:  { label: "Canonical URL Mismatch",           impact: "high",   action: "Fix URL",     actionHref: "/audits/issues", gain: "Prevents duplicate content penalties" },
+  low_word_count:      { label: "Thin Content (<300 words)",         impact: "medium", action: "Expand",      actionHref: "/audits/issues", gain: "Better topical depth & rankings" },
+  deep_page_depth:     { label: "Deep Pages (4+ clicks from home)",  impact: "medium", action: "Restructure", actionHref: "/audits/links",  gain: "Improves crawl budget & indexing" },
+  robots_txt_blocked:  { label: "Site Blocked by robots.txt",        impact: "high",   action: "Fix Now",     actionHref: "/audits/issues", gain: "Allows Google to crawl your site" },
 };
 
 // ─── Static fallback data (used for metrics we can't compute from DB) ─────────

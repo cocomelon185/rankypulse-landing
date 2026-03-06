@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getBillingState, getAuditCap } from "@/lib/billing-store";
+import { withTimeout } from "@/app/api/crawl/route";
 
 // Helper to normalize domain
 function normalizeDomain(rawDomain: string): string {
@@ -58,6 +59,40 @@ export async function POST(req: NextRequest) {
             url: `https://${cleanDomain}`,
             status: "pending",
         });
+
+        // 3. Sitemap seeding — parse sitemap.xml and seed discovered URLs (best-effort, 3s timeout)
+        try {
+            const sitemapXml = await withTimeout(
+                fetch(`https://${cleanDomain}/sitemap.xml`, {
+                    headers: { "User-Agent": "Mozilla/5.0 (compatible; RankyPulse/1.0)" },
+                }).then(r => r.ok ? r.text() : ""),
+                3000,
+                ""
+            );
+            if (sitemapXml) {
+                const domainRoot = cleanDomain.replace(/^www\./, "");
+                const locs = [...sitemapXml.matchAll(/<loc>\s*(https?:\/\/[^\s<]+)\s*<\/loc>/gi)]
+                    .map(m => m[1].trim())
+                    .filter(u => {
+                        try { return new URL(u).hostname.replace(/^www\./, "") === domainRoot; }
+                        catch { return false; }
+                    })
+                    .filter(u => u !== `https://${cleanDomain}` && u !== `https://www.${cleanDomain}`);
+
+                if (locs.length > 0) {
+                    const sitemapUrls = locs.slice(0, 50).map(u => ({
+                        job_id: job.id,
+                        url: u,
+                        status: "pending",
+                    }));
+                    await supabaseAdmin.from("crawl_queue").upsert(sitemapUrls, {
+                        onConflict: "job_id,url",
+                        ignoreDuplicates: true,
+                    });
+                    console.log(`[Crawl Start] Seeded ${locs.length} URLs from sitemap.xml for ${cleanDomain}`);
+                }
+            }
+        } catch { /* sitemap is optional — continue without it */ }
 
         // Update job status to crawling
         await supabaseAdmin

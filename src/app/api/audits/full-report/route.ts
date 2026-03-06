@@ -47,6 +47,17 @@ const ISSUE_CATEGORY: Record<string, string> = {
     redirect_chain: "crawlability",
     orphan_page: "internalLinking",
     multiple_h1: "markup",
+    // Phase 3
+    title_too_long:      "markup",
+    title_too_short:     "markup",
+    meta_desc_too_long:  "markup",
+    meta_desc_too_short: "markup",
+    no_og_tags:          "markup",
+    no_schema:           "markup",
+    canonical_mismatch:  "crawlability",
+    low_word_count:      "markup",
+    deep_page_depth:     "internalLinking",
+    robots_txt_blocked:  "crawlability",
 };
 
 export async function GET(req: Request) {

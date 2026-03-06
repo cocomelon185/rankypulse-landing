@@ -18,8 +18,17 @@ interface CompactIssue {
     msg: string;
 }
 
+// ── URL depth helper (0 = homepage, 1 = /blog, 2 = /blog/post, etc.) ──────────
+function getUrlDepth(url: string): number {
+    try {
+        const segments = new URL(url).pathname.split("/").filter(Boolean);
+        return segments.length;
+    } catch { return 0; }
+}
+
 function auditPageCompact(
     domain: string,
+    pageUrl: string,
     html: string,
     psi: Record<string, unknown> | null,
     brokenLinks: string[]
@@ -38,6 +47,20 @@ function auditPageCompact(
     if (!hasMeta) {
         score -= 10;
         issues.push({ id: "no_meta_description", sev: "HIGH", msg: "Missing meta description" });
+    } else {
+        // Meta description length checks
+        const metaDescContent =
+            html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i)?.[1]?.trim() ??
+            html.match(/<meta\s+content=["']([^"']+)["']\s+name=["']description["']/i)?.[1]?.trim();
+        if (metaDescContent) {
+            if (metaDescContent.length > 160) {
+                score -= 5;
+                issues.push({ id: "meta_desc_too_long", sev: "MED", msg: `Meta description is ${metaDescContent.length} chars (max 160)` });
+            } else if (metaDescContent.length < 70) {
+                score -= 3;
+                issues.push({ id: "meta_desc_too_short", sev: "LOW", msg: `Meta description is ${metaDescContent.length} chars (min 70)` });
+            }
+        }
     }
 
     // Title tag
@@ -46,6 +69,16 @@ function auditPageCompact(
     if (!hasTitle) {
         score -= 10;
         issues.push({ id: "no_title", sev: "HIGH", msg: "Missing title tag" });
+    } else {
+        // Title length checks
+        const titleText = titleMatch![1].trim();
+        if (titleText.length > 60) {
+            score -= 5;
+            issues.push({ id: "title_too_long", sev: "MED", msg: `Title is ${titleText.length} chars (max 60)` });
+        } else if (titleText.length < 30) {
+            score -= 3;
+            issues.push({ id: "title_too_short", sev: "LOW", msg: `Title is ${titleText.length} chars (min 30)` });
+        }
     }
 
     // H1
@@ -63,6 +96,19 @@ function auditPageCompact(
     if (!hasCanonical) {
         score -= 3;
         issues.push({ id: "no_canonical", sev: "LOW", msg: "Missing canonical tag" });
+    } else {
+        // Canonical mismatch — canonical exists but points to a different URL
+        const canonHref = (
+            html.match(/<link\s[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["']/i) ??
+            html.match(/<link\s[^>]*href=["']([^"']+)["'][^>]*rel=["']canonical["']/i)
+        )?.[1]?.trim();
+        if (canonHref) {
+            const norm = (u: string) => u.replace(/\/$/, "");
+            if (norm(canonHref) !== norm(pageUrl)) {
+                score -= 8;
+                issues.push({ id: "canonical_mismatch", sev: "HIGH", msg: `Canonical → ${canonHref}` });
+            }
+        }
     }
 
     // Robots noindex
@@ -71,6 +117,23 @@ function auditPageCompact(
     if (isNoindex) {
         score -= 15;
         issues.push({ id: "robots_noindex", sev: "HIGH", msg: "Page set to noindex" });
+    }
+
+    // Open Graph tags
+    const hasOgTitle = /<meta\s[^>]*property=["']og:title["']/i.test(html);
+    const hasOgDesc  = /<meta\s[^>]*property=["']og:description["']/i.test(html);
+    if (!hasOgTitle || !hasOgDesc) {
+        score -= 5;
+        issues.push({ id: "no_og_tags", sev: "MED", msg: "Missing og:title or og:description" });
+    }
+
+    // Structured data / Schema.org
+    const hasSchema =
+        /<script\s[^>]*type=["']application\/ld\+json["']/i.test(html) ||
+        /\bitemscope\b/i.test(html);
+    if (!hasSchema) {
+        score -= 3;
+        issues.push({ id: "no_schema", sev: "LOW", msg: "No structured data (JSON-LD / Schema.org)" });
     }
 
     // Images missing alt
@@ -87,6 +150,19 @@ function auditPageCompact(
     if (htmlBytes > 100_000) {
         score -= 5;
         issues.push({ id: "large_page_size", sev: "MED", msg: `HTML size ${Math.round(htmlBytes / 1024)}KB (>100KB)` });
+    }
+
+    // Low word count (<300 words of visible text)
+    const textOnly = html
+        .replace(/<script[\s\S]*?<\/script>/gi, "")
+        .replace(/<style[\s\S]*?<\/style>/gi, "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    const wordCount = textOnly.split(" ").filter(w => w.length > 2).length;
+    if (wordCount < 300) {
+        score -= 5;
+        issues.push({ id: "low_word_count", sev: "MED", msg: `Only ${wordCount} words (300+ recommended)` });
     }
 
     // Broken links
@@ -318,7 +394,7 @@ export async function GET(req: NextRequest) {
         }
 
         // 5. Run compact audit
-        const { score, issues } = auditPageCompact(cleanDomain, html, psi, brokenLinks);
+        const { score, issues } = auditPageCompact(cleanDomain, targetUrl, html, psi, brokenLinks);
 
         // 5b. Detect redirect chain (≥2 hops = chain of 3+ URLs)
         if (redirectChain.length >= 3) {
@@ -327,6 +403,26 @@ export async function GET(req: NextRequest) {
                 sev: "MED",
                 msg: `Redirect chain: ${redirectChain.length - 1} hops`,
             });
+        }
+
+        // 5c. Robots.txt site-level blocking check (root page only)
+        if (isRoot) {
+            try {
+                const robotsText = await withTimeout(
+                    fetch(`https://${cleanDomain}/robots.txt`, {
+                        headers: { "User-Agent": "Mozilla/5.0 (compatible; RankyPulse/1.0)" },
+                    }).then(r => r.ok ? r.text() : ""),
+                    3000,
+                    ""
+                );
+                if (robotsText) {
+                    // Detect "User-agent: *" followed by "Disallow: /"
+                    const isBlocked = /User-agent:\s*\*[\s\S]*?Disallow:\s*\/(\s|$)/i.test(robotsText);
+                    if (isBlocked) {
+                        issues.push({ id: "robots_txt_blocked", sev: "HIGH", msg: "robots.txt blocks all crawlers (Disallow: /)" });
+                    }
+                }
+            } catch { /* non-critical */ }
         }
 
         // Extract meta_description for duplicate detection at read time
@@ -346,6 +442,7 @@ export async function GET(req: NextRequest) {
                 title: html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() ?? "",
                 meta_description: metaDescription,
                 outbound_links: internalLinks,
+                depth: getUrlDepth(targetUrl),
                 is_root: isRoot,
                 psi_available: !!psi,
             },
