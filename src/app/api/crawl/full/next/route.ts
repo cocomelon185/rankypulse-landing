@@ -109,6 +109,13 @@ function auditPageCompact(
                 issues.push({ id: "canonical_mismatch", sev: "HIGH", msg: `Canonical → ${canonHref}` });
             }
         }
+
+        // Multiple canonical tags (only when at least one canonical exists)
+        const canonicalTagCount = (html.match(/<link\s[^>]*rel=["']canonical["']/gi) ?? []).length;
+        if (canonicalTagCount > 1) {
+            score -= 10;
+            issues.push({ id: "multiple_canonicals", sev: "HIGH", msg: `${canonicalTagCount} canonical tags found (should be exactly 1)` });
+        }
     }
 
     // Robots noindex

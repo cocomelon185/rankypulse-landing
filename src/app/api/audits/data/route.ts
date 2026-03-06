@@ -146,6 +146,22 @@ export async function GET(req: NextRequest) {
       issueUrlMap["deep_page_depth"] = deepPages.map(p => p.url).slice(0, 10);
     }
 
+    // ── Post-crawl: keyword cannibalization (3+ pages sharing same 5-word title prefix) ──
+    const titlePrefixGroups: Record<string, string[]> = {};
+    for (const page of pages) {
+      const title = (page.metadata?.title ?? "").trim();
+      if (!title || title.length < 10) continue;
+      const prefix = title.toLowerCase().split(/\s+/).slice(0, 5).join(" ");
+      if (!titlePrefixGroups[prefix]) titlePrefixGroups[prefix] = [];
+      titlePrefixGroups[prefix].push(page.url);
+    }
+    const cannibalizationGroups = Object.values(titlePrefixGroups).filter(urls => urls.length >= 3);
+    if (cannibalizationGroups.length > 0) {
+      const affectedUrls = [...new Set(cannibalizationGroups.flat())];
+      issueMap["keyword_cannibalization"] = { sev: "HIGH", count: affectedUrls.length };
+      issueUrlMap["keyword_cannibalization"] = affectedUrls.slice(0, 10);
+    }
+
     // ── Map to display format using ISSUE_META ────────────────────────────────
     const impactOrder: Record<string, number> = { error: 0, warning: 1, notice: 2 };
     const issues = Object.entries(issueMap)
@@ -188,6 +204,12 @@ export async function GET(req: NextRequest) {
       ? Math.round(depths.reduce((a, b) => a + b, 0) / depths.length * 10) / 10
       : 0;
     const deepPageCount = depths.filter(d => d > 3).length;
+    const depthDistribution = {
+      depth1:    depths.filter(d => d === 1).length,
+      depth2:    depths.filter(d => d === 2).length,
+      depth3:    depths.filter(d => d === 3).length,
+      depth4plus: depths.filter(d => d >= 4).length,
+    };
 
     return NextResponse.json({
       healthScore: avgScore,
@@ -198,7 +220,7 @@ export async function GET(req: NextRequest) {
       crawledAt: latestJob.updated_at ?? latestJob.created_at,
       totalPages: pages.length || latestJob.pages_crawled || 0,
       issues,
-      crawlStats: { avgDepth, deepPageCount, totalPages: pages.length },
+      crawlStats: { avgDepth, deepPageCount, totalPages: pages.length, depthDistribution },
     });
   } catch (err) {
     console.error("Error fetching audit issues data:", err);

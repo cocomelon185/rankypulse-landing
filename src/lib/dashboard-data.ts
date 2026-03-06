@@ -109,6 +109,9 @@ export const ISSUE_META: Record<string, {
   low_word_count:      { label: "Thin Content (<300 words)",         impact: "medium", action: "Expand",      actionHref: "/audits/issues", gain: "Better topical depth & rankings" },
   deep_page_depth:     { label: "Deep Pages (4+ clicks from home)",  impact: "medium", action: "Restructure", actionHref: "/audits/links",  gain: "Improves crawl budget & indexing" },
   robots_txt_blocked:  { label: "Site Blocked by robots.txt",        impact: "high",   action: "Fix Now",     actionHref: "/audits/issues", gain: "Allows Google to crawl your site" },
+  // ── Phase 4 new checks ──────────────────────────────────────────────────────
+  multiple_canonicals:     { label: "Multiple Canonical Tags",    impact: "high",   action: "Remove Duplicates", actionHref: "/audits/issues", gain: "Prevents conflicting canonical signals to Google" },
+  keyword_cannibalization: { label: "Keyword Cannibalization",    impact: "high",   action: "Consolidate Pages", actionHref: "/audits/issues", gain: "Consolidating competing pages strengthens ranking signal" },
 };
 
 // ─── Static fallback data (used for metrics we can't compute from DB) ─────────

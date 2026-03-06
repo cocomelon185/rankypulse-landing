@@ -30,6 +30,9 @@ const TASK_GAIN: Record<string, { points: number; effort: "easy" | "medium" | "h
     title_too_short:            { points: 2,  effort: "easy" },
     meta_desc_too_short:        { points: 2,  effort: "easy" },
     large_page_size:            { points: 2,  effort: "medium" },
+    // Phase 4
+    multiple_canonicals:        { points: 10, effort: "easy" },
+    keyword_cannibalization:    { points: 12, effort: "hard" },
 };
 
 /**

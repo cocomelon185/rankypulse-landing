@@ -58,6 +58,9 @@ const ISSUE_CATEGORY: Record<string, string> = {
     low_word_count:      "markup",
     deep_page_depth:     "internalLinking",
     robots_txt_blocked:  "crawlability",
+    // Phase 4
+    multiple_canonicals:     "crawlability",
+    keyword_cannibalization: "markup",
 };
 
 export async function GET(req: Request) {

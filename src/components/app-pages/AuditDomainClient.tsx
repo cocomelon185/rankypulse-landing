@@ -43,7 +43,17 @@ interface AuditData {
     crawledAt: string | null;
     totalPages: number;
     issues: IssueItem[];
-    crawlStats?: { avgDepth: number; deepPageCount: number; totalPages: number };
+    crawlStats?: {
+        avgDepth: number;
+        deepPageCount: number;
+        totalPages: number;
+        depthDistribution?: {
+            depth1: number;
+            depth2: number;
+            depth3: number;
+            depth4plus: number;
+        };
+    };
 }
 
 // ── Thematic score computation ────────────────────────────────────────────────
@@ -74,6 +84,9 @@ const ISSUE_CATEGORY: Record<string, string> = {
     low_word_count:      "Content",
     deep_page_depth:     "Links",
     robots_txt_blocked:  "Technical",
+    // Phase 4
+    multiple_canonicals:     "Technical",
+    keyword_cannibalization: "Content",
 };
 
 const THEMATIC_COLORS: Record<string, string> = {
@@ -151,7 +164,105 @@ const INSIGHT_GAIN: Record<string, number> = {
     orphan_page: 8, redirect_chain: 6, slow_page: 6, no_og_tags: 5,
     low_word_count: 5, meta_desc_too_long: 5, no_schema: 3, deep_page_depth: 3,
     no_h1: 3, images_missing_alt: 2,
+    // Phase 4
+    multiple_canonicals: 10, keyword_cannibalization: 12,
 };
+
+// ── DepthDistributionWidget ───────────────────────────────────────────────────
+function DepthDistributionWidget({ dist, total }: {
+    dist: { depth1: number; depth2: number; depth3: number; depth4plus: number };
+    total: number;
+}) {
+    const rows = [
+        { label: "Depth 1", count: dist.depth1,    color: "#22c55e" },
+        { label: "Depth 2", count: dist.depth2,    color: "#3b82f6" },
+        { label: "Depth 3", count: dist.depth3,    color: "#eab308" },
+        { label: "Depth 4+", count: dist.depth4plus, color: "#ef4444" },
+    ];
+    return (
+        <div className="rounded-xl p-4 mt-4" style={{ background: "#0d1526", border: "1px solid #1E2940" }}>
+            <div className="text-sm font-semibold text-white mb-3">Link Depth Structure</div>
+            {rows.map(({ label, count, color }) => {
+                const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                return (
+                    <div key={label} className="mb-2">
+                        <div className="flex justify-between text-xs mb-0.5" style={{ color: "#6B7A99" }}>
+                            <span>{label}</span>
+                            <span>{count} pages ({pct}%)</span>
+                        </div>
+                        <div className="rounded-full h-1.5 w-full" style={{ background: "#1E2940" }}>
+                            <div className="rounded-full h-1.5 transition-all" style={{ width: `${pct}%`, background: color }} />
+                        </div>
+                    </div>
+                );
+            })}
+            {dist.depth4plus > 0 && (
+                <p className="text-[11px] mt-2" style={{ color: "#ef4444" }}>
+                    ⚠ {dist.depth4plus} page{dist.depth4plus > 1 ? "s are" : " is"} buried 4+ clicks from homepage
+                </p>
+            )}
+        </div>
+    );
+}
+
+// ── SEOInsightPanel ───────────────────────────────────────────────────────────
+function SEOInsightPanel({ auditData, crawlStats }: {
+    auditData: AuditData;
+    crawlStats: AuditData["crawlStats"];
+}) {
+    const crawlIssueIds = ["robots_txt_blocked","robots_noindex","canonical_mismatch","multiple_canonicals","redirect_chain","orphan_page"];
+    const crawlIssues = auditData.issues.filter(i => crawlIssueIds.includes(i.id));
+    const crawlBlocked = crawlIssues.reduce((s, i) => s + i.urlsAffected, 0);
+
+    const contentIssueIds = ["no_title","no_meta_description","duplicate_title","duplicate_meta_description","low_word_count","keyword_cannibalization","no_og_tags"];
+    const contentIssues = auditData.issues.filter(i => contentIssueIds.includes(i.id));
+    const contentAffected = contentIssues.reduce((s, i) => s + i.urlsAffected, 0);
+
+    const avgDepth = crawlStats?.avgDepth ?? 0;
+    const deepCount = crawlStats?.deepPageCount ?? 0;
+    const orphanIssue = auditData.issues.find(i => i.id === "orphan_page");
+
+    const panels = [
+        {
+            title: "Crawlability",
+            icon: crawlBlocked > 0 ? "🔴" : "✅",
+            color: crawlBlocked > 0 ? "#ef4444" : "#22c55e",
+            body: crawlBlocked > 0
+                ? `${crawlBlocked} page${crawlBlocked > 1 ? "s are" : " is"} at risk of not being indexed. ${crawlIssues[0] ? `Top issue: ${crawlIssues[0].title}.` : ""} Fix critical crawl errors first to ensure Google can reach your content.`
+                : "All crawled pages appear indexable. No blocking robots.txt or noindex issues detected. Your site is fully accessible to search engines.",
+        },
+        {
+            title: "Content Quality",
+            icon: contentAffected > 5 ? "⚠️" : contentAffected > 0 ? "🟡" : "✅",
+            color: contentAffected > 5 ? "#ef4444" : contentAffected > 0 ? "#eab308" : "#22c55e",
+            body: contentAffected > 0
+                ? `${contentAffected} page${contentAffected > 1 ? "s have" : " has"} content metadata issues. ${contentIssues[0] ? `Highest impact: ${contentIssues[0].title} (${contentIssues[0].urlsAffected} pages).` : ""} Well-crafted titles and descriptions directly improve click-through rates.`
+                : "Content metadata looks healthy. All crawled pages have titles, meta descriptions, and adequate word counts.",
+        },
+        {
+            title: "Link Architecture",
+            icon: avgDepth > 3 || deepCount > 3 ? "⚠️" : "✅",
+            color: avgDepth > 3 || deepCount > 3 ? "#eab308" : "#22c55e",
+            body: deepCount > 0
+                ? `Average page depth is ${avgDepth}. ${deepCount} page${deepCount > 1 ? "s are" : " is"} buried 4+ clicks from the homepage — these pages receive less crawl budget and link equity.${orphanIssue ? ` ${orphanIssue.urlsAffected} orphaned pages have no internal links at all.` : " Consider flattening your URL structure."}`
+                : `Average page depth is ${avgDepth > 0 ? avgDepth : "shallow"}. Your site structure is well-organized — all pages are reachable within a few clicks of the homepage.${orphanIssue ? ` Note: ${orphanIssue.urlsAffected} pages have no internal links.` : ""}`,
+        },
+    ];
+
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {panels.map(({ title, icon, color, body }) => (
+                <div key={title} className="rounded-xl p-4" style={{ background: "#0d1526", border: "1px solid #1E2940" }}>
+                    <div className="flex items-center gap-2 mb-2">
+                        <span role="img" aria-label={title}>{icon}</span>
+                        <span className="text-sm font-semibold" style={{ color }}>{title}</span>
+                    </div>
+                    <p className="text-xs leading-relaxed" style={{ color: "#8892A4" }}>{body}</p>
+                </div>
+            ))}
+        </div>
+    );
+}
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 export function AuditDomainClient({ domain }: { domain: string }) {
@@ -487,6 +598,11 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                 </div>
             )}
 
+            {/* ── SEO Insight Panel */}
+            {auditData && !isCrawling && (
+                <SEOInsightPanel auditData={auditData} crawlStats={auditData.crawlStats} />
+            )}
+
             {/* ── 2-col layout */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
                 <div className="xl:col-span-2 space-y-5">
@@ -691,6 +807,14 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                             </button>
                         </div>
                     </div>
+
+                    {/* Depth Distribution Widget */}
+                    {auditData?.crawlStats?.depthDistribution && (
+                        <DepthDistributionWidget
+                            dist={auditData.crawlStats.depthDistribution}
+                            total={auditData.crawlStats.totalPages}
+                        />
+                    )}
                 </div>
             </div>
         </div>
