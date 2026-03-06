@@ -122,6 +122,14 @@ export function AuditDomainClient({ domain }: { domain: string }) {
     // Using a ref avoids triggering re-renders and survives across them.
     const drivingJobIdRef = useRef<string | null>(null);
 
+    // Write domain to localStorage so audit sub-pages (/audits/speed, /audits/full etc.) can read it
+    useEffect(() => {
+        if (domain) {
+            localStorage.setItem("rankypulse_last_url", domain);
+            localStorage.setItem("rankypulse_audit_domain", domain);
+        }
+    }, [domain]);
+
     const fetchData = useCallback(async () => {
         try {
             const [projRes, auditRes] = await Promise.all([

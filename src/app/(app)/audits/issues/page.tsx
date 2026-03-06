@@ -137,7 +137,11 @@ export default function CrawlIssuesPage() {
             }
 
             // ── Path 1: Authenticated Supabase data (no active local audit) ──────
-            const authRes = await fetch('/api/audits/data');
+            // Read domain from localStorage so we show data for the currently viewed domain
+            const storedDomain = localStorage.getItem('rankypulse_audit_domain') ?? localStorage.getItem('rankypulse_last_url') ?? '';
+            const cleanStoredDomain = storedDomain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].toLowerCase().trim();
+            const domainQuery = cleanStoredDomain ? `?domain=${encodeURIComponent(cleanStoredDomain)}` : '';
+            const authRes = await fetch(`/api/audits/data${domainQuery}`);
             if (authRes.ok) {
                 const data = await authRes.json();
                 setIsAuthenticated(true);

@@ -268,18 +268,19 @@ export async function GET(req: NextRequest) {
         // 5. Run compact audit
         const { score, issues } = auditPageCompact(cleanDomain, html, psi, brokenLinks);
 
-        // 6. Save to audit_pages
-        await supabaseAdmin.from("audit_pages").insert({
+        // 6. Save to audit_pages (upsert in case URL is revisited)
+        await supabaseAdmin.from("audit_pages").upsert({
             job_id: jobId,
             url: targetUrl,
             score,
             issues,
+            psi_data: isRoot ? psi : null,
             metadata: {
                 title: html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() ?? "",
                 is_root: isRoot,
                 psi_available: !!psi,
             },
-        });
+        }, { onConflict: "job_id,url", ignoreDuplicates: false });
 
         // 7. Add new links to queue (upsert to skip duplicates)
         if (internalLinks.length > 0) {
