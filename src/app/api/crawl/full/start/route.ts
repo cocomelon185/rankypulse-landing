@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
         const cleanDomain = normalizeDomain(domain);
 
         // Set page limit based on plan
-        const limit = plan === "pro" ? 200 : plan === "starter" ? 50 : 10;
+        const limit = plan === "pro" ? 1000 : plan === "starter" ? 100 : 50;
 
         // 1. Create the job record
         const { data: job, error: jobError } = await supabaseAdmin

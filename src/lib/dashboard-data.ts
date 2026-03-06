@@ -92,6 +92,8 @@ export const ISSUE_META: Record<string, {
   broken_links:           { label: "Broken Internal Links",      impact: "high",   action: "View URLs", actionHref: "/audits/links",  gain: "+2–4 authority pages" },
   slow_page:              { label: "Slow Page Load Speed",        impact: "medium", action: "Optimize",  actionHref: "/audits/speed",  gain: null },
   duplicate_title:        { label: "Duplicate Title Tags",       impact: "medium", action: "Fix Now",   actionHref: "/audits/issues", gain: null },
+  page_not_found:         { label: "404 Pages Found",            impact: "high",   action: "Fix URL",   actionHref: "/audits/issues", gain: "Prevents crawl budget waste" },
+  large_page_size:        { label: "Large Page Size (>100KB)",   impact: "medium", action: "Optimize",  actionHref: "/audits/speed",  gain: "Faster load times, better Core Web Vitals" },
 };
 
 // ─── Static fallback data (used for metrics we can't compute from DB) ─────────

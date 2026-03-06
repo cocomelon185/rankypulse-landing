@@ -30,6 +30,7 @@ interface IssueItem {
     title: string;
     description: string;
     urlsAffected: number;
+    affectedUrls?: string[];
     discovered: string;
 }
 
@@ -55,6 +56,8 @@ const ISSUE_CATEGORY: Record<string, string> = {
     robots_noindex: "Indexing",
     broken_links: "Links",
     slow_page: "Performance",
+    page_not_found: "Indexing",
+    large_page_size: "Performance",
 };
 
 const THEMATIC_COLORS: Record<string, string> = {
@@ -483,6 +486,24 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                                     <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden">
                                                         <div className="px-5 py-4 border-b" style={{ background: "#0D1424", borderColor: "#1E2940" }}>
                                                             <p className="text-[13px] text-white mb-3">{issue.description}</p>
+                                                            {issue.affectedUrls && issue.affectedUrls.length > 0 && (
+                                                                <div className="mb-4">
+                                                                    <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#6B7A99" }}>
+                                                                        Affected Pages
+                                                                    </p>
+                                                                    <div className="flex flex-wrap gap-1.5">
+                                                                        {issue.affectedUrls.map((url) => {
+                                                                            const path = url.replace(/^https?:\/\/[^/]+/, "") || "/";
+                                                                            return (
+                                                                                <span key={url} className="px-2 py-0.5 rounded text-[11px] font-mono truncate max-w-[280px]"
+                                                                                    style={{ background: "#1a2236", color: "#8B9BB4", border: "1px solid #1E2940" }}>
+                                                                                    {path}
+                                                                                </span>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                             <button onClick={() => router.push(`/app/action-center`)}
                                                                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-white transition hover:opacity-90"
                                                                 style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)" }}>

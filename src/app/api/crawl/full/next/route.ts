@@ -83,6 +83,13 @@ function auditPageCompact(
         issues.push({ id: "images_missing_alt", sev: "LOW", msg: `${missingAlt} image(s) missing alt text` });
     }
 
+    // Large page size (>100KB HTML)
+    const htmlBytes = new TextEncoder().encode(html).length;
+    if (htmlBytes > 100_000) {
+        score -= 5;
+        issues.push({ id: "large_page_size", sev: "MED", msg: `HTML size ${Math.round(htmlBytes / 1024)}KB (>100KB)` });
+    }
+
     // Broken links
     if (brokenLinks.length > 0) {
         score -= Math.min(15, brokenLinks.length * 5);
@@ -206,6 +213,7 @@ export async function GET(req: NextRequest) {
         let html = "";
         let psi: Record<string, unknown> | null = null;
         let fetchError: string | null = null;
+        let httpStatus = 200;
 
         try {
             // Fetch the specific targetUrl (not just the root domain)
@@ -218,6 +226,7 @@ export async function GET(req: NextRequest) {
                         headers: { "User-Agent": "Mozilla/5.0 (compatible; RankyPulse/1.0)" },
                     });
                     clearTimeout(timer);
+                    httpStatus = res.status;
                     if (!res.ok) return "";
                     return await res.text();
                 } catch {
@@ -233,6 +242,36 @@ export async function GET(req: NextRequest) {
         } catch (e) {
             fetchError = e instanceof Error ? e.message : "Fetch failed";
             console.error(`[Crawl] fetch error for ${targetUrl}:`, fetchError);
+        }
+
+        // Handle HTTP error pages (404, 5xx) — save them as issues so they appear in the audit
+        if (!html && !psi && !fetchError && httpStatus >= 400) {
+            const issueId = httpStatus === 404 ? "page_not_found" : "page_error";
+            const pageIssues: CompactIssue[] = [{ id: issueId, sev: "HIGH", msg: `Page returns HTTP ${httpStatus}` }];
+            await supabaseAdmin.from("audit_pages").upsert({
+                job_id: jobId,
+                url: targetUrl,
+                score: 10,
+                issues: pageIssues,
+                psi_data: null,
+                metadata: { title: "", is_root: isRoot, psi_available: false },
+            }, { onConflict: "job_id,url", ignoreDuplicates: false });
+            await supabaseAdmin.from("crawl_queue").update({ status: "done" }).eq("id", queueItem.id);
+            const newCrawled = job.pages_crawled + 1;
+            await supabaseAdmin.from("crawl_jobs").update({
+                pages_crawled: newCrawled,
+                last_heartbeat_at: new Date().toISOString(),
+                current_url: null,
+            }).eq("id", jobId);
+            return NextResponse.json({
+                done: false,
+                progress: Math.min(99, Math.round((newCrawled / job.pages_limit) * 100)),
+                crawled: newCrawled,
+                url: targetUrl,
+                score: 10,
+                issuesFound: pageIssues.length,
+                issues: pageIssues,
+            });
         }
 
         if (fetchError || (!html && !psi)) {

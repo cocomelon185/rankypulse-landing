@@ -58,6 +58,7 @@ interface AuditIssue {
     title: string;
     description: string;
     urlsAffected: number;
+    affectedUrls?: string[];
     trend: string;
     discovered: Date | string;
 }
@@ -84,6 +85,7 @@ export default function CrawlIssuesPage() {
 
     const [activeTab, setActiveTab] = useState<'all' | 'errors' | 'warnings' | 'notices'>(initialTab);
     const [search, setSearch] = useState('');
+    const [expandedIssue, setExpandedIssue] = useState<string | null>(null);
 
     // Keep tab in sync if URL param changes (e.g. browser back/forward)
     useEffect(() => {
@@ -431,54 +433,89 @@ export default function CrawlIssuesPage() {
                         {!loading && filteredIssues.map((issue) => {
                             const categoryInfo = categoriesWithCounts.find(c => c.id.toLowerCase() === issue.severity + 's');
                             const Icon = categoryInfo?.icon || Info;
+                            const isExpanded = expandedIssue === issue.id;
 
                             return (
-                                <motion.div
-                                    key={issue.id}
-                                    layout
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: 10 }}
-                                    className="grid grid-cols-12 items-center px-6 py-5 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors group cursor-pointer"
-                                >
-                                    <div className="col-span-6 flex gap-4 pr-4">
-                                        <div className={`mt-1 flex-shrink-0 w-8 h-8 rounded-lg ${categoryInfo?.bg} ${categoryInfo?.border} border flex items-center justify-center`}>
-                                            <Icon size={16} className={categoryInfo?.color} />
+                                <div key={issue.id}>
+                                    <motion.div
+                                        layout
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 10 }}
+                                        onClick={() => setExpandedIssue(isExpanded ? null : issue.id)}
+                                        className="grid grid-cols-12 items-center px-6 py-5 border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors group cursor-pointer"
+                                    >
+                                        <div className="col-span-6 flex gap-4 pr-4">
+                                            <div className={`mt-1 flex-shrink-0 w-8 h-8 rounded-lg ${categoryInfo?.bg} ${categoryInfo?.border} border flex items-center justify-center`}>
+                                                <Icon size={16} className={categoryInfo?.color} />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-['DM_Sans'] font-semibold text-[15px] text-gray-200 group-hover:text-white transition-colors flex items-center gap-2">
+                                                    {issue.title}
+                                                    <ArrowUpRight size={14} className="text-gray-600 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                                                </h3>
+                                                <p className="font-['DM_Sans'] text-[13px] text-gray-500 mt-1 line-clamp-1">
+                                                    {issue.description}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h3 className="font-['DM_Sans'] font-semibold text-[15px] text-gray-200 group-hover:text-white transition-colors flex items-center gap-2">
-                                                {issue.title}
-                                                <ArrowUpRight size={14} className="text-gray-600 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                                            </h3>
-                                            <p className="font-['DM_Sans'] text-[13px] text-gray-500 mt-1 line-clamp-1">
-                                                {issue.description}
-                                            </p>
+
+                                        <div className="col-span-2 text-right">
+                                            <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] font-['DM_Mono'] text-sm text-gray-300">
+                                                {issue.urlsAffected.toLocaleString()}
+                                            </span>
                                         </div>
-                                    </div>
 
-                                    <div className="col-span-2 text-right">
-                                        <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] font-['DM_Mono'] text-sm text-gray-300">
-                                            {issue.urlsAffected.toLocaleString()}
-                                        </span>
-                                    </div>
-
-                                    <div className="col-span-2 text-right">
-                                        <span className={`font-['DM_Mono'] text-[13px] ${issue.trend.startsWith('+') ? 'text-red-400' :
-                                            issue.trend.startsWith('-') ? 'text-emerald-400' :
-                                                'text-gray-500'
-                                            }`}>
-                                            {issue.trend.startsWith('-') ? '↓ ' : issue.trend.startsWith('+') ? '↑ ' : ''}
-                                            {Math.abs(parseInt(issue.trend))}
-                                        </span>
-                                    </div>
-
-                                    <div className="col-span-2 text-right">
-                                        <div className="flex items-center justify-end gap-1.5 text-gray-500">
-                                            <Clock size={12} />
-                                            <span className="font-['DM_Mono'] text-[12px]">{timeAgo(issue.discovered)}</span>
+                                        <div className="col-span-2 text-right">
+                                            <span className={`font-['DM_Mono'] text-[13px] ${issue.trend.startsWith('+') ? 'text-red-400' :
+                                                issue.trend.startsWith('-') ? 'text-emerald-400' :
+                                                    'text-gray-500'
+                                                }`}>
+                                                {issue.trend.startsWith('-') ? '↓ ' : issue.trend.startsWith('+') ? '↑ ' : ''}
+                                                {Math.abs(parseInt(issue.trend))}
+                                            </span>
                                         </div>
-                                    </div>
-                                </motion.div>
+
+                                        <div className="col-span-2 text-right">
+                                            <div className="flex items-center justify-end gap-1.5 text-gray-500">
+                                                <Clock size={12} />
+                                                <span className="font-['DM_Mono'] text-[12px]">{timeAgo(issue.discovered)}</span>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+
+                                    <AnimatePresence>
+                                        {isExpanded && (
+                                            <motion.div
+                                                initial={{ height: 0 }}
+                                                animate={{ height: "auto" }}
+                                                exit={{ height: 0 }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="px-6 py-4 border-b border-white/[0.04] bg-white/[0.01]">
+                                                    <p className="font-['DM_Sans'] text-[13px] text-gray-300 mb-3">{issue.description}</p>
+                                                    {issue.affectedUrls && issue.affectedUrls.length > 0 && (
+                                                        <div>
+                                                            <p className="font-['DM_Mono'] text-[10px] text-gray-500 tracking-widest uppercase mb-2">
+                                                                Affected Pages
+                                                            </p>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {issue.affectedUrls.map((url) => {
+                                                                    const path = url.replace(/^https?:\/\/[^/]+/, '') || '/';
+                                                                    return (
+                                                                        <span key={url} className="px-2 py-0.5 rounded font-['DM_Mono'] text-[11px] text-gray-400 bg-white/[0.04] border border-white/[0.08] truncate max-w-[300px]">
+                                                                            {path}
+                                                                        </span>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
                             );
                         })}
                     </AnimatePresence>

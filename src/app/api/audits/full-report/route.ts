@@ -41,6 +41,8 @@ const ISSUE_CATEGORY: Record<string, string> = {
     robots_noindex: "crawlability",
     broken_links: "internalLinking",
     slow_page: "sitePerformance",
+    page_not_found: "crawlability",
+    large_page_size: "sitePerformance",
 };
 
 export async function GET(req: Request) {

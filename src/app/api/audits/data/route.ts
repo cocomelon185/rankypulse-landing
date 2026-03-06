@@ -79,12 +79,17 @@ export async function GET(req: NextRequest) {
 
     // ── Aggregate issues across all pages grouped by issue ID ─────────────────
     const issueMap: Record<string, { sev: string; count: number }> = {};
+    const issueUrlMap: Record<string, string[]> = {};
     for (const page of pages) {
       for (const issue of page.issues ?? []) {
         if (!issueMap[issue.id]) {
           issueMap[issue.id] = { sev: issue.sev, count: 0 };
+          issueUrlMap[issue.id] = [];
         }
         issueMap[issue.id].count++;
+        if (issueUrlMap[issue.id].length < 10) {
+          issueUrlMap[issue.id].push(page.url);
+        }
       }
     }
 
@@ -106,6 +111,7 @@ export async function GET(req: NextRequest) {
           title: meta.label,
           description: meta.gain ?? "Fix this issue to improve your SEO performance",
           urlsAffected: count,
+          affectedUrls: issueUrlMap[id] ?? [],
           trend: "0",
           discovered: latestJob.created_at,
         };
