@@ -15,6 +15,7 @@ interface PageMetadata {
   title?: string;
   meta_description?: string;
   outbound_links?: string[];
+  broken_link_targets?: string[];
   depth?: number;
 }
 
@@ -72,6 +73,30 @@ export async function GET(req: NextRequest) {
         issues: [],
       });
     }
+
+    // ── Previous completed job for score delta ────────────────────────────────
+    let previousScore: number | null = null;
+    try {
+      const { data: prevJob } = await supabaseAdmin
+        .from("crawl_jobs")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("domain", targetDomain)
+        .eq("status", "completed")
+        .order("created_at", { ascending: false })
+        .range(1, 1)
+        .maybeSingle();
+
+      if (prevJob?.id) {
+        const { data: prevPages } = await supabaseAdmin
+          .from("audit_pages")
+          .select("score")
+          .eq("job_id", prevJob.id);
+        if (prevPages && prevPages.length > 0) {
+          previousScore = calculateSeoScore(prevPages as { score: number | null }[]);
+        }
+      }
+    } catch { /* non-critical */ }
 
     // ── All audit pages for that job ──────────────────────────────────────────
     const { data: rawPages } = await supabaseAdmin
@@ -211,8 +236,21 @@ export async function GET(req: NextRequest) {
       depth4plus: depths.filter(d => d >= 4).length,
     };
 
+    const totalInternalLinks = pages.reduce(
+      (sum, p) => sum + (p.metadata?.outbound_links?.length ?? 0), 0
+    );
+    const brokenPageCount   = issueMap["broken_links"]?.count ?? 0;
+    const redirectPageCount = issueMap["redirect_chain"]?.count ?? 0;
+
+    // ── Broken link source→target report ──────────────────────────────────────
+    const brokenLinksReport: { source: string; targets: string[] }[] = pages
+      .filter(p => (p.metadata?.broken_link_targets?.length ?? 0) > 0)
+      .map(p => ({ source: p.url, targets: p.metadata!.broken_link_targets! }))
+      .slice(0, 20);
+
     return NextResponse.json({
       healthScore: avgScore,
+      previousScore,
       errors,
       warnings,
       notices,
@@ -220,7 +258,16 @@ export async function GET(req: NextRequest) {
       crawledAt: latestJob.updated_at ?? latestJob.created_at,
       totalPages: pages.length || latestJob.pages_crawled || 0,
       issues,
-      crawlStats: { avgDepth, deepPageCount, totalPages: pages.length, depthDistribution },
+      brokenLinks: brokenLinksReport,
+      crawlStats: {
+        avgDepth,
+        deepPageCount,
+        totalPages: pages.length,
+        depthDistribution,
+        internalLinks: totalInternalLinks,
+        brokenPages: brokenPageCount,
+        redirectPages: redirectPageCount,
+      },
     });
   } catch (err) {
     console.error("Error fetching audit issues data:", err);

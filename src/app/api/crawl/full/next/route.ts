@@ -449,6 +449,7 @@ export async function GET(req: NextRequest) {
                 title: html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() ?? "",
                 meta_description: metaDescription,
                 outbound_links: internalLinks,
+                broken_link_targets: brokenLinks.slice(0, 10),
                 depth: getUrlDepth(targetUrl),
                 is_root: isRoot,
                 psi_available: !!psi,

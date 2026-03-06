@@ -82,6 +82,9 @@ export const ISSUE_META: Record<string, {
   action: string;
   actionHref: string;
   gain: string | null;
+  ctrImpact?: string;
+  trafficGain?: string;
+  fixSteps?: string[];
 }> = {
   no_meta_description:    { label: "Missing Meta Descriptions",  impact: "high",   action: "Fix Now",   actionHref: "/audits/issues", gain: "+3–5 ranking positions" },
   no_title:               { label: "Missing Title Tags",         impact: "high",   action: "Fix Now",   actionHref: "/audits/issues", gain: "+2–4 ranking positions" },

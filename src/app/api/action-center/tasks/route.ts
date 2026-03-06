@@ -76,14 +76,18 @@ export async function GET() {
             }
         }
 
-        const sevOrder: Record<string, number> = { HIGH: 0, MED: 1, LOW: 2 };
+        // Weighted priority: sevWeight * pageCount * (points / 5)
+        const sevWeight: Record<string, number> = { HIGH: 3, MED: 2, LOW: 1 };
 
         const tasks = Object.entries(issueMap)
-            .sort(([, a], [, b]) =>
-                (sevOrder[a.sev] ?? 2) - (sevOrder[b.sev] ?? 2) || b.count - a.count
-            )
-            .slice(0, 12)
             .map(([id, { sev, count }]) => {
+                const points = TASK_GAIN[id]?.points ?? 2;
+                const weight = sevWeight[sev] ?? 1;
+                return { id, sev, count, priorityScore: weight * count * (points / 5) };
+            })
+            .sort((a, b) => b.priorityScore - a.priorityScore)
+            .slice(0, 12)
+            .map(({ id, sev, count }) => {
                 const meta = ISSUE_META[id];
                 const gain = TASK_GAIN[id];
                 return {

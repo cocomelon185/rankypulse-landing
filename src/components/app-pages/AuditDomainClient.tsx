@@ -8,6 +8,8 @@ import {
     CheckCircle, ChevronRight, Zap, ArrowRight, AlertCircle,
     Loader2, Clock,
 } from "lucide-react";
+import { AuditSummaryPanel } from "./AuditSummaryPanel";
+import { ISSUE_CONTENT } from "@/lib/issue-content";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface ProjectData {
@@ -36,6 +38,7 @@ interface IssueItem {
 
 interface AuditData {
     healthScore: number;
+    previousScore?: number | null;
     errors: number;
     warnings: number;
     notices: number;
@@ -43,6 +46,7 @@ interface AuditData {
     crawledAt: string | null;
     totalPages: number;
     issues: IssueItem[];
+    brokenLinks?: { source: string; targets: string[] }[];
     crawlStats?: {
         avgDepth: number;
         deepPageCount: number;
@@ -53,6 +57,9 @@ interface AuditData {
             depth3: number;
             depth4plus: number;
         };
+        internalLinks?: number;
+        brokenPages?: number;
+        redirectPages?: number;
     };
 }
 
@@ -168,6 +175,29 @@ const INSIGHT_GAIN: Record<string, number> = {
     multiple_canonicals: 10, keyword_cannibalization: 12,
 };
 
+// ── CrawlTransparencyPanel ────────────────────────────────────────────────────
+function CrawlTransparencyPanel({ pagesCrawled, internalLinks, brokenPages, redirectPages }: {
+    pagesCrawled: number; internalLinks: number; brokenPages: number; redirectPages: number;
+}) {
+    const stats = [
+        { label: "Pages Crawled",        value: pagesCrawled.toLocaleString(),   color: "#22c55e" },
+        { label: "Internal Links Found", value: internalLinks.toLocaleString(),  color: "#3b82f6" },
+        { label: "Broken Pages",         value: brokenPages.toLocaleString(),    color: brokenPages   > 0 ? "#ef4444" : "#22c55e" },
+        { label: "Redirects Found",      value: redirectPages.toLocaleString(),  color: redirectPages > 0 ? "#eab308" : "#22c55e" },
+    ];
+    return (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-xl border p-4"
+            style={{ background: "#0d1526", borderColor: "#1E2940" }}>
+            {stats.map(({ label, value, color }) => (
+                <div key={label} className="flex flex-col gap-0.5">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: "#6B7A99" }}>{label}</span>
+                    <span className="text-xl font-black" style={{ color }}>{value}</span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 // ── DepthDistributionWidget ───────────────────────────────────────────────────
 function DepthDistributionWidget({ dist, total }: {
     dist: { depth1: number; depth2: number; depth3: number; depth4plus: number };
@@ -181,7 +211,10 @@ function DepthDistributionWidget({ dist, total }: {
     ];
     return (
         <div className="rounded-xl p-4 mt-4" style={{ background: "#0d1526", border: "1px solid #1E2940" }}>
-            <div className="text-sm font-semibold text-white mb-3">Link Depth Structure</div>
+            <div className="text-sm font-semibold text-white mb-1">Link Depth Structure</div>
+            <p className="text-[11px] mb-3" style={{ color: "#6B7A99" }}>
+                Pages deeper than 3 clicks receive less internal link authority and crawl budget.
+            </p>
             {rows.map(({ label, count, color }) => {
                 const pct = total > 0 ? Math.round((count / total) * 100) : 0;
                 return (
@@ -221,6 +254,7 @@ function SEOInsightPanel({ auditData, crawlStats }: {
     const avgDepth = crawlStats?.avgDepth ?? 0;
     const deepCount = crawlStats?.deepPageCount ?? 0;
     const orphanIssue = auditData.issues.find(i => i.id === "orphan_page");
+    const kannibalizationIssue = auditData.issues.find(i => i.id === "keyword_cannibalization");
 
     const panels = [
         {
@@ -236,7 +270,11 @@ function SEOInsightPanel({ auditData, crawlStats }: {
             icon: contentAffected > 5 ? "⚠️" : contentAffected > 0 ? "🟡" : "✅",
             color: contentAffected > 5 ? "#ef4444" : contentAffected > 0 ? "#eab308" : "#22c55e",
             body: contentAffected > 0
-                ? `${contentAffected} page${contentAffected > 1 ? "s have" : " has"} content metadata issues. ${contentIssues[0] ? `Highest impact: ${contentIssues[0].title} (${contentIssues[0].urlsAffected} pages).` : ""} Well-crafted titles and descriptions directly improve click-through rates.`
+                ? `${contentAffected} page${contentAffected > 1 ? "s have" : " has"} content metadata issues. ${contentIssues[0] ? `Highest impact: ${contentIssues[0].title} (${contentIssues[0].urlsAffected} pages).` : ""}${
+                    kannibalizationIssue
+                        ? ` Keyword cannibalization detected on ${kannibalizationIssue.urlsAffected} pages — consolidate or differentiate competing pages to strengthen your ranking signal.`
+                        : " Well-crafted titles and descriptions directly improve click-through rates."
+                }`
                 : "Content metadata looks healthy. All crawled pages have titles, meta descriptions, and adequate word counts.",
         },
         {
@@ -244,8 +282,8 @@ function SEOInsightPanel({ auditData, crawlStats }: {
             icon: avgDepth > 3 || deepCount > 3 ? "⚠️" : "✅",
             color: avgDepth > 3 || deepCount > 3 ? "#eab308" : "#22c55e",
             body: deepCount > 0
-                ? `Average page depth is ${avgDepth}. ${deepCount} page${deepCount > 1 ? "s are" : " is"} buried 4+ clicks from the homepage — these pages receive less crawl budget and link equity.${orphanIssue ? ` ${orphanIssue.urlsAffected} orphaned pages have no internal links at all.` : " Consider flattening your URL structure."}`
-                : `Average page depth is ${avgDepth > 0 ? avgDepth : "shallow"}. Your site structure is well-organized — all pages are reachable within a few clicks of the homepage.${orphanIssue ? ` Note: ${orphanIssue.urlsAffected} pages have no internal links.` : ""}`,
+                ? `Average page depth is ${avgDepth}. ${deepCount} page${deepCount > 1 ? "s are" : " is"} buried 4+ clicks from the homepage — these pages receive less crawl budget and link equity.${orphanIssue ? ` ${orphanIssue.urlsAffected} orphan page${orphanIssue.urlsAffected > 1 ? "s have" : " has"} no internal links — add links from related content or navigation menus to pass PageRank.` : " Consider flattening your URL structure."}`
+                : `Average page depth is ${avgDepth > 0 ? avgDepth : "shallow"}. Your site structure is well-organized — all pages are reachable within a few clicks of the homepage.${orphanIssue ? ` Note: ${orphanIssue.urlsAffected} page${orphanIssue.urlsAffected > 1 ? "s lack" : " lacks"} internal links. Add links from related content pages or your site navigation.` : ""}`,
         },
     ];
 
@@ -468,7 +506,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
 
     const scoreColor = score >= 80 ? "#00C853" : score >= 60 ? "#FF9800" : "#FF3D3D";
     const scoreLabel = score >= 80 ? "Excellent" : score >= 60 ? "Good" : "Poor";
-    const r = 68;
+    const r = 74;
     const circ = 2 * Math.PI * r;
     const offset = circ * (1 - score / 100);
 
@@ -484,6 +522,18 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                 <ChevronRight size={12} />
                 <span className="text-white font-semibold">{domain}</span>
             </nav>
+
+            {/* ── Audit Summary Panel */}
+            {auditData && !isCrawling && (
+                <AuditSummaryPanel
+                    score={score}
+                    errors={errors}
+                    topIssueName={issues[0]?.title}
+                    topIssuePages={issues[0]?.urlsAffected}
+                    quickWinName={topWin?.title}
+                    quickWinGain={topWin ? INSIGHT_GAIN[topWin.id] : undefined}
+                />
+            )}
 
             {/* ── Header Bar */}
             <div className="rounded-xl border px-5 py-4 flex flex-wrap items-center gap-3 relative overflow-hidden"
@@ -559,7 +609,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
 
             {/* ── Insight Cards */}
             {auditData && !isCrawling && (
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
                     <InsightCard
                         icon={score >= 80 ? "✓" : score >= 60 ? "~" : "!"}
                         color={score >= 80 ? "#22c55e" : score >= 60 ? "#eab308" : "#ef4444"}
@@ -595,7 +645,24 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                         value={topWin ? `+${INSIGHT_GAIN[topWin.id]}pts` : "🎉"}
                         desc={topWin ? topWin.title : "No critical issues!"}
                     />
+                    <InsightCard
+                        icon="🏆"
+                        color="#eab308"
+                        title="Opportunity"
+                        value={topWin ? `+${INSIGHT_GAIN[topWin.id]}pts` : "🎉"}
+                        desc={topWin ? `Fix ${topWin.title.toLowerCase()} for biggest gain` : "Site is well optimized"}
+                    />
                 </div>
+            )}
+
+            {/* ── Crawl Transparency Panel */}
+            {auditData && !isCrawling && (
+                <CrawlTransparencyPanel
+                    pagesCrawled={jobData.pagesCrawled}
+                    internalLinks={auditData.crawlStats?.internalLinks ?? 0}
+                    brokenPages={auditData.crawlStats?.brokenPages ?? 0}
+                    redirectPages={auditData.crawlStats?.redirectPages ?? 0}
+                />
             )}
 
             {/* ── SEO Insight Panel */}
@@ -633,6 +700,15 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                     <span className="mt-2 px-3 py-1 rounded-full text-xs font-bold" style={{ background: `${scoreColor}18`, color: scoreColor }}>
                                         {scoreLabel}
                                     </span>
+                                    {auditData?.previousScore != null && (
+                                        <div className="flex items-center gap-1 mt-1 text-[11px] font-bold">
+                                            {auditData.healthScore >= auditData.previousScore ? (
+                                                <span style={{ color: "#22c55e" }}>▲ +{auditData.healthScore - auditData.previousScore} since last audit</span>
+                                            ) : (
+                                                <span style={{ color: "#ef4444" }}>▼ {auditData.healthScore - auditData.previousScore} since last audit</span>
+                                            )}
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -678,8 +754,12 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                         ) : (
                             <div>
                                 {issues.slice(0, 8).map((issue, i) => {
-                                    const colors = { error: "#FF3D3D", warning: "#FF9800", notice: "#00B0FF" };
-                                    const c = colors[issue.severity];
+                                    const severityBadge: Record<string, { label: string; bg: string; color: string }> = {
+                                        error:   { label: "Error",   bg: "rgba(239,68,68,0.15)",  color: "#ef4444" },
+                                        warning: { label: "Warning", bg: "rgba(234,179,8,0.15)",  color: "#eab308" },
+                                        notice:  { label: "Notice",  bg: "rgba(59,130,246,0.15)", color: "#3b82f6" },
+                                    };
+                                    const badge = severityBadge[issue.severity] ?? severityBadge.notice;
                                     const isExpanded = expandedIssue === issue.id;
                                     return (
                                         <div key={issue.id}>
@@ -712,15 +792,79 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                                         </div>
                                                     )}
                                                 </div>
-                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
-                                                    style={{ background: `${c}18`, color: c }}>{issue.severity}</span>
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 uppercase tracking-wide"
+                                                    style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
                                                 <ChevronRight size={14} style={{ color: "#4A5568" }} className={`transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                                             </div>
                                             <AnimatePresence>
                                                 {isExpanded && (
-                                                    <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden">
+                                                    <motion.div
+                                                        initial={{ height: 0, opacity: 0 }}
+                                                        animate={{ height: "auto", opacity: 1 }}
+                                                        exit={{ height: 0, opacity: 0 }}
+                                                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                                                        className="overflow-hidden"
+                                                    >
                                                         <div className="px-5 py-4 border-b" style={{ background: "#0D1424", borderColor: "#1E2940" }}>
                                                             <p className="text-[13px] text-white mb-3">{issue.description}</p>
+                                                            {(() => {
+                                                                const content = ISSUE_CONTENT[issue.id];
+                                                                if (!content) return null;
+                                                                return (
+                                                                    <>
+                                                                        {(content.ctrImpact || content.trafficGain) && (
+                                                                            <div className="flex flex-wrap gap-2 mb-3">
+                                                                                {content.ctrImpact && (
+                                                                                    <div className="rounded-lg px-3 py-1.5 text-[11px]"
+                                                                                        style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444" }}>
+                                                                                        📉 {content.ctrImpact}
+                                                                                    </div>
+                                                                                )}
+                                                                                {content.trafficGain && (
+                                                                                    <div className="rounded-lg px-3 py-1.5 text-[11px]"
+                                                                                        style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", color: "#22c55e" }}>
+                                                                                        📈 {content.trafficGain}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                        {content.fixSteps && content.fixSteps.length > 0 && (
+                                                                            <div className="mb-4">
+                                                                                <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#6B7A99" }}>How to Fix</p>
+                                                                                <ol className="space-y-1.5">
+                                                                                    {content.fixSteps.map((step, idx) => (
+                                                                                        <li key={idx} className="flex gap-2 text-[12px]" style={{ color: "#8B9BB4" }}>
+                                                                                            <span className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
+                                                                                                style={{ background: "#1a2236", color: "#FF642D", border: "1px solid #1E2940" }}>
+                                                                                                {idx + 1}
+                                                                                            </span>
+                                                                                            {step}
+                                                                                        </li>
+                                                                                    ))}
+                                                                                </ol>
+                                                                            </div>
+                                                                        )}
+                                                                    </>
+                                                                );
+                                                            })()}
+                                                            {issue.id === "broken_links" && auditData?.brokenLinks && auditData.brokenLinks.length > 0 && (
+                                                                <div className="mb-4">
+                                                                    <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#6B7A99" }}>Broken Link Details</p>
+                                                                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                                                        {auditData.brokenLinks.map(({ source, targets }) => {
+                                                                            const srcPath = source.replace(/^https?:\/\/[^/]+/, "") || "/";
+                                                                            return (
+                                                                                <div key={source} className="rounded-lg p-2.5" style={{ background: "#1a2236", border: "1px solid #1E2940" }}>
+                                                                                    <p className="text-[10px] font-mono mb-1" style={{ color: "#8B9BB4" }}>Source: {srcPath}</p>
+                                                                                    {targets.map(t => (
+                                                                                        <p key={t} className="text-[10px] font-mono" style={{ color: "#ef4444" }}>→ {t}</p>
+                                                                                    ))}
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                             {issue.affectedUrls && issue.affectedUrls.length > 0 && (
                                                                 <div className="mb-4">
                                                                     <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#6B7A99" }}>
