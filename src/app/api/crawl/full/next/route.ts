@@ -145,12 +145,15 @@ export async function GET(req: NextRequest) {
                 .update({ status: "completed", current_url: null, last_error: null })
                 .eq("id", jobId);
             try {
-                await supabaseAdmin.from("activity_events").insert({
-                    user_id: session.user.id,
-                    type: "audit_completed",
-                    domain: job.domain,
-                    meta: { jobId, pages_crawled: job.pages_crawled },
-                });
+                await supabaseAdmin.from("activity_events").upsert(
+                    {
+                        user_id: session.user.id,
+                        type: "audit_completed",
+                        domain: job.domain,
+                        meta: { jobId, pages_crawled: job.pages_crawled },
+                    },
+                    { onConflict: "user_id,type,domain", ignoreDuplicates: true }
+                );
             } catch { /* non-critical */ }
             return NextResponse.json({ done: true, message: "Reached page limit", progress: 100, crawled: job.pages_crawled });
         }
@@ -169,12 +172,15 @@ export async function GET(req: NextRequest) {
                 .update({ status: "completed", current_url: null, last_error: null })
                 .eq("id", jobId);
             try {
-                await supabaseAdmin.from("activity_events").insert({
-                    user_id: session.user.id,
-                    type: "audit_completed",
-                    domain: job.domain,
-                    meta: { jobId, pages_crawled: job.pages_crawled },
-                });
+                await supabaseAdmin.from("activity_events").upsert(
+                    {
+                        user_id: session.user.id,
+                        type: "audit_completed",
+                        domain: job.domain,
+                        meta: { jobId, pages_crawled: job.pages_crawled },
+                    },
+                    { onConflict: "user_id,type,domain", ignoreDuplicates: true }
+                );
             } catch { /* non-critical */ }
             return NextResponse.json({ done: true, message: "Crawl complete", progress: 100, crawled: job.pages_crawled });
         }

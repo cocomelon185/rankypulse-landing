@@ -75,20 +75,27 @@ export async function POST(req: NextRequest) {
                 .eq("domain", cleanDomain);
 
             if ((count ?? 0) <= 1) {
-                // First audit = project creation
-                await supabaseAdmin.from("activity_events").insert({
+                // First audit = project creation (upsert for idempotency)
+                await supabaseAdmin.from("activity_events").upsert(
+                    {
+                        user_id: session.user.id,
+                        type: "project_created",
+                        domain: cleanDomain,
+                        meta: { jobId: job.id },
+                    },
+                    { onConflict: "user_id,type,domain", ignoreDuplicates: true }
+                );
+            }
+            // Audit started (upsert for idempotency)
+            await supabaseAdmin.from("activity_events").upsert(
+                {
                     user_id: session.user.id,
-                    type: "project_created",
+                    type: "audit_started",
                     domain: cleanDomain,
                     meta: { jobId: job.id },
-                });
-            }
-            await supabaseAdmin.from("activity_events").insert({
-                user_id: session.user.id,
-                type: "audit_started",
-                domain: cleanDomain,
-                meta: { jobId: job.id },
-            });
+                },
+                { onConflict: "user_id,type,domain", ignoreDuplicates: true }
+            );
         } catch { /* activity_events table may not exist yet */ }
 
         return NextResponse.json({ jobId: job.id, message: "Crawl started" });

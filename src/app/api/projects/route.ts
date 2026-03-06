@@ -119,14 +119,17 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: deleteError.message }, { status: 500 });
   }
 
-  // Log activity event exactly once (best-effort)
+  // Log activity event exactly once (best-effort, upsert for idempotency)
   try {
-    await supabaseAdmin.from("activity_events").insert({
-      user_id: userId,
-      type: "project_deleted",
-      domain,
-      meta: {},
-    });
+    await supabaseAdmin.from("activity_events").upsert(
+      {
+        user_id: userId,
+        type: "project_deleted",
+        domain,
+        meta: {},
+      },
+      { onConflict: "user_id,type,domain", ignoreDuplicates: true }
+    );
   } catch { /* non-critical */ }
 
   return NextResponse.json({ success: true });
