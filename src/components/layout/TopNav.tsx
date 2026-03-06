@@ -82,8 +82,11 @@ function ScheduledAuditsPanel({ onClose }: { onClose: () => void }) {
           Schedule automatic weekly audits for your projects.
         </p>
         <button
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white"
+          onClick={onClose}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-80 active:opacity-70"
           style={{ background: "rgba(255,100,45,0.15)", color: "#FF642D" }}
+          disabled
+          title="Scheduled audits available on Pro plan"
         >
           <Plus size={12} /> Schedule Audit
         </button>
