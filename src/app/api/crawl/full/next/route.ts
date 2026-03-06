@@ -4,7 +4,6 @@ import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import {
     withTimeout,
-    fetchHTML,
     fetchPSI,
     extractInternalLinks,
     checkBrokenLinks,
@@ -56,7 +55,7 @@ function auditPageCompact(
         issues.push({ id: "no_h1", sev: "MED", msg: "Missing H1 heading" });
     } else if (h1Count > 1) {
         score -= 3;
-        issues.push({ id: "duplicate_title", sev: "LOW", msg: `${h1Count} H1 tags found (should be 1)` });
+        issues.push({ id: "multiple_h1", sev: "LOW", msg: `${h1Count} H1 tags found (should be 1)` });
     }
 
     // Canonical
@@ -214,29 +213,43 @@ export async function GET(req: NextRequest) {
         let psi: Record<string, unknown> | null = null;
         let fetchError: string | null = null;
         let httpStatus = 200;
+        let redirectChain: string[] = [];
 
         try {
-            // Fetch the specific targetUrl (not just the root domain)
-            const fetchHTMLPromise = async () => {
+            // Fetch with manual redirect tracking so we can detect redirect chains
+            const fetchHTMLPromise = async (): Promise<string> => {
                 const controller = new AbortController();
-                const timer = setTimeout(() => controller.abort(), 10000);
+                const timer = setTimeout(() => controller.abort(), 12000);
+                let currentUrl = targetUrl;
+                redirectChain = [targetUrl];
                 try {
-                    const res = await fetch(targetUrl, {
-                        signal: controller.signal,
-                        headers: { "User-Agent": "Mozilla/5.0 (compatible; RankyPulse/1.0)" },
-                    });
-                    clearTimeout(timer);
-                    httpStatus = res.status;
-                    if (!res.ok) return "";
-                    return await res.text();
+                    for (let hop = 0; hop < 10; hop++) {
+                        const res = await fetch(currentUrl, {
+                            signal: controller.signal,
+                            redirect: "manual",
+                            headers: { "User-Agent": "Mozilla/5.0 (compatible; RankyPulse/1.0)" },
+                        });
+                        if (res.status >= 300 && res.status < 400) {
+                            const loc = res.headers.get("location");
+                            if (!loc) break;
+                            currentUrl = loc.startsWith("http") ? loc : new URL(loc, currentUrl).toString();
+                            redirectChain.push(currentUrl);
+                            continue;
+                        }
+                        clearTimeout(timer);
+                        httpStatus = res.status;
+                        if (!res.ok) return "";
+                        return await res.text();
+                    }
                 } catch {
-                    clearTimeout(timer);
-                    return "";
+                    // timeout or network error
                 }
+                clearTimeout(timer);
+                return "";
             };
 
             [html, psi] = await Promise.all([
-                withTimeout(fetchHTMLPromise(), 10000, ""),
+                withTimeout(fetchHTMLPromise(), 13000, ""),
                 isRoot ? withTimeout(fetchPSI(cleanDomain), 15000, null) : Promise.resolve(null),
             ]);
         } catch (e) {
@@ -307,6 +320,21 @@ export async function GET(req: NextRequest) {
         // 5. Run compact audit
         const { score, issues } = auditPageCompact(cleanDomain, html, psi, brokenLinks);
 
+        // 5b. Detect redirect chain (≥2 hops = chain of 3+ URLs)
+        if (redirectChain.length >= 3) {
+            issues.push({
+                id: "redirect_chain",
+                sev: "MED",
+                msg: `Redirect chain: ${redirectChain.length - 1} hops`,
+            });
+        }
+
+        // Extract meta_description for duplicate detection at read time
+        const metaDescription =
+            html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i)?.[1]?.trim() ??
+            html.match(/<meta\s+content=["']([^"']+)["']\s+name=["']description["']/i)?.[1]?.trim() ??
+            "";
+
         // 6. Save to audit_pages (upsert in case URL is revisited)
         await supabaseAdmin.from("audit_pages").upsert({
             job_id: jobId,
@@ -316,6 +344,8 @@ export async function GET(req: NextRequest) {
             psi_data: isRoot ? psi : null,
             metadata: {
                 title: html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() ?? "",
+                meta_description: metaDescription,
+                outbound_links: internalLinks,
                 is_root: isRoot,
                 psi_available: !!psi,
             },

@@ -58,6 +58,10 @@ const ISSUE_CATEGORY: Record<string, string> = {
     slow_page: "Performance",
     page_not_found: "Indexing",
     large_page_size: "Performance",
+    duplicate_meta_description: "Content",
+    redirect_chain: "Technical",
+    orphan_page: "Links",
+    multiple_h1: "Content",
 };
 
 const THEMATIC_COLORS: Record<string, string> = {
@@ -475,7 +479,27 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                                     style={{ background: "#1a2236", color: "#4A5568" }}>{i + 1}</span>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm font-semibold text-white">{issue.title}</p>
-                                                    <p className="text-[11px] mt-0.5" style={{ color: "#6B7A99" }}>{issue.urlsAffected} pages affected</p>
+                                                    <p className="text-[11px] mt-0.5" style={{ color: "#6B7A99" }}>
+                                                        {issue.urlsAffected} page{issue.urlsAffected !== 1 ? "s" : ""} affected
+                                                    </p>
+                                                    {issue.affectedUrls && issue.affectedUrls.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1 mt-1.5">
+                                                            {issue.affectedUrls.slice(0, 3).map((url) => {
+                                                                const path = url.replace(/^https?:\/\/[^/]+/, "") || "/";
+                                                                return (
+                                                                    <span key={url} className="px-1.5 rounded text-[10px] font-mono truncate max-w-[160px]"
+                                                                        style={{ background: "#1a2236", color: "#8B9BB4", border: "1px solid #1E2940" }}>
+                                                                        {path}
+                                                                    </span>
+                                                                );
+                                                            })}
+                                                            {issue.affectedUrls.length > 3 && (
+                                                                <span className="text-[10px] font-mono" style={{ color: "#4A5568" }}>
+                                                                    +{issue.affectedUrls.length - 3} more
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
                                                     style={{ background: `${c}18`, color: c }}>{issue.severity}</span>

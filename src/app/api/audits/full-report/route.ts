@@ -43,6 +43,10 @@ const ISSUE_CATEGORY: Record<string, string> = {
     slow_page: "sitePerformance",
     page_not_found: "crawlability",
     large_page_size: "sitePerformance",
+    duplicate_meta_description: "markup",
+    redirect_chain: "crawlability",
+    orphan_page: "internalLinking",
+    multiple_h1: "markup",
 };
 
 export async function GET(req: Request) {

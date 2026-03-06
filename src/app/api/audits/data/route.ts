@@ -11,10 +11,17 @@ interface RawIssue {
   msg: string;
 }
 
+interface PageMetadata {
+  title?: string;
+  meta_description?: string;
+  outbound_links?: string[];
+}
+
 interface AuditPage {
   url: string;
   score: number | null;
   issues: RawIssue[] | null;
+  metadata?: PageMetadata | null;
 }
 
 const sevToSeverity = (sev: string): "error" | "warning" | "notice" => {
@@ -68,13 +75,14 @@ export async function GET(req: NextRequest) {
     // ── All audit pages for that job ──────────────────────────────────────────
     const { data: rawPages } = await supabaseAdmin
       .from("audit_pages")
-      .select("url, score, issues")
+      .select("url, score, issues, metadata")
       .eq("job_id", latestJob.id);
 
     const pages: AuditPage[] = (rawPages ?? []).map((p) => ({
       url: p.url,
       score: p.score ?? null,
       issues: Array.isArray(p.issues) ? (p.issues as RawIssue[]) : [],
+      metadata: (p.metadata as PageMetadata) ?? null,
     }));
 
     // ── Aggregate issues across all pages grouped by issue ID ─────────────────
@@ -91,6 +99,43 @@ export async function GET(req: NextRequest) {
           issueUrlMap[issue.id].push(page.url);
         }
       }
+    }
+
+    // ── Post-crawl analysis: duplicate titles, duplicate meta, orphan pages ──
+    const titleMap: Record<string, string[]> = {};
+    const metaDescMap: Record<string, string[]> = {};
+    const linkedSet = new Set<string>();
+    const homepage = `https://${targetDomain}`;
+
+    for (const page of pages) {
+      const meta = page.metadata;
+      const title = meta?.title?.trim();
+      const desc  = meta?.meta_description?.trim();
+      if (title) { titleMap[title] = [...(titleMap[title] ?? []), page.url]; }
+      if (desc)  { metaDescMap[desc]  = [...(metaDescMap[desc]  ?? []), page.url]; }
+      for (const lnk of meta?.outbound_links ?? []) { linkedSet.add(lnk); }
+    }
+
+    const dupTitleUrls = new Set(Object.values(titleMap).filter(u => u.length > 1).flat());
+    const dupMetaUrls  = new Set(Object.values(metaDescMap).filter(u => u.length > 1).flat());
+    const homepageWww  = `https://www.${targetDomain}`;
+    const orphanUrls   = new Set(
+      pages.map(p => p.url).filter(
+        url => url !== homepage && url !== homepageWww && !linkedSet.has(url)
+      )
+    );
+
+    if (dupTitleUrls.size > 0) {
+      issueMap["duplicate_title"]  = { sev: "MED", count: dupTitleUrls.size };
+      issueUrlMap["duplicate_title"]  = [...dupTitleUrls].slice(0, 10);
+    }
+    if (dupMetaUrls.size > 0) {
+      issueMap["duplicate_meta_description"]  = { sev: "MED", count: dupMetaUrls.size };
+      issueUrlMap["duplicate_meta_description"]  = [...dupMetaUrls].slice(0, 10);
+    }
+    if (orphanUrls.size > 0) {
+      issueMap["orphan_page"]  = { sev: "HIGH", count: orphanUrls.size };
+      issueUrlMap["orphan_page"]  = [...orphanUrls].slice(0, 10);
     }
 
     // ── Map to display format using ISSUE_META ────────────────────────────────

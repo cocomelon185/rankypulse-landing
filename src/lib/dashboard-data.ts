@@ -91,9 +91,13 @@ export const ISSUE_META: Record<string, {
   images_missing_alt:     { label: "Images Missing Alt Text",    impact: "low",    action: "Fix Now",   actionHref: "/audits/issues", gain: null },
   broken_links:           { label: "Broken Internal Links",      impact: "high",   action: "View URLs", actionHref: "/audits/links",  gain: "+2–4 authority pages" },
   slow_page:              { label: "Slow Page Load Speed",        impact: "medium", action: "Optimize",  actionHref: "/audits/speed",  gain: null },
-  duplicate_title:        { label: "Duplicate Title Tags",       impact: "medium", action: "Fix Now",   actionHref: "/audits/issues", gain: null },
-  page_not_found:         { label: "404 Pages Found",            impact: "high",   action: "Fix URL",   actionHref: "/audits/issues", gain: "Prevents crawl budget waste" },
-  large_page_size:        { label: "Large Page Size (>100KB)",   impact: "medium", action: "Optimize",  actionHref: "/audits/speed",  gain: "Faster load times, better Core Web Vitals" },
+  duplicate_title:             { label: "Duplicate Title Tags",         impact: "medium", action: "Fix Now",    actionHref: "/audits/issues", gain: null },
+  page_not_found:              { label: "404 Pages Found",               impact: "high",   action: "Fix URL",   actionHref: "/audits/issues", gain: "Prevents crawl budget waste" },
+  large_page_size:             { label: "Large Page Size (>100KB)",      impact: "medium", action: "Optimize",  actionHref: "/audits/speed",  gain: "Faster load times, better Core Web Vitals" },
+  duplicate_meta_description:  { label: "Duplicate Meta Descriptions",   impact: "medium", action: "Fix Now",   actionHref: "/audits/issues", gain: null },
+  redirect_chain:              { label: "Redirect Chains",               impact: "medium", action: "Fix URL",   actionHref: "/audits/issues", gain: "Faster crawling, fewer wasted hops" },
+  orphan_page:                 { label: "Orphan Pages",                  impact: "high",   action: "Add Links", actionHref: "/audits/links",  gain: "Improves crawlability and link equity" },
+  multiple_h1:                 { label: "Multiple H1 Tags",              impact: "low",    action: "Fix Now",   actionHref: "/audits/issues", gain: null },
 };
 
 // ─── Static fallback data (used for metrics we can't compute from DB) ─────────
