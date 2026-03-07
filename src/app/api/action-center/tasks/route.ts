@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { ISSUE_META } from "@/lib/dashboard-data";
 
+const BUILD_VERSION = "2026-03-07-v3";
+
 interface Task {
   id: string;
   title: string;
@@ -53,6 +55,7 @@ export async function GET(req: NextRequest) {
   }
 
   const userId = session.user.id;
+  const debug = req.nextUrl.searchParams.get("debug") === "true";
 
   try {
     // ── Get the latest completed crawl job ────────────────────────────────
@@ -65,8 +68,14 @@ export async function GET(req: NextRequest) {
       .limit(1)
       .maybeSingle();
 
+    console.log("[ActionCenter] userId:", userId, "latestJob:", latestJob ? { id: latestJob.id, domain: latestJob.domain } : null);
+
     if (!latestJob) {
-      return NextResponse.json({ tasks: [], domain: null });
+      return NextResponse.json({
+        tasks: [],
+        domain: null,
+        ...(debug ? { _debug: { buildVersion: BUILD_VERSION, reason: "no_completed_job", userId } } : {}),
+      });
     }
 
     const jobId = latestJob.id;
@@ -78,9 +87,15 @@ export async function GET(req: NextRequest) {
       .select("url, score, issues, metadata")
       .eq("job_id", jobId);
 
+    console.log("[ActionCenter] jobId:", jobId, "rawPages:", rawPages?.length ?? "null", "auditError:", auditError);
+
     if (auditError) {
-      console.error("Error fetching audit pages:", auditError);
-      return NextResponse.json({ tasks: [], domain });
+      console.error("[ActionCenter] Supabase error:", auditError.code, auditError.message, auditError.details);
+      return NextResponse.json({
+        tasks: [],
+        domain,
+        ...(debug ? { _debug: { buildVersion: BUILD_VERSION, error: auditError.message, code: auditError.code, details: auditError.details, jobId } } : {}),
+      });
     }
 
     const pages = (rawPages ?? []).map((p) => ({
@@ -97,6 +112,8 @@ export async function GET(req: NextRequest) {
         issueMap[issue.id].count++;
       }
     }
+
+    console.log("[ActionCenter] pages:", pages.length, "storedIssues:", Object.keys(issueMap).length, "issueIds:", Object.keys(issueMap));
 
     // ── Post-crawl metadata analysis (mirrors /api/audits/data logic) ─────
     const titleMap: Record<string, string[]> = {};
@@ -143,6 +160,8 @@ export async function GET(req: NextRequest) {
       issueMap["keyword_cannibalization"] = { sev: "HIGH", count: [...new Set(cannibGroups.flat())].length };
     }
 
+    console.log("[ActionCenter] afterDerived:", Object.keys(issueMap).length, "keys:", Object.keys(issueMap), "dupTitles:", dupTitleUrls.size, "orphans:", orphanUrls.size, "deep:", deepPages.length);
+
     // ── Transform issueMap → Task[] using ISSUE_META for labels ──────────
     const tasks: Task[] = Object.entries(issueMap).map(([id, { sev, count }], index) => {
       const meta = ISSUE_META[id];
@@ -176,7 +195,42 @@ export async function GET(req: NextRequest) {
       return d !== 0 ? d : b.affectedPages - a.affectedPages;
     });
 
-    return NextResponse.json({ tasks, domain });
+    console.log("[ActionCenter] totalTasks:", tasks.length);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response: Record<string, any> = { tasks, domain };
+
+    if (debug) {
+      const derivedIds = ["duplicate_title", "duplicate_meta_description", "orphan_page", "deep_page_depth", "keyword_cannibalization"];
+      response._debug = {
+        buildVersion: BUILD_VERSION,
+        jobId,
+        jobCreatedAt: latestJob.created_at,
+        rawPagesCount: rawPages?.length ?? 0,
+        rawPagesNull: rawPages === null,
+        pagesWithIssues: pages.filter(p => p.issues.length > 0).length,
+        pagesWithMetadata: pages.filter(p => p.metadata && Object.keys(p.metadata).length > 0).length,
+        storedIssueIds: Object.keys(issueMap).filter(id => !derivedIds.includes(id)),
+        derivedIssueIds: Object.keys(issueMap).filter(id => derivedIds.includes(id)),
+        issueMap,
+        dupTitleCount: dupTitleUrls.size,
+        dupMetaCount: dupMetaUrls.size,
+        orphanCount: orphanUrls.size,
+        deepPageCount: deepPages.length,
+        linkedSetSize: linkedSet.size,
+        totalTasks: tasks.length,
+        samplePage: pages.length > 0 ? {
+          url: pages[0].url,
+          issuesCount: pages[0].issues.length,
+          issueIds: pages[0].issues.map(i => i.id),
+          hasMetadata: !!pages[0].metadata,
+          metadataKeys: pages[0].metadata ? Object.keys(pages[0].metadata) : [],
+          metadataTitle: pages[0].metadata?.title ?? null,
+        } : null,
+      };
+    }
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Error in /api/action-center/tasks:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
