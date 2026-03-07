@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { ISSUE_META } from "@/lib/dashboard-data";
 
-const BUILD_VERSION = "2026-03-07-v3";
+const BUILD_VERSION = "2026-03-07-v4";
 
 interface Task {
   id: string;
@@ -58,45 +58,59 @@ export async function GET(req: NextRequest) {
   const debug = req.nextUrl.searchParams.get("debug") === "true";
 
   try {
-    // ── Get the latest completed crawl job ────────────────────────────────
-    const { data: latestJob } = await supabaseAdmin
+    // ── Find the best completed crawl job (one that actually has audit_pages) ──
+    const { data: recentJobs } = await supabaseAdmin
       .from("crawl_jobs")
       .select("id, domain, created_at")
       .eq("user_id", userId)
       .eq("status", "completed")
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(5);
 
-    console.log("[ActionCenter] userId:", userId, "latestJob:", latestJob ? { id: latestJob.id, domain: latestJob.domain } : null);
+    console.log("[ActionCenter] userId:", userId, "recentJobs:", recentJobs?.length ?? 0);
 
-    if (!latestJob) {
+    if (!recentJobs || recentJobs.length === 0) {
       return NextResponse.json({
         tasks: [],
         domain: null,
-        ...(debug ? { _debug: { buildVersion: BUILD_VERSION, reason: "no_completed_job", userId } } : {}),
+        ...(debug ? { _debug: { buildVersion: BUILD_VERSION, reason: "no_completed_jobs", userId } } : {}),
+      });
+    }
+
+    // Try each job until we find one with actual audit_pages data
+    let latestJob: typeof recentJobs[0] | null = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let rawPages: any[] | null = null;
+    const skippedJobs: string[] = [];
+
+    for (const job of recentJobs) {
+      const { data, error } = await supabaseAdmin
+        .from("audit_pages")
+        .select("url, score, issues, metadata")
+        .eq("job_id", job.id);
+
+      console.log("[ActionCenter] trying job:", job.id, "domain:", job.domain, "pages:", data?.length ?? "null", "error:", error);
+
+      if (!error && data && data.length > 0) {
+        latestJob = job;
+        rawPages = data;
+        break;
+      }
+      skippedJobs.push(`${job.domain}(${job.id.slice(0, 8)})`);
+    }
+
+    if (!latestJob || !rawPages || rawPages.length === 0) {
+      return NextResponse.json({
+        tasks: [],
+        domain: recentJobs[0]?.domain ?? null,
+        ...(debug ? { _debug: { buildVersion: BUILD_VERSION, reason: "no_jobs_with_pages", skippedJobs, totalJobs: recentJobs.length } } : {}),
       });
     }
 
     const jobId = latestJob.id;
     const domain = latestJob.domain;
 
-    // ── Fetch all audit pages (issues + metadata, same as /api/audits/data) ──
-    const { data: rawPages, error: auditError } = await supabaseAdmin
-      .from("audit_pages")
-      .select("url, score, issues, metadata")
-      .eq("job_id", jobId);
-
-    console.log("[ActionCenter] jobId:", jobId, "rawPages:", rawPages?.length ?? "null", "auditError:", auditError);
-
-    if (auditError) {
-      console.error("[ActionCenter] Supabase error:", auditError.code, auditError.message, auditError.details);
-      return NextResponse.json({
-        tasks: [],
-        domain,
-        ...(debug ? { _debug: { buildVersion: BUILD_VERSION, error: auditError.message, code: auditError.code, details: auditError.details, jobId } } : {}),
-      });
-    }
+    console.log("[ActionCenter] selected job:", jobId, "domain:", domain, "pages:", rawPages.length, "skipped:", skippedJobs);
 
     const pages = (rawPages ?? []).map((p) => ({
       url: p.url as string,
@@ -205,9 +219,10 @@ export async function GET(req: NextRequest) {
       response._debug = {
         buildVersion: BUILD_VERSION,
         jobId,
+        jobDomain: domain,
         jobCreatedAt: latestJob.created_at,
+        skippedJobs,
         rawPagesCount: rawPages?.length ?? 0,
-        rawPagesNull: rawPages === null,
         pagesWithIssues: pages.filter(p => p.issues.length > 0).length,
         pagesWithMetadata: pages.filter(p => p.metadata && Object.keys(p.metadata).length > 0).length,
         storedIssueIds: Object.keys(issueMap).filter(id => !derivedIds.includes(id)),
