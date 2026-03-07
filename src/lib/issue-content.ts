@@ -1,9 +1,10 @@
-// Issue-specific content for client display: traffic impact and fix steps.
+// Issue-specific content for client display: traffic impact, fix steps, and example fixes.
 // Kept separate from dashboard-data.ts (which has server-only imports).
 export const ISSUE_CONTENT: Record<string, {
     ctrImpact?: string;
     trafficGain?: string;
     fixSteps?: string[];
+    exampleFix?: string;
 }> = {
     no_meta_description: {
         ctrImpact: "−15–30% CTR without a compelling description",
@@ -14,6 +15,7 @@ export const ISSUE_CONTENT: Record<string, {
             "Include a clear call to action (e.g. 'Learn more', 'Get started')",
             "Publish and re-run the audit to verify",
         ],
+        exampleFix: "RankyPulse helps businesses run automated SEO audits, fix technical issues, and improve search rankings.",
     },
     no_title: {
         ctrImpact: "Google auto-generates titles, reducing CTR by up to 40%",
@@ -24,6 +26,7 @@ export const ISSUE_CONTENT: Record<string, {
             "Ensure each page has a unique title — no duplicates",
             "Add the <title> tag in <head> and re-crawl",
         ],
+        exampleFix: "RankyPulse — Automated SEO Audit & Issue Tracking Tool",
     },
     broken_links: {
         ctrImpact: "Dead-end links increase bounce rate by 10–20%",
@@ -34,6 +37,7 @@ export const ISSUE_CONTENT: Record<string, {
             "For deleted pages, set up a 301 redirect to the nearest relevant page",
             "Re-run the audit to confirm all links resolve",
         ],
+        exampleFix: "Update the href to the correct live URL or add a 301 redirect from the old path.",
     },
     duplicate_title: {
         ctrImpact: "Duplicate titles dilute ranking signal — pages compete against each other",
@@ -44,6 +48,7 @@ export const ISSUE_CONTENT: Record<string, {
             "Rewrite other pages' titles to target distinct, relevant keywords",
             "Verify uniqueness and re-run the audit",
         ],
+        exampleFix: "[Page Topic] — [Brand Name] | [Keyword Differentiator]",
     },
     robots_txt_blocked: {
         ctrImpact: "Google cannot index your site at all — zero organic traffic possible",
@@ -54,6 +59,7 @@ export const ISSUE_CONTENT: Record<string, {
             "Remove or narrow that rule (e.g. only disallow /admin/)",
             "Submit a recrawl request in Google Search Console",
         ],
+        exampleFix: "User-agent: *\nDisallow: /admin/\n# Remove the Disallow: / line if present",
     },
     orphan_page: {
         ctrImpact: "Orphan pages rarely rank — they receive no PageRank from other pages",
@@ -64,6 +70,7 @@ export const ISSUE_CONTENT: Record<string, {
             "Add an internal link in the body text or navigation of those related pages",
             "Consider adding orphan pages to your XML sitemap",
         ],
+        exampleFix: "<a href='/your-page'>Learn more about [Topic]</a>",
     },
     canonical_mismatch: {
         ctrImpact: "Google may index the wrong URL variant, splitting ranking signal",
@@ -74,6 +81,7 @@ export const ISSUE_CONTENT: Record<string, {
             "Check for trailing slash inconsistencies (e.g. /page vs /page/)",
             "Re-run the audit to verify no mismatches remain",
         ],
+        exampleFix: '<link rel="canonical" href="https://yourdomain.com/exact-page-url/" />',
     },
     redirect_chain: {
         ctrImpact: "Each redirect hop adds ~100ms latency and reduces link equity passed",
@@ -84,6 +92,7 @@ export const ISSUE_CONTENT: Record<string, {
             "Remove intermediate redirect hops from your server config",
             "Verify each redirect resolves in a single hop",
         ],
+        exampleFix: "Update original link to point directly to: /final-destination-url",
     },
     low_word_count: {
         ctrImpact: "Thin pages are rarely shown for competitive queries",
@@ -94,6 +103,7 @@ export const ISSUE_CONTENT: Record<string, {
             "Include the page's primary keyword naturally 2–3 times",
             "Add H2/H3 subheadings to structure the additional content",
         ],
+        exampleFix: "Expand this section with an FAQ, use-case examples, or a how-it-works explanation (aim for 300+ words).",
     },
     keyword_cannibalization: {
         ctrImpact: "Competing pages split clicks — neither ranks as well as one authoritative page",
@@ -104,6 +114,7 @@ export const ISSUE_CONTENT: Record<string, {
             "Either merge weaker pages into the stronger one (301 redirect), or differentiate keyword focus",
             "Add cross-links between pages that remain distinct",
         ],
+        exampleFix: "Merge /page-a into /page-b with a 301 redirect, or differentiate by updating /page-a to target a related but distinct keyword.",
     },
     multiple_canonicals: {
         ctrImpact: "Conflicting canonical signals cause Google to ignore all of them",
@@ -114,6 +125,7 @@ export const ISSUE_CONTENT: Record<string, {
             "Verify the remaining canonical href matches the page URL",
             "Re-run the audit to confirm only one canonical per page",
         ],
+        exampleFix: '<link rel="canonical" href="https://yourdomain.com/page/" />  <!-- Remove all other canonical tags -->',
     },
     robots_noindex: {
         ctrImpact: "Pages set to noindex are excluded from Google's index entirely",

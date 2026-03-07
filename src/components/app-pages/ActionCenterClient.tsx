@@ -14,6 +14,8 @@ interface Task {
     description: string;
     severity: "error" | "warning" | "notice";
     effort: "easy" | "medium" | "hard";
+    effortLabel?: string;
+    priorityReason?: string;
     estimatedPoints: number;
     affectedPages: number;
     actionHref: string;
@@ -34,6 +36,12 @@ const SEVERITY_CONFIG = {
 };
 
 const EFFORT_LABELS = { easy: "Easy fix", medium: "Medium effort", hard: "Complex fix" };
+
+const EFFORT_BADGE: Record<string, { bg: string; color: string }> = {
+    easy:   { bg: "rgba(34,197,94,0.15)",  color: "#22c55e" },
+    medium: { bg: "rgba(234,179,8,0.15)",  color: "#eab308" },
+    hard:   { bg: "rgba(239,68,68,0.15)",  color: "#ef4444" },
+};
 
 export function ActionCenterClient() {
     const router = useRouter();
@@ -207,6 +215,11 @@ export function ActionCenterClient() {
                                                 <p className={`text-sm font-semibold truncate ${task.status === "done" ? "line-through opacity-50" : "text-white"}`}>
                                                     {task.title}
                                                 </p>
+                                                {task.priorityReason && (
+                                                    <p className="text-[11px] mt-0.5 truncate" style={{ color: "#4A5568" }}>
+                                                        {task.priorityReason}
+                                                    </p>
+                                                )}
                                                 <div className="flex items-center gap-2 mt-0.5">
                                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                                                         style={{ background: statusCfg.bg, color: statusCfg.color }}>
@@ -215,12 +228,16 @@ export function ActionCenterClient() {
                                                     <span className="text-[10px]" style={{ color: "#4A5568" }}>
                                                         +{task.estimatedPoints} pts
                                                     </span>
-                                                    <span className="text-[10px]" style={{ color: "#4A5568" }}>
-                                                        {task.affectedPages} page{task.affectedPages !== 1 ? "s" : ""}
-                                                    </span>
-                                                    <span className="text-[10px]" style={{ color: "#4A5568" }}>
-                                                        {EFFORT_LABELS[task.effort]}
-                                                    </span>
+                                                    {task.effortLabel ? (
+                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                                            style={{ background: EFFORT_BADGE[task.effort]?.bg, color: EFFORT_BADGE[task.effort]?.color }}>
+                                                            {task.effortLabel}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-[10px]" style={{ color: "#4A5568" }}>
+                                                            {EFFORT_LABELS[task.effort]}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
 

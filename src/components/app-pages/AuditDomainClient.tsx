@@ -47,6 +47,7 @@ interface AuditData {
     totalPages: number;
     issues: IssueItem[];
     brokenLinks?: { source: string; targets: string[] }[];
+    crawlDuration?: number | null;
     crawlStats?: {
         avgDepth: number;
         deepPageCount: number;
@@ -118,13 +119,23 @@ function computeThematicScores(issues: IssueItem[]) {
     }));
 }
 
+// ── Thematic tooltip content ───────────────────────────────────────────────────
+const THEMATIC_TOOLTIP: Record<string, string> = {
+    Technical:   "Canonical errors, redirect chains, robots.txt blocks, duplicate H1",
+    Content:     "Missing titles, meta descriptions, duplicate content, low word count",
+    Performance: "Slow page load times, large page sizes",
+    Links:       "Broken links, orphan pages, excessive link depth",
+    Indexing:    "Noindex directives, blocked pages, crawl errors",
+};
+
 // ── ThematicScore mini gauge ──────────────────────────────────────────────────
 function ThematicScore({ label, score, color, loading }: { label: string; score: number; color: string; loading?: boolean }) {
     const r = 28;
     const circ = 2 * Math.PI * r;
     const offset = circ * (1 - score / 100);
+    const tip = THEMATIC_TOOLTIP[label];
     return (
-        <div className="flex flex-col items-center gap-2">
+        <div className="relative flex flex-col items-center gap-2 group">
             <div className="relative w-16 h-16">
                 {loading ? (
                     <div className="w-full h-full flex items-center justify-center">
@@ -143,6 +154,15 @@ function ThematicScore({ label, score, color, loading }: { label: string; score:
                 )}
             </div>
             <span className="text-[10px] font-semibold text-center" style={{ color: "#8B9BB4" }}>{label}</span>
+            {tip && (
+                <div className="absolute bottom-[110%] left-1/2 -translate-x-1/2 z-50 pointer-events-none
+                    invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-150
+                    rounded-lg px-3 py-2 text-[10px] w-44 text-center leading-relaxed"
+                    style={{ background: "#1a2236", border: "1px solid #1E2940", color: "#8B9BB4" }}>
+                    <p className="font-bold mb-0.5 text-white">{label}</p>
+                    {tip}
+                </div>
+            )}
         </div>
     );
 }
@@ -174,6 +194,37 @@ const INSIGHT_GAIN: Record<string, number> = {
     // Phase 4
     multiple_canonicals: 10, keyword_cannibalization: 12,
 };
+
+// ── OpportunityCard ───────────────────────────────────────────────────────────
+function OpportunityCard({ topIssues }: { topIssues: IssueItem[] }) {
+    if (topIssues.length === 0) {
+        return (
+            <div className="rounded-xl p-3 flex flex-col gap-1 min-w-0"
+                style={{ background: "#0d1526", border: "1px solid #1E2940" }}>
+                <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#6B7A99" }}>Opportunity</div>
+                <div className="text-xl font-black" style={{ color: "#eab308" }}>🏆</div>
+                <div className="text-[10px] leading-relaxed" style={{ color: "#4A5568" }}>
+                    Well optimized! Keep publishing content and building internal links.
+                </div>
+            </div>
+        );
+    }
+    const top3 = topIssues.slice(0, 3).map(i => i.title);
+    return (
+        <div className="rounded-xl p-3 flex flex-col gap-1 min-w-0"
+            style={{ background: "#0d1526", border: "1px solid #1E2940" }}>
+            <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#6B7A99" }}>Opportunity</div>
+            <div className="text-sm font-black" style={{ color: "#eab308" }}>+15–25% traffic</div>
+            <div className="text-[10px] mb-1" style={{ color: "#4A5568" }}>Fix top issues to boost rankings</div>
+            {top3.map(t => (
+                <div key={t} className="text-[10px] flex gap-1 items-start" style={{ color: "#6B7A99" }}>
+                    <span style={{ color: "#eab308" }}>•</span>
+                    <span className="truncate">{t}</span>
+                </div>
+            ))}
+        </div>
+    );
+}
 
 // ── CrawlTransparencyPanel ────────────────────────────────────────────────────
 function CrawlTransparencyPanel({ pagesCrawled, internalLinks, brokenPages, redirectPages }: {
@@ -213,7 +264,7 @@ function DepthDistributionWidget({ dist, total }: {
         <div className="rounded-xl p-4 mt-4" style={{ background: "#0d1526", border: "1px solid #1E2940" }}>
             <div className="text-sm font-semibold text-white mb-1">Link Depth Structure</div>
             <p className="text-[11px] mb-3" style={{ color: "#6B7A99" }}>
-                Pages deeper than 3 clicks receive less internal link authority and crawl budget.
+                Internal links pass ranking authority across your site. Pages closer to the homepage receive stronger signals and more crawl budget.
             </p>
             {rows.map(({ label, count, color }) => {
                 const pct = total > 0 ? Math.round((count / total) * 100) : 0;
@@ -231,7 +282,10 @@ function DepthDistributionWidget({ dist, total }: {
             })}
             {dist.depth4plus > 0 && (
                 <p className="text-[11px] mt-2" style={{ color: "#ef4444" }}>
-                    ⚠ {dist.depth4plus} page{dist.depth4plus > 1 ? "s are" : " is"} buried 4+ clicks from homepage
+                    ⚠ {dist.depth4plus} page{dist.depth4plus > 1 ? "s are" : " is"} buried 4+ clicks from homepage.
+                    {total > 0 && (dist.depth4plus / total) > 0.2 && (
+                        <span> Many pages ({Math.round((dist.depth4plus / total) * 100)}%) are buried deep — consider flattening your site structure.</span>
+                    )}
                 </p>
             )}
         </div>
@@ -505,7 +559,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
     const topWin = issues.find(i => INSIGHT_GAIN[i.id]);
 
     const scoreColor = score >= 80 ? "#00C853" : score >= 60 ? "#FF9800" : "#FF3D3D";
-    const scoreLabel = score >= 80 ? "Excellent" : score >= 60 ? "Good" : "Poor";
+    const scoreLabel = score >= 95 ? "Excellent" : score >= 80 ? "Good" : score >= 60 ? "Needs Improvement" : "Poor";
     const r = 74;
     const circ = 2 * Math.PI * r;
     const offset = circ * (1 - score / 100);
@@ -515,7 +569,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
         : "—";
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* ── Breadcrumb */}
             <nav className="flex items-center gap-2 text-[12px]" style={{ color: "#6B7A99" }}>
                 <button onClick={() => router.push("/app/audit")} className="hover:text-white transition">Site Audit</button>
@@ -559,6 +613,9 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                             )}
                             <span className="flex items-center gap-1"><Clock size={10} /> {lastAudit}</span>
                             <span>{jobData.pagesCrawled.toLocaleString()} pages</span>
+                            {auditData?.crawlDuration && (
+                                <span className="flex items-center gap-1">⏱ {auditData.crawlDuration}s crawl</span>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -645,13 +702,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                         value={topWin ? `+${INSIGHT_GAIN[topWin.id]}pts` : "🎉"}
                         desc={topWin ? topWin.title : "No critical issues!"}
                     />
-                    <InsightCard
-                        icon="🏆"
-                        color="#eab308"
-                        title="Opportunity"
-                        value={topWin ? `+${INSIGHT_GAIN[topWin.id]}pts` : "🎉"}
-                        desc={topWin ? `Fix ${topWin.title.toLowerCase()} for biggest gain` : "Site is well optimized"}
-                    />
+                    <OpportunityCard topIssues={issues} />
                 </div>
             )}
 
@@ -747,7 +798,10 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                 ) : (
                                     <>
                                         <CheckCircle size={20} className="mb-2" style={{ color: "#00C853" }} />
-                                        <p className="text-sm">No issues found — great work!</p>
+                                        <p className="text-sm font-semibold" style={{ color: "#00C853" }}>Great work! All SEO checks passed.</p>
+                                        <p className="text-xs mt-1 text-center max-w-xs" style={{ color: "#4A5568" }}>
+                                            Continue monitoring your site regularly to maintain strong search visibility.
+                                        </p>
                                     </>
                                 )}
                             </div>
@@ -842,6 +896,20 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                                                                         </li>
                                                                                     ))}
                                                                                 </ol>
+                                                                            </div>
+                                                                        )}
+                                                                        {content.exampleFix && (
+                                                                            <div className="mb-4">
+                                                                                <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#6B7A99" }}>Example Fix</p>
+                                                                                <div className="rounded-lg p-3 relative" style={{ background: "#1a2236", border: "1px solid #1E2940" }}>
+                                                                                    <p className="text-[11px] font-mono pr-14 whitespace-pre-wrap" style={{ color: "#8B9BB4" }}>{content.exampleFix}</p>
+                                                                                    <button
+                                                                                        onClick={() => navigator.clipboard.writeText(content.exampleFix!)}
+                                                                                        className="absolute top-2 right-2 text-[10px] font-bold px-2 py-1 rounded transition hover:opacity-80"
+                                                                                        style={{ background: "rgba(255,100,45,0.15)", color: "#FF642D" }}>
+                                                                                        Copy
+                                                                                    </button>
+                                                                                </div>
                                                                             </div>
                                                                         )}
                                                                     </>

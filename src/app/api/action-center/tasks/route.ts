@@ -98,6 +98,10 @@ export async function GET() {
                     description: meta?.gain ?? "Fixing this issue will improve your SEO performance.",
                     severity: sev === "HIGH" ? "error" : sev === "MED" ? "warning" : "notice",
                     effort: gain?.effort ?? "medium",
+                    effortLabel: gain?.effort === "easy" ? "Easy Fix"
+                        : gain?.effort === "medium" ? "Medium Fix"
+                        : "Developer Required",
+                    priorityReason: `${sev === "HIGH" ? "High" : sev === "MED" ? "Medium" : "Low"} impact · ${count} page${count !== 1 ? "s" : ""} affected`,
                     estimatedPoints: gain?.points ?? 2,
                     affectedPages: count,
                     actionHref: meta?.actionHref ?? "/audits/issues",
