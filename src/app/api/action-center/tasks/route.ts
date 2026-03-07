@@ -124,8 +124,8 @@ export async function GET(req: NextRequest) {
     // ── Get all audit pages for this job ──────────────────────────────────
     const { data: auditPages, error: auditError } = await supabaseAdmin
       .from("audit_pages")
-      .select("url, score, psi_data")
-      .eq("crawl_job_id", jobId);
+      .select("url, score, issues")
+      .eq("job_id", jobId);
 
     if (auditError) {
       console.error("Error fetching audit pages:", auditError);
@@ -139,10 +139,9 @@ export async function GET(req: NextRequest) {
     const issueMap = new Map<string, { count: number; severity: "error" | "warning" | "notice"; pages: string[] }>();
 
     for (const page of auditPages || []) {
-      const psiData = page.psi_data as any;
-      if (!psiData?.issues) continue;
+      if (!Array.isArray(page.issues)) continue;
 
-      const issues = psiData.issues as RawIssue[];
+      const issues = page.issues as RawIssue[];
       for (const issue of issues) {
         const key = issue.id;
         const severity = sevToSeverity(issue.sev);
