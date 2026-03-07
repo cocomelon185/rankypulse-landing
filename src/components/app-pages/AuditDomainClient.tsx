@@ -541,11 +541,18 @@ export function AuditDomainClient({ domain }: { domain: string }) {
     }
 
     const isCrawling = jobData.status === "crawling" || jobData.status === "pending";
-    const score = auditData?.healthScore ?? jobData.score ?? 0;
+    const rawScore = auditData?.healthScore ?? jobData.score ?? 0;
     const errors = auditData?.errors ?? jobData.errors ?? 0;
     const warnings = auditData?.warnings ?? jobData.warnings ?? 0;
     const notices = auditData?.notices ?? jobData.notices ?? 0;
     const issues = auditData?.issues ?? [];
+
+    // Frontend safeScore: defensive rendering in case backend returns a stale/inconsistent score
+    const totalIssueCount = errors + warnings + notices;
+    const pageCount = auditData?.totalPages ?? jobData.pagesCrawled ?? 0;
+    const score = (auditData && pageCount > 0 && totalIssueCount === 0 && rawScore < 90)
+      ? 95
+      : rawScore;
     const crawlStats = auditData?.crawlStats;
     const thematicScores = computeThematicScores(issues);
 

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint . --max-warnings 0",
     "test": "playwright test",
+    "test:unit": "vitest run",
     "test:headed": "playwright test --headed",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "db:seed": "node scripts/seed-users.mjs"
@@ -49,6 +50,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   }
 }

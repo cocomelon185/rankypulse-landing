@@ -3,7 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { ISSUE_META } from "@/lib/dashboard-data";
-import { calculateSeoScore } from "@/lib/seo-score";
+import { calculateSeoScore, computeSeoScore } from "@/lib/seo-score";
+import { validateAuditData } from "@/lib/audit-validator";
 
 interface RawIssue {
   id: string;
@@ -220,13 +221,23 @@ export async function GET(req: NextRequest) {
     const errors   = issues.filter((i) => i.severity === "error").length;
     const warnings = issues.filter((i) => i.severity === "warning").length;
     const notices  = issues.filter((i) => i.severity === "notice").length;
+    const totalIssueTypes = errors + warnings + notices;
 
-    const avgScore = calculateSeoScore(pages);
+    // Deterministic issue-weighted score (replaces PSI-average + single-case patch)
+    const rawScore = computeSeoScore({
+      pages: pages.length,
+      totalIssues: totalIssueTypes,
+      criticalIssues: errors,
+      warningIssues: warnings,
+      noticeIssues: notices,
+    });
 
-    // If crawl produced pages but no issues and score is 0 (all null page scores), default to 95
-    const finalScore = avgScore === 0 && pages.length > 0 && Object.keys(issueMap).length === 0
-      ? 95
-      : avgScore;
+    // Validate and correct any remaining contradictions before responding
+    const { score: finalScore } = validateAuditData({
+      score: rawScore,
+      pages: pages.length,
+      totalIssues: totalIssueTypes,
+    });
 
     // ── Crawl duration (updated_at − created_at) ───────────────────────────────
     const crawlDurationSecs = latestJob.updated_at && latestJob.created_at
