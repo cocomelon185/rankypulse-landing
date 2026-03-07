@@ -1,118 +1,204 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
-import { ISSUE_META } from "@/lib/dashboard-data";
 
-// Estimated SEO point gain + effort level per issue type
-const TASK_GAIN: Record<string, { points: number; effort: "easy" | "medium" | "hard" }> = {
-    robots_txt_blocked:         { points: 30, effort: "medium" },
-    robots_noindex:             { points: 25, effort: "easy" },
-    no_title:                   { points: 15, effort: "easy" },
-    broken_links:               { points: 12, effort: "medium" },
-    no_meta_description:        { points: 10, effort: "easy" },
-    canonical_mismatch:         { points: 8,  effort: "easy" },
-    duplicate_title:            { points: 8,  effort: "medium" },
-    orphan_page:                { points: 8,  effort: "medium" },
-    redirect_chain:             { points: 6,  effort: "easy" },
-    slow_page:                  { points: 6,  effort: "hard" },
-    no_og_tags:                 { points: 5,  effort: "easy" },
-    low_word_count:             { points: 5,  effort: "medium" },
-    meta_desc_too_long:         { points: 5,  effort: "easy" },
-    duplicate_meta_description: { points: 4,  effort: "medium" },
-    no_schema:                  { points: 3,  effort: "easy" },
-    no_h1:                      { points: 3,  effort: "easy" },
-    deep_page_depth:            { points: 3,  effort: "hard" },
-    title_too_long:             { points: 3,  effort: "easy" },
-    images_missing_alt:         { points: 2,  effort: "easy" },
-    multiple_h1:                { points: 2,  effort: "easy" },
-    no_canonical:               { points: 2,  effort: "easy" },
-    title_too_short:            { points: 2,  effort: "easy" },
-    meta_desc_too_short:        { points: 2,  effort: "easy" },
-    large_page_size:            { points: 2,  effort: "medium" },
-    // Phase 4
-    multiple_canonicals:        { points: 10, effort: "easy" },
-    keyword_cannibalization:    { points: 12, effort: "hard" },
+interface Task {
+  id: string;
+  title: string;
+  description: string;
+  severity: "error" | "warning" | "notice";
+  effort: "easy" | "medium" | "hard";
+  estimatedPoints: number;
+  affectedPages: number;
+  actionHref: string;
+  status: "todo" | "in_progress" | "done";
+  progress: number;
+}
+
+interface RawIssue {
+  id: string;
+  sev: "LOW" | "MED" | "HIGH";
+  msg: string;
+}
+
+// Severity mapping
+const sevToSeverity = (sev: string): "error" | "warning" | "notice" => {
+  if (sev === "HIGH") return "error";
+  if (sev === "MED") return "warning";
+  return "notice";
 };
 
-/**
- * GET /api/action-center/tasks
- * Returns actionable tasks generated from the latest completed crawl.
- */
-export async function GET() {
-    try {
-        const session = await getServerSession(authOptions);
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+// Issue type → effort mapping
+const issueTypeEffort: Record<string, "easy" | "medium" | "hard"> = {
+  "orphan-pages": "easy",
+  "missing-meta-descriptions": "easy",
+  "duplicate-titles": "easy",
+  "missing-h1": "easy",
+  "missing-canonical": "medium",
+  "missing-alt-text": "medium",
+  "broken-internal-links": "medium",
+};
 
-        // Get the latest completed crawl job
-        const { data: latestJob } = await supabaseAdmin
-            .from("crawl_jobs")
-            .select("id, domain")
-            .eq("user_id", session.user.id)
-            .eq("status", "completed")
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
+// Issue type → base description mapping
+const issueDescriptions: Record<string, string> = {
+  "orphan-pages": "Pages that are not linked from any other page. These pages waste crawl budget and are harder for search engines to discover.",
+  "missing-meta-descriptions": "Pages without meta descriptions miss out on click-through rate optimization. Search engines may auto-generate poor snippets.",
+  "broken-internal-links": "Internal links returning 404 damage crawl budget and user experience. Fix or redirect these URLs immediately.",
+  "duplicate-titles": "Duplicate or missing title tags reduce click-through rates and confuse search engines about page topics.",
+  "missing-h1": "Each page should have exactly one H1 tag that clearly describes the page content for both users and search engines.",
+  "missing-alt-text": "Images without alt text are not accessible to users with screen readers and provide no SEO value.",
+  "missing-canonical": "Missing canonical tags can lead to duplicate content issues and diluted ranking power across multiple URLs.",
+};
 
-        if (!latestJob) {
-            return NextResponse.json({ tasks: [], domain: null });
-        }
+// Points scoring
+const basePoints = {
+  "error": 8,
+  "warning": 5,
+  "notice": 2,
+};
 
-        // Aggregate issues across all pages for this job
-        const { data: rawPages } = await supabaseAdmin
-            .from("audit_pages")
-            .select("issues")
-            .eq("job_id", latestJob.id);
+// Calculate estimated points based on severity and affected page count
+function calculateEstimatedPoints(
+  severity: "error" | "warning" | "notice",
+  affectedCount: number
+): number {
+  const base = basePoints[severity];
+  return Math.round(base * (1 + affectedCount / 100));
+}
 
-        const issueMap: Record<string, { sev: string; count: number }> = {};
-        for (const page of rawPages ?? []) {
-            for (const issue of (page.issues ?? []) as { id: string; sev: string }[]) {
-                if (!issueMap[issue.id]) {
-                    issueMap[issue.id] = { sev: issue.sev, count: 0 };
-                }
-                issueMap[issue.id].count++;
-            }
-        }
+// Get issue title (from mapping or use msg)
+function getIssueTitle(issueId: string, msg: string): string {
+  const titleMap: Record<string, string> = {
+    "orphan-pages": "Orphan Pages",
+    "missing-meta-descriptions": "Missing Meta Descriptions",
+    "broken-internal-links": "Broken Internal Links",
+    "duplicate-titles": "Duplicate Title Tags",
+    "missing-h1": "Missing H1 Tags",
+    "missing-alt-text": "Images Missing Alt Text",
+    "missing-canonical": "Missing Canonical Tags",
+  };
+  return titleMap[issueId] || msg;
+}
 
-        // Weighted priority: sevWeight * pageCount * (points / 5)
-        const sevWeight: Record<string, number> = { HIGH: 3, MED: 2, LOW: 1 };
+// Get description for issue
+function getIssueDescription(issueId: string): string {
+  return issueDescriptions[issueId] || "Fixing this issue will improve your site's SEO score and search visibility.";
+}
 
-        const tasks = Object.entries(issueMap)
-            .map(([id, { sev, count }]) => {
-                const points = TASK_GAIN[id]?.points ?? 2;
-                const weight = sevWeight[sev] ?? 1;
-                return { id, sev, count, priorityScore: weight * count * (points / 5) };
-            })
-            .sort((a, b) => b.priorityScore - a.priorityScore)
-            .slice(0, 12)
-            .map(({ id, sev, count }) => {
-                const meta = ISSUE_META[id];
-                const gain = TASK_GAIN[id];
-                return {
-                    id,
-                    title: meta
-                        ? `Fix: ${meta.label}`
-                        : `Fix: ${id.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}`,
-                    description: meta?.gain ?? "Fixing this issue will improve your SEO performance.",
-                    severity: sev === "HIGH" ? "error" : sev === "MED" ? "warning" : "notice",
-                    effort: gain?.effort ?? "medium",
-                    effortLabel: gain?.effort === "easy" ? "Easy Fix"
-                        : gain?.effort === "medium" ? "Medium Fix"
-                        : "Developer Required",
-                    priorityReason: `${sev === "HIGH" ? "High" : sev === "MED" ? "Medium" : "Low"} impact · ${count} page${count !== 1 ? "s" : ""} affected`,
-                    estimatedPoints: gain?.points ?? 2,
-                    affectedPages: count,
-                    actionHref: meta?.actionHref ?? "/audits/issues",
-                    status: "todo" as const,
-                    progress: 0,
-                };
-            });
+// Get effort level
+function getEffortLevel(issueId: string): "easy" | "medium" | "hard" {
+  return issueTypeEffort[issueId] || "medium";
+}
 
-        return NextResponse.json({ tasks, domain: latestJob.domain });
-    } catch (err) {
-        console.error("[action-center/tasks] Error:", err);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userId = session.user.id;
+
+  try {
+    // ── Get the latest completed crawl job ────────────────────────────────
+    const { data: latestJob } = await supabaseAdmin
+      .from("crawl_jobs")
+      .select("id, domain, created_at")
+      .eq("user_id", userId)
+      .eq("status", "completed")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // No completed crawl job found
+    if (!latestJob) {
+      return NextResponse.json({
+        tasks: [],
+        domain: null,
+      });
     }
+
+    const jobId = latestJob.id;
+    const domain = latestJob.domain;
+
+    // ── Get all audit pages for this job ──────────────────────────────────
+    const { data: auditPages, error: auditError } = await supabaseAdmin
+      .from("audit_pages")
+      .select("url, score, psi_data")
+      .eq("crawl_job_id", jobId);
+
+    if (auditError) {
+      console.error("Error fetching audit pages:", auditError);
+      return NextResponse.json({
+        tasks: [],
+        domain,
+      });
+    }
+
+    // ── Extract and flatten all issues ────────────────────────────────────
+    const issueMap = new Map<string, { count: number; severity: "error" | "warning" | "notice"; pages: string[] }>();
+
+    for (const page of auditPages || []) {
+      const psiData = page.psi_data as any;
+      if (!psiData?.issues) continue;
+
+      const issues = psiData.issues as RawIssue[];
+      for (const issue of issues) {
+        const key = issue.id;
+        const severity = sevToSeverity(issue.sev);
+
+        if (!issueMap.has(key)) {
+          issueMap.set(key, {
+            count: 0,
+            severity,
+            pages: [],
+          });
+        }
+
+        const entry = issueMap.get(key)!;
+        entry.count += 1;
+        if (!entry.pages.includes(page.url)) {
+          entry.pages.push(page.url);
+        }
+      }
+    }
+
+    // ── Transform issues to tasks ────────────────────────────────────────────
+    const tasks: Task[] = Array.from(issueMap.entries()).map(([issueId, { count, severity, pages }], index) => {
+      const effort = getEffortLevel(issueId);
+      const estimatedPoints = calculateEstimatedPoints(severity, count);
+
+      return {
+        id: `${issueId}-${index}`,
+        title: getIssueTitle(issueId, issueId),
+        description: getIssueDescription(issueId),
+        severity,
+        effort,
+        estimatedPoints,
+        affectedPages: count,
+        actionHref: `/app/audit/${domain}`,
+        status: "todo" as const,
+        progress: 0,
+      };
+    });
+
+    // ── Sort by priority: ERROR → WARNING → NOTICE, then by page count ───
+    const severityOrder = { "error": 0, "warning": 1, "notice": 2 };
+    tasks.sort((a, b) => {
+      const sevDiff = severityOrder[a.severity] - severityOrder[b.severity];
+      if (sevDiff !== 0) return sevDiff;
+      return b.affectedPages - a.affectedPages;
+    });
+
+    return NextResponse.json({
+      tasks,
+      domain,
+    });
+  } catch (error) {
+    console.error("Error in /api/action-center/tasks:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }
