@@ -61,9 +61,9 @@ function FloatingScorePreview() {
           <div
             className="col-span-1 flex flex-col items-center justify-center rounded-xl border border-border p-4 bg-background"
           >
-            <span className="mb-2 font-mono text-xs tracking-widest text-gray-600">SEO SCORE</span>
-            <span className="font-['Fraunces'] text-5xl font-bold text-emerald-400">75</span>
-            <span className="mt-1 font-['DM_Sans'] text-xs text-gray-500">/ 100</span>
+            <span className="mb-2 small tracking-widest text-[var(--landing-text-muted)]">SEO SCORE</span>
+            <span className="text-5xl font-bold text-emerald-400">75</span>
+            <span className="mt-1 small text-[var(--landing-text-muted)]">/ 100</span>
             <div className="mt-3 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1">
               <span className="font-mono text-xs tracking-wider text-emerald-400">● GOOD</span>
             </div>
@@ -86,18 +86,18 @@ function FloatingScorePreview() {
                 >
                   {issue.label}
                 </span>
-                <span className="flex-1 truncate font-['DM_Sans'] text-xs text-gray-300">
+                <span className="flex-1 truncate small text-gray-300">
                   {issue.text}
                 </span>
-                <span className="flex-shrink-0 font-mono text-xs text-emerald-400">{issue.traffic}</span>
+                <span className="flex-shrink-0 small text-emerald-400">{issue.traffic}</span>
               </div>
             ))}
             <div
               className="mt-1 flex items-center justify-between rounded-lg border border-indigo-500/20 p-2.5"
               style={{ background: "rgba(99,102,241,0.08)" }}
             >
-              <span className="font-['DM_Sans'] text-xs text-gray-400">You could be gaining</span>
-              <span className="font-['Fraunces'] text-sm font-bold text-indigo-300">300–1,500 visits/mo</span>
+              <span className="small text-[var(--landing-text-secondary)]">You could be gaining</span>
+              <span className="text-sm font-bold text-indigo-300">300–1,500 visits/mo</span>
             </div>
           </div>
         </div>
@@ -286,7 +286,7 @@ export function Hero() {
                   if (scanError) setScanError(null);
                 }}
                 placeholder="yoursite.com"
-                className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 py-4 pl-10 pr-4 font-['DM_Sans'] text-sm text-foreground placeholder-gray-500 dark:placeholder-gray-600 transition-all duration-200 focus:border-indigo-500/60 focus:bg-indigo-500/4 focus:outline-none"
+                className="w-full rounded-xl border border-[var(--landing-border)] bg-white/5 py-4 pl-10 pr-4 text-sm text-foreground placeholder-[var(--landing-text-muted)] transition-all duration-200 focus:border-indigo-500/60 focus:bg-indigo-500/4 focus:outline-none"
               />
             </div>
             <button
@@ -305,20 +305,26 @@ export function Hero() {
             <motion.p
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-2 pl-1 text-left font-['DM_Sans'] text-sm text-red-400"
+              className="mt-2 pl-1 text-left text-sm text-red-400"
             >
               {error}
             </motion.p>
           )}
           {auditLimitError && (
-            <motion.p
+            <motion.div
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-2 pl-1 text-left font-['DM_Sans'] text-sm text-amber-400"
+              className="mt-3 flex flex-col items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/8 p-4"
             >
-              {auditLimitError}{" "}
-              <a href="/pricing" className="underline">Upgrade</a>
-            </motion.p>
+              <p className="text-sm text-amber-400">{auditLimitError}</p>
+              <a
+                href="/pricing"
+                className="btn btn-primary text-xs"
+                style={{ background: "var(--landing-accent-secondary)" }}
+              >
+                View upgrade options →
+              </a>
+            </motion.div>
           )}
         </motion.div>
 
@@ -339,7 +345,7 @@ export function Hero() {
                 />
               ))}
             </div>
-            <span className="font-['DM_Mono'] text-xs text-gray-500">
+            <span className="small text-[var(--landing-text-muted)]">
               Analyzing {domain}…
             </span>
           </motion.div>
@@ -350,7 +356,7 @@ export function Hero() {
           <motion.p
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mx-auto mb-4 max-w-xl pl-1 text-left font-['DM_Sans'] text-sm text-red-400"
+            className="mx-auto mb-4 max-w-xl pl-1 text-left text-sm text-red-400"
           >
             {scanError}
           </motion.p>
@@ -368,7 +374,7 @@ export function Hero() {
               {TRUST_PILLS.map(({ icon: Icon, text }) => (
                 <div key={text} className="flex items-center gap-1.5">
                   <Icon size={13} className="text-indigo-400" />
-                  <span className="font-['DM_Sans'] text-xs text-gray-500">{text}</span>
+                  <span className="small text-[var(--landing-text-muted)]">{text}</span>
                 </div>
               ))}
             </motion.div>
@@ -379,13 +385,13 @@ export function Hero() {
               transition={{ delay: 0.55 }}
               className="mb-14 flex flex-wrap items-center justify-center gap-2"
             >
-              <span className="font-['DM_Mono'] text-xs text-gray-700">Try it on:</span>
+              <span className="small text-[var(--landing-text-muted)]">Try it on:</span>
               {["stripe.com", "shopify.com", "notion.so"].map((demo) => (
                 <button
                   key={demo}
                   type="button"
                   onClick={() => handleQuickLink(demo)}
-                  className="rounded-lg border border-black/10 dark:border-white/8 bg-black/5 dark:bg-white/4 px-3 py-1.5 font-['DM_Mono'] text-xs text-gray-500 dark:text-gray-400 transition-all duration-150 hover:border-black/20 hover:bg-black/10 hover:text-foreground dark:hover:border-white/15 dark:hover:bg-white/8"
+                  className="rounded-lg border border-[var(--landing-border)] bg-white/4 px-3 py-1.5 small text-[var(--landing-text-secondary)] transition-all duration-150 hover:border-white/15 hover:bg-white/8 hover:text-[var(--landing-text-primary)]"
                 >
                   {demo}
                 </button>
@@ -407,7 +413,7 @@ export function Hero() {
               key={stat.label}
               className="rounded-xl border border-border dark:border-white/5 bg-card dark:bg-white/2 p-4 text-center transition-all duration-200 hover:border-black/10 dark:hover:border-white/8 hover:bg-black/5 dark:hover:bg-white/4"
             >
-              <div className="mb-1 font-['Fraunces'] text-2xl font-bold" style={{ color: stat.color }}>
+              <div className="mb-1 text-2xl font-bold" style={{ color: stat.color }}>
                 {statsInView ? (
                   <CountUp
                     start={0}
@@ -422,7 +428,7 @@ export function Hero() {
                   "0"
                 )}
               </div>
-              <div className="font-['DM_Mono'] text-xs tracking-wider text-gray-600">{stat.label}</div>
+              <div className="small tracking-wider text-[var(--landing-text-muted)]">{stat.label}</div>
             </div>
           ))}
         </motion.div>
