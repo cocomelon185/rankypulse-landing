@@ -1,6 +1,8 @@
 // ─── RankyPulse Mock Data ──────────────────────────────────────────────────
-// Central mock data store for all app pages. Replace with real API calls
-// as features are built out.
+// DEPRECATED: Do NOT import this file in production app components.
+// All app pages must use real API calls (e.g. /api/projects, /api/audits/data).
+// This file may only be used in unit tests or Storybook fixtures.
+// See MEMORY.md — "Mock Data Status" for the current state.
 
 export const MOCK_PROJECTS = [
     {

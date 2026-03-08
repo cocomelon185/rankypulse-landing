@@ -4,9 +4,9 @@ import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 
 const LIMITS: Record<string, number | null> = {
-  free: null,       // unlimited for free tier
-  starter: 20,
-  pro: 75,
+  free: null,       // unlimited audits (only fixes are limited)
+  starter: 25,      // 25 audits/month
+  pro: null,        // unlimited
 };
 
 function startOfMonth() {

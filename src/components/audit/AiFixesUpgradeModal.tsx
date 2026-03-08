@@ -58,7 +58,7 @@ export function AiFixesUpgradeModal({ onClose, onContinueWithout }: AiFixesUpgra
               AI Fixes are part of Pro
             </h2>
             <p className="mt-0.5 text-sm text-gray-600">
-              $19/month · Pro plan
+              $29/month · Pro plan
             </p>
           </div>
         </div>

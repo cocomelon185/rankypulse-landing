@@ -19,6 +19,8 @@ import {
   BarChart2,
   X,
   Crown,
+  Network,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -37,25 +39,28 @@ interface NavGroup {
 
 const NAV_GROUPS: NavGroup[] = [
   {
+    label: "OVERVIEW",
     items: [
       { label: "Dashboard", href: "/app/dashboard", icon: LayoutDashboard },
       { label: "Projects", href: "/app/projects", icon: FolderOpen },
     ],
   },
   {
-    label: "SEO TOOLS",
+    label: "GROWTH",
     items: [
-      { label: "Site Audit", href: "/app/audit", icon: Search },
+      { label: "SEO Opportunities", href: "/app/opportunities", icon: Target },
       { label: "Keyword Research", href: "/app/keywords", icon: BarChart2 },
       { label: "Rank Tracking", href: "/app/rank-tracking", icon: TrendingUp },
-      { label: "Backlinks", href: "/app/backlinks", icon: LinkIcon },
-      { label: "Competitors", href: "/app/competitors", icon: Users },
+      { label: "Competitor Intelligence", href: "/app/competitor-intelligence", icon: Users },
     ],
   },
   {
     label: "OPTIMIZATION",
     items: [
+      { label: "Site Audit", href: "/app/audit", icon: Search },
       { label: "Action Center", href: "/app/action-center", icon: Zap, badge: "__dynamic__" },
+      { label: "Internal Links", href: "/app/internal-links", icon: Network },
+      { label: "Backlinks", href: "/app/backlinks", icon: LinkIcon },
       { label: "Content Ideas", href: "/app/content", icon: BookOpen },
     ],
   },

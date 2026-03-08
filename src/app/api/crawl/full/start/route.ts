@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
-import { getBillingState, getAuditCap } from "@/lib/billing-store";
 import { withTimeout } from "@/app/api/crawl/route";
 
 // Helper to normalize domain
@@ -26,15 +25,23 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { domain, plan } = await req.json();
+        const { domain } = await req.json();
         if (!domain) {
             return NextResponse.json({ error: "Domain required" }, { status: 400 });
         }
 
         const cleanDomain = normalizeDomain(domain);
 
-        // Set page limit based on plan
-        const limit = plan === "pro" ? 1000 : plan === "starter" ? 100 : 50;
+        // Read the user's plan from the database (server-authoritative — never trust client)
+        const { data: userData } = await supabaseAdmin
+            .from("users")
+            .select("plan")
+            .eq("id", session.user.id)
+            .single();
+        const userPlan = (userData?.plan as string) ?? "free";
+
+        // Set page limit based on server-verified plan
+        const limit = userPlan === "pro" ? 1000 : userPlan === "starter" ? 100 : 50;
 
         // 1. Create the job record
         const { data: job, error: jobError } = await supabaseAdmin

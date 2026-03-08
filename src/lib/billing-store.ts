@@ -4,15 +4,15 @@
  *
  * Quotas per spec:
  * - Free: unlimited audits, 3 fixes/month
- * - Starter: 20 audits/month, unlimited fixes
- * - Pro: 75 audits/month, unlimited fixes
+ * - Starter: 25 audits/month, unlimited fixes
+ * - Pro: unlimited audits, unlimited fixes
  */
 
 const STORAGE_KEY = "rankypulse_plan";
 const PLAN_AUDIT_CAPS: Record<string, number> = {
-  free: Number.POSITIVE_INFINITY, // unlimited
-  starter: 20,
-  pro: 75,
+  free: Number.POSITIVE_INFINITY,    // unlimited
+  starter: 25,                       // 25 audits/month
+  pro: Number.POSITIVE_INFINITY,     // unlimited
 };
 const PLAN_FIX_CAPS: Record<string, number> = {
   free: 3,

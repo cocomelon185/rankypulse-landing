@@ -6,8 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Zap, CheckCircle, ChevronRight, AlertTriangle,
     XCircle, AlertCircle, ExternalLink, Check, X, Loader2,
-    ChevronDown, Copy, Target, Shield, Sparkles, Globe,
+    ChevronDown, Copy, Target, Shield, Sparkles, Globe, Lock,
 } from "lucide-react";
+import Link from "next/link";
 
 // ── Enriched Task interface (matches API v5 response) ────────────────────────
 
@@ -137,6 +138,7 @@ export function ActionCenterClient() {
     const [allDomains, setAllDomains] = useState<string[]>([]);
     const [seoScore, setSeoScore] = useState(0);
     const [projectedScore, setProjectedScore] = useState(0);
+    const [userPlan, setUserPlan] = useState<"free" | "starter" | "pro">("free");
 
     // UI state
     const [loading, setLoading] = useState(true);
@@ -147,6 +149,50 @@ export function ActionCenterClient() {
     const [copied, setCopied] = useState(false);
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
     const [showAllUrls, setShowAllUrls] = useState(false);
+
+    // AI Fix state
+    const [aiFixState, setAiFixState] = useState<"idle" | "loading" | "done" | "error">("idle");
+    const [aiFixText, setAiFixText] = useState<string>("");
+    const [aiFixCopied, setAiFixCopied] = useState(false);
+
+    // Reset AI fix state when selected task changes
+    useEffect(() => {
+        setAiFixState("idle");
+        setAiFixText("");
+        setAiFixCopied(false);
+    }, [selectedTask]);
+
+    // ── Generate AI fix ──────────────────────────────────────────────────────
+
+    const generateAiFix = async (task: Task, force = false) => {
+        if (!domain) return;
+        setAiFixState("loading");
+        try {
+            const res = await fetch("/api/action-center/ai-fix", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    issueId: task.issueId,
+                    domain,
+                    affectedPageUrls: task.affectedPageUrls,
+                    title: task.title,
+                    force,
+                }),
+            });
+            if (!res.ok) throw new Error("ai_unavailable");
+            const data = await res.json() as { suggestion: string; cached: boolean };
+            setAiFixText(data.suggestion);
+            setAiFixState("done");
+        } catch {
+            setAiFixState("error");
+        }
+    };
+
+    const copyAiFix = async () => {
+        await navigator.clipboard.writeText(aiFixText);
+        setAiFixCopied(true);
+        setTimeout(() => setAiFixCopied(false), 2000);
+    };
 
     // ── Fetch tasks ──────────────────────────────────────────────────────────
 
@@ -172,6 +218,16 @@ export function ActionCenterClient() {
     }, []);
 
     useEffect(() => { fetchTasks(); }, [fetchTasks]);
+
+    // Fetch user plan from server (authoritative — not localStorage)
+    useEffect(() => {
+        fetch("/api/user/plan")
+            .then(r => r.ok ? r.json() : { plan: "free" })
+            .then((data: { plan: string }) => {
+                setUserPlan((data.plan ?? "free") as "free" | "starter" | "pro");
+            })
+            .catch(() => {}); // default stays "free"
+    }, []);
 
     // ── Persist task toggle ──────────────────────────────────────────────────
 
@@ -537,6 +593,36 @@ export function ActionCenterClient() {
                                         <p className="text-xs" style={{ color: "#6B7A99" }}>Try adjusting your filters</p>
                                     </div>
                                 )}
+
+                                {/* ── Upgrade CTA for free plan ── */}
+                                {userPlan === "free" && tasks.length > 0 && (
+                                    <div
+                                        className="rounded-xl border p-5 flex items-center gap-4"
+                                        style={{ background: "rgba(255,100,45,0.06)", borderColor: "rgba(255,100,45,0.2)" }}
+                                    >
+                                        <div
+                                            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                                            style={{ background: "rgba(255,100,45,0.12)" }}
+                                        >
+                                            <Lock size={18} style={{ color: "#FF642D" }} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-bold text-white">
+                                                You&apos;re on the free plan — crawling up to 50 pages
+                                            </p>
+                                            <p className="text-xs mt-0.5" style={{ color: "#6B7A99" }}>
+                                                Starter crawls 100 pages and Pro crawls 1,000. You may be missing critical issues on deeper pages.
+                                            </p>
+                                        </div>
+                                        <Link
+                                            href="/pricing"
+                                            className="shrink-0 px-4 py-2 rounded-lg text-xs font-bold text-white whitespace-nowrap transition hover:opacity-90"
+                                            style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)" }}
+                                        >
+                                            Upgrade →
+                                        </Link>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -701,6 +787,108 @@ export function ActionCenterClient() {
                                                     </p>
                                                 </div>
                                             </div>
+                                        </div>
+
+                                        {/* AI SUGGESTED FIX */}
+                                        <div className="rounded-lg p-4" style={{ background: "rgba(139,92,246,0.04)", border: "1px solid rgba(139,92,246,0.15)" }}>
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Sparkles size={13} style={{ color: "#7C3AED" }} />
+                                                    <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#7C3AED" }}>
+                                                        AI Suggested Fix
+                                                    </p>
+                                                </div>
+                                                {aiFixState === "idle" && (
+                                                    <button
+                                                        onClick={() => generateAiFix(selectedTaskData)}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-90"
+                                                        style={{ background: "rgba(139,92,246,0.15)", color: "#A78BFA" }}
+                                                    >
+                                                        <Sparkles size={11} />
+                                                        Generate Fix
+                                                    </button>
+                                                )}
+                                                {aiFixState === "done" && (
+                                                    <button
+                                                        onClick={() => generateAiFix(selectedTaskData, true)}
+                                                        className="flex items-center gap-1.5 text-[10px] font-medium transition-opacity hover:opacity-70"
+                                                        style={{ color: "#8B9BB4" }}
+                                                    >
+                                                        ↺ Regenerate
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Loading */}
+                                            {aiFixState === "loading" && (
+                                                <div className="flex items-center gap-3 py-3">
+                                                    {[0, 1, 2, 3, 4].map((i) => (
+                                                        <motion.div
+                                                            key={i}
+                                                            className="h-1.5 w-1.5 rounded-full"
+                                                            style={{ background: "#7C3AED" }}
+                                                            animate={{ opacity: [0.3, 1, 0.3], scaleY: [1, 1.8, 1] }}
+                                                            transition={{ duration: 1, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
+                                                        />
+                                                    ))}
+                                                    <span className="text-[11px]" style={{ color: "#8B9BB4" }}>
+                                                        Generating suggestion…
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {/* Result */}
+                                            {aiFixState === "done" && aiFixText && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 4 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ duration: 0.3 }}
+                                                >
+                                                    <p className="text-[12px] leading-relaxed whitespace-pre-wrap mb-3" style={{ color: "#C8D0E0" }}>
+                                                        {aiFixText}
+                                                    </p>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px]" style={{ color: "#4A5568" }}>
+                                                            {aiFixText.length} chars · generated by Claude
+                                                        </span>
+                                                        <button
+                                                            onClick={copyAiFix}
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all"
+                                                            style={
+                                                                aiFixCopied
+                                                                    ? { background: "rgba(34,197,94,0.12)", color: "#22C55E" }
+                                                                    : { background: "rgba(139,92,246,0.1)", color: "#A78BFA" }
+                                                            }
+                                                        >
+                                                            {aiFixCopied ? <Check size={11} /> : <Copy size={11} />}
+                                                            {aiFixCopied ? "Copied!" : "Copy Fix"}
+                                                        </button>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+
+                                            {/* Error */}
+                                            {aiFixState === "error" && (
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-[11px] text-red-400">
+                                                        AI unavailable — please try again.
+                                                    </p>
+                                                    <button
+                                                        onClick={() => generateAiFix(selectedTaskData)}
+                                                        className="text-[11px] px-3 py-1.5 rounded-lg transition"
+                                                        style={{ background: "rgba(239,68,68,0.08)", color: "#F87171" }}
+                                                    >
+                                                        Retry
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {/* Idle hint */}
+                                            {aiFixState === "idle" && (
+                                                <p className="text-[11px]" style={{ color: "#4A5568" }}>
+                                                    Get a tailored fix suggestion generated by Claude AI for this specific issue.
+                                                </p>
+                                            )}
                                         </div>
 
                                         {/* ACTION BUTTONS */}

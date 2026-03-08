@@ -26,7 +26,7 @@ const plans = [
     name: "Starter",
     priceUsd: "$9",
     priceInr: "₹999",
-    audits: "20 audits/month",
+    audits: "25 audits/month",
     features: [
       "Everything in Free",
       "Discoverability dashboard",
@@ -38,9 +38,9 @@ const plans = [
   },
   {
     name: "Pro",
-    priceUsd: "$19",
-    priceInr: "₹1,699",
-    audits: "75 audits/month",
+    priceUsd: "$29",
+    priceInr: "₹2,600",
+    audits: "Unlimited audits",
     features: [
       "Everything in Starter",
       "Competitor gap finder",

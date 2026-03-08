@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search, Bell, Clock, ChevronDown, LogOut, Crown, User as UserIcon, Menu, X,
-  CheckCircle, AlertCircle, Info, Calendar, RefreshCcw, Plus,
+  Search, Bell, ChevronDown, LogOut, Crown, User as UserIcon, Menu, X,
+  CheckCircle, AlertCircle, Info,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -54,54 +54,11 @@ function NotificationsPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ── Scheduled Audits panel ─────────────────────────────────────────────────────
-function ScheduledAuditsPanel({ onClose }: { onClose: () => void }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 8, scale: 0.96 }}
-      transition={{ duration: 0.15 }}
-      className="absolute right-0 top-full mt-2 w-72 rounded-xl border overflow-hidden z-50 shadow-2xl"
-      style={{ background: "#0D1424", borderColor: "#1E2940" }}
-    >
-      <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "#1E2940" }}>
-        <p className="text-sm font-bold text-white flex items-center gap-2">
-          <Calendar size={14} style={{ color: "#FF642D" }} /> Scheduled Audits
-        </p>
-        <button onClick={onClose} className="p-1 rounded-lg hover:bg-white/[0.04]" style={{ color: "#6B7A99" }}>
-          <X size={14} />
-        </button>
-      </div>
-      <div className="px-4 py-6 flex flex-col items-center text-center">
-        <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style={{ background: "rgba(255,100,45,0.1)" }}>
-          <RefreshCcw size={20} style={{ color: "#FF642D" }} />
-        </div>
-        <p className="text-sm font-semibold text-white mb-1">No scheduled audits</p>
-        <p className="text-[12px] mb-4" style={{ color: "#6B7A99" }}>
-          Schedule automatic weekly audits for your projects.
-        </p>
-        <button
-          onClick={onClose}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-80 active:opacity-70"
-          style={{ background: "rgba(255,100,45,0.15)", color: "#FF642D" }}
-          disabled
-          title="Scheduled audits available on Pro plan"
-        >
-          <Plus size={12} /> Schedule Audit
-        </button>
-        <p className="text-[10px] mt-3" style={{ color: "#4A5568" }}>Scheduled audits available on Pro plan</p>
-      </div>
-    </motion.div>
-  );
-}
-
 // ── Main TopNav ────────────────────────────────────────────────────────────────
 export function TopNav({ onMenuClick }: { onMenuClick?: () => void } = {}) {
   const { data: session } = useSession();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showScheduled, setShowScheduled] = useState(false);
 
   const displayName = session?.user?.name || "John Doe";
   const displayRole = (session?.user as any)?.role === "admin" ? "Admin" : "Founder";
@@ -110,18 +67,11 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void } = {}) {
 
   // Close other panel when opening one
   const toggleNotifications = () => {
-    setShowScheduled(false);
     setShowUserMenu(false);
     setShowNotifications(v => !v);
   };
-  const toggleScheduled = () => {
-    setShowNotifications(false);
-    setShowUserMenu(false);
-    setShowScheduled(v => !v);
-  };
   const toggleUserMenu = () => {
     setShowNotifications(false);
-    setShowScheduled(false);
     setShowUserMenu(v => !v);
   };
 
@@ -184,27 +134,6 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void } = {}) {
           <AnimatePresence>
             {showNotifications && (
               <NotificationsPanel onClose={() => setShowNotifications(false)} />
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Clock — Scheduled Audits */}
-        <div className="relative">
-          <button
-            id="btn-scheduled-audits"
-            onClick={toggleScheduled}
-            className={cn(
-              "p-2.5 rounded-xl transition-colors hover:bg-white/[0.04]",
-              showScheduled && "bg-white/[0.06]"
-            )}
-            style={{ color: showScheduled ? "#FF642D" : "#6B7A99" }}
-            title="Scheduled Audits"
-          >
-            <Clock size={18} />
-          </button>
-          <AnimatePresence>
-            {showScheduled && (
-              <ScheduledAuditsPanel onClose={() => setShowScheduled(false)} />
             )}
           </AnimatePresence>
         </div>

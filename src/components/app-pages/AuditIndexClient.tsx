@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Clock, Globe, Eye, Loader2, AlertCircle } from "lucide-react";
+import { OnboardingModal, ONBOARDING_STORAGE_KEY } from "@/components/modals/OnboardingModal";
 
 interface Project {
     domain: string;
@@ -21,6 +22,7 @@ export function AuditIndexClient() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showOnboarding, setShowOnboarding] = useState(false);
 
     const fetchProjects = useCallback(async () => {
         try {
@@ -37,7 +39,21 @@ export function AuditIndexClient() {
 
     useEffect(() => { fetchProjects(); }, [fetchProjects]);
 
+    // Show onboarding modal the first time a user has no projects
+    useEffect(() => {
+        if (!loading && projects.length === 0 && !error) {
+            const seen = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+            if (!seen) setShowOnboarding(true);
+        }
+    }, [loading, projects.length, error]);
+
     return (
+        <>
+        <AnimatePresence>
+            {showOnboarding && (
+                <OnboardingModal onClose={() => setShowOnboarding(false)} />
+            )}
+        </AnimatePresence>
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
@@ -150,5 +166,6 @@ export function AuditIndexClient() {
                 </div>
             )}
         </div>
+        </>
     );
 }

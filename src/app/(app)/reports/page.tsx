@@ -1,112 +1,78 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import {
-  FileText, Download, Share2, Search, Plus, ArrowRight,
-  Clock, ExternalLink, CheckCircle, AlertTriangle, Zap,
+  FileText, Search, Plus, ArrowRight,
+  Clock, ExternalLink, CheckCircle, AlertTriangle, Zap, Loader2,
 } from 'lucide-react';
 import { extractAuditDomain, isValidExtractedDomain } from '@/lib/url-validation';
 
-const MOCK_REPORTS = [
-  {
-    id: 'r1',
-    domain: 'stripe.com',
-    generatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
-    score: 88,
-    criticalIssues: 0,
-    warnings: 2,
-    passed: 19,
-    highlights: ['All meta tags present', 'Core Web Vitals: Good', 'Structured data valid'],
-    status: 'ready' as const,
-  },
-  {
-    id: 'r2',
-    domain: 'notion.so',
-    generatedAt: new Date(Date.now() - 28 * 60 * 60 * 1000),
-    score: 71,
-    criticalIssues: 2,
-    warnings: 3,
-    passed: 16,
-    highlights: ['Canonical mismatch on 4 pages', 'Missing OG images', 'LCP within range'],
-    status: 'ready' as const,
-  },
-  {
-    id: 'r3',
-    domain: 'myshop.io',
-    generatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    score: 45,
-    criticalIssues: 5,
-    warnings: 4,
-    passed: 8,
-    highlights: ['No meta descriptions (14 pages)', 'Missing H1 tags', 'Robots.txt blocking crawlers'],
-    status: 'ready' as const,
-  },
-  {
-    id: 'r4',
-    domain: 'linear.app',
-    generatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    score: 94,
-    criticalIssues: 0,
-    warnings: 0,
-    passed: 21,
-    highlights: ['Perfect score on all checks', 'Schema markup excellent', 'Mobile optimised'],
-    status: 'ready' as const,
-  },
-  {
-    id: 'r5',
-    domain: 'techblog.dev',
-    generatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    score: 62,
-    criticalIssues: 1,
-    warnings: 3,
-    passed: 14,
-    highlights: ['Slow LCP (3.8s)', 'Missing canonical tags', 'Open Graph incomplete'],
-    status: 'ready' as const,
-  },
-];
+interface Project {
+  id: string;
+  domain: string;
+  status: 'completed' | 'crawling' | 'pending' | 'failed';
+  created_at?: string;
+  updated_at?: string;
+  pages_crawled?: number;
+  pages_total?: number;
+}
 
-const getScoreColor = (score: number) => {
-  if (score >= 85) return { text: '#10b981', bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.25)', label: 'Excellent' };
-  if (score >= 70) return { text: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.25)', label: 'Good' };
-  if (score >= 50) return { text: '#f97316', bg: 'rgba(249,115,22,0.1)', border: 'rgba(249,115,22,0.25)', label: 'Fair' };
-  return             { text: '#ef4444', bg: 'rgba(239,68,68,0.1)',  border: 'rgba(239,68,68,0.25)',  label: 'Poor' };
-};
-
-const timeAgo = (date: Date) => {
+const timeAgo = (dateStr: string) => {
+  const date = new Date(dateStr);
   const s = Math.floor((Date.now() - date.getTime()) / 1000);
   if (s < 3600)  return `${Math.floor(s / 60)}m ago`;
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
   return `${Math.floor(s / 86400)}d ago`;
 };
 
+const STATUS_COLORS: Record<string, string> = {
+  completed: '#10b981',
+  crawling:  '#f59e0b',
+  pending:   '#6b7280',
+  failed:    '#ef4444',
+};
+
 export default function ReportsPage() {
   const router = useRouter();
-  const [search, setSearch] = useState('');
-  const [tab, setTab] = useState<'all' | 'critical' | 'clean'>('all');
+  const [projects, setProjects]   = useState<Project[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [search, setSearch]       = useState('');
+  const [tab, setTab]             = useState<'all' | 'completed' | 'crawling'>('all');
   const [newDomain, setNewDomain] = useState('');
   const [showInput, setShowInput] = useState(false);
 
+  useEffect(() => {
+    fetch('/api/projects')
+      .then(r => r.ok ? r.json() : [])
+      .then((data: Project[]) => setProjects(data ?? []))
+      .catch(() => setProjects([]))
+      .finally(() => setLoading(false));
+  }, []);
+
   const filtered = useMemo(() => {
-    return MOCK_REPORTS
-      .filter(r => {
-        const matchSearch = r.domain.includes(search.toLowerCase());
+    return projects
+      .filter(p => {
+        const matchSearch = p.domain.toLowerCase().includes(search.toLowerCase());
         const matchTab =
-          tab === 'all'      ? true :
-          tab === 'critical' ? r.criticalIssues > 0 :
-          tab === 'clean'    ? r.criticalIssues === 0 : true;
+          tab === 'all'       ? true :
+          tab === 'completed' ? p.status === 'completed' :
+          tab === 'crawling'  ? (p.status === 'crawling' || p.status === 'pending') : true;
         return matchSearch && matchTab;
       })
-      .sort((a, b) => b.generatedAt.getTime() - a.generatedAt.getTime());
-  }, [search, tab]);
+      .sort((a, b) =>
+        new Date(b.updated_at || b.created_at || 0).getTime() -
+        new Date(a.updated_at || a.created_at || 0).getTime()
+      );
+  }, [projects, search, tab]);
 
-  const handleNewReport = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleNewAudit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const input = e.currentTarget.elements.namedItem('domain') as HTMLInputElement | null;
     const cleaned = extractAuditDomain(input?.value ?? newDomain);
     if (isValidExtractedDomain(cleaned)) {
-      router.push(`/report/${cleaned}`);
+      router.push(`/audits/issues?domain=${encodeURIComponent(cleaned)}`);
     }
   };
 
@@ -147,12 +113,16 @@ export default function ReportsPage() {
               Audit Reports
             </h1>
             <p className="font-['DM_Sans'] text-gray-400 text-sm mt-1">
-              {MOCK_REPORTS.length} reports generated ·{' '}
-              {MOCK_REPORTS.filter(r => r.criticalIssues > 0).length} have critical issues
+              {loading ? 'Loading your projects…' : (
+                <>
+                  {projects.length} project{projects.length !== 1 ? 's' : ''} ·{' '}
+                  {projects.filter(p => p.status === 'completed').length} audits complete
+                </>
+              )}
             </p>
           </div>
 
-          {/* Generate new report */}
+          {/* Start new audit */}
           <div>
             {!showInput ? (
               <button
@@ -165,13 +135,13 @@ export default function ReportsPage() {
                   transition-all"
               >
                 <Plus size={15} />
-                New Report
+                New Audit
               </button>
             ) : (
               <motion.form
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                onSubmit={handleNewReport}
+                onSubmit={handleNewAudit}
                 className="flex gap-2"
               >
                 <input
@@ -187,17 +157,21 @@ export default function ReportsPage() {
                     font-['DM_Sans'] focus:outline-none
                     focus:border-indigo-500/50 w-48 transition-all"
                 />
-                <button type="submit"
+                <button
+                  type="submit"
                   className="px-4 py-2.5 bg-indigo-500 text-white
                     rounded-xl font-['DM_Sans'] font-semibold text-sm
-                    hover:bg-indigo-400 transition-colors flex items-center gap-1.5">
+                    hover:bg-indigo-400 transition-colors flex items-center gap-1.5"
+                >
                   <Zap size={13} />
-                  Generate
+                  Start
                 </button>
-                <button type="button"
+                <button
+                  type="button"
                   onClick={() => setShowInput(false)}
                   className="px-3 py-2.5 border border-white/10 text-gray-500
-                    rounded-xl text-sm hover:bg-white/5 transition-colors">
+                    rounded-xl text-sm hover:bg-white/5 transition-colors"
+                >
                   ✕
                 </button>
               </motion.form>
@@ -212,12 +186,11 @@ export default function ReportsPage() {
           transition={{ delay: 0.1, duration: 0.4 }}
           className="flex flex-wrap items-center gap-3 mb-6"
         >
-          {/* Tabs */}
           <div className="flex gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06]">
             {([
-              { key: 'all',      label: 'All Reports' },
-              { key: 'critical', label: 'Has Issues' },
-              { key: 'clean',    label: 'Clean' },
+              { key: 'all',       label: 'All' },
+              { key: 'completed', label: 'Completed' },
+              { key: 'crawling',  label: 'In Progress' },
             ] as const).map(t => (
               <button
                 key={t.key}
@@ -234,15 +207,16 @@ export default function ReportsPage() {
             ))}
           </div>
 
-          {/* Search */}
           <div className="relative flex-1 min-w-[180px]">
-            <Search size={13}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+            <Search
+              size={13}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600"
+            />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search reports..."
+              placeholder="Search by domain..."
               className="w-full pl-8 pr-4 py-2.5 bg-white/[0.04]
                 border border-white/[0.08] rounded-xl text-sm text-white
                 placeholder-gray-600 font-['DM_Sans']
@@ -251,175 +225,187 @@ export default function ReportsPage() {
           </div>
         </motion.div>
 
-        {/* ── Report Cards ── */}
-        <div className="grid gap-4">
-          <AnimatePresence>
-            {filtered.map((report, i) => {
-              const score = getScoreColor(report.score);
-              return (
-                <motion.div
-                  key={report.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ delay: i * 0.06, duration: 0.35 }}
-                  className="group rounded-2xl border border-white/[0.06]
-                    bg-[#13161f] hover:border-white/[0.12]
-                    hover:shadow-xl hover:shadow-black/30
-                    transition-all duration-200 overflow-hidden"
-                >
-                  <div className="p-6">
-                    <div className="flex items-start justify-between gap-4 flex-wrap">
+        {/* ── Loading ── */}
+        {loading && (
+          <div className="flex items-center justify-center py-24">
+            <Loader2 size={24} className="animate-spin text-indigo-400" />
+          </div>
+        )}
 
-                      {/* Left: domain + meta */}
-                      <div className="flex items-start gap-4 min-w-0">
-                        {/* Score ring */}
-                        <div
-                          className="relative flex-shrink-0 w-14 h-14 rounded-xl
-                            flex flex-col items-center justify-center border"
-                          style={{ background: score.bg, borderColor: score.border }}
-                        >
-                          <span className="font-['Fraunces'] text-lg font-bold leading-none"
-                            style={{ color: score.text }}>
-                            {report.score}
-                          </span>
-                          <span className="font-['DM_Mono'] text-[8px] tracking-widest mt-0.5"
-                            style={{ color: score.text }}>
-                            {score.label.toUpperCase()}
-                          </span>
-                        </div>
+        {/* ── Project Cards ── */}
+        {!loading && (
+          <div className="grid gap-4">
+            <AnimatePresence>
+              {filtered.map((project, i) => {
+                const isCompleted = project.status === 'completed';
+                const isCrawling  = project.status === 'crawling' || project.status === 'pending';
+                const isFailed    = project.status === 'failed';
+                const statusColor = STATUS_COLORS[project.status] ?? '#6b7280';
+                const dateStr     = project.updated_at || project.created_at;
 
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <h2 className="font-['DM_Sans'] font-semibold text-white text-base
-                              group-hover:text-indigo-300 transition-colors">
-                              {report.domain}
-                            </h2>
-                            <span className="font-['DM_Mono'] text-[10px] text-gray-600
-                              tracking-wider">
-                              <Clock size={9} className="inline mr-1" />
-                              {timeAgo(report.generatedAt)}
-                            </span>
-                          </div>
+                return (
+                  <motion.div
+                    key={project.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ delay: i * 0.06, duration: 0.35 }}
+                    className="group rounded-2xl border border-white/[0.06]
+                      bg-[#13161f] hover:border-white/[0.12]
+                      hover:shadow-xl hover:shadow-black/30
+                      transition-all duration-200 overflow-hidden"
+                  >
+                    <div className="p-6">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
 
-                          {/* Issue counts */}
-                          <div className="flex items-center gap-3 mb-3">
-                            {report.criticalIssues > 0 ? (
-                              <span className="flex items-center gap-1
-                                font-['DM_Sans'] text-xs text-red-400">
-                                <AlertTriangle size={11} />
-                                {report.criticalIssues} critical
-                              </span>
+                        {/* Left: domain + status */}
+                        <div className="flex items-start gap-4 min-w-0">
+                          {/* Status icon */}
+                          <div
+                            className="relative flex-shrink-0 w-14 h-14 rounded-xl
+                              flex flex-col items-center justify-center border"
+                            style={{
+                              background:   `${statusColor}18`,
+                              borderColor:  `${statusColor}40`,
+                            }}
+                          >
+                            {isCrawling ? (
+                              <Loader2 size={20} className="animate-spin" style={{ color: statusColor }} />
+                            ) : isCompleted ? (
+                              <CheckCircle size={20} style={{ color: statusColor }} />
                             ) : (
-                              <span className="flex items-center gap-1
-                                font-['DM_Sans'] text-xs text-emerald-400">
-                                <CheckCircle size={11} />
-                                No critical issues
-                              </span>
+                              <AlertTriangle size={20} style={{ color: statusColor }} />
                             )}
-                            {report.warnings > 0 && (
-                              <span className="font-['DM_Sans'] text-xs text-amber-500">
-                                {report.warnings} warnings
-                              </span>
-                            )}
-                            <span className="font-['DM_Sans'] text-xs text-gray-600">
-                              {report.passed} passed
+                            <span
+                              className="font-['DM_Mono'] text-[8px] tracking-widest mt-1"
+                              style={{ color: statusColor }}
+                            >
+                              {isCompleted ? 'DONE' : isCrawling ? 'LIVE' : 'FAIL'}
                             </span>
                           </div>
 
-                          {/* Highlights */}
-                          <ul className="space-y-0.5">
-                            {report.highlights.map((h, j) => (
-                              <li key={j}
-                                className="font-['DM_Sans'] text-xs text-gray-500
-                                  flex items-start gap-1.5">
-                                <span className="mt-1 w-1 h-1 rounded-full flex-shrink-0"
-                                  style={{ background: j === 0 && report.criticalIssues > 0 ? '#ef4444' : '#374151' }} />
-                                {h}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <h2 className="font-['DM_Sans'] font-semibold text-white text-base
+                                group-hover:text-indigo-300 transition-colors">
+                                {project.domain}
+                              </h2>
+                              {dateStr && (
+                                <span className="font-['DM_Mono'] text-[10px] text-gray-600 tracking-wider">
+                                  <Clock size={9} className="inline mr-1" />
+                                  {timeAgo(dateStr)}
+                                </span>
+                              )}
+                            </div>
 
-                      {/* Right: actions */}
-                      <div className="flex items-center gap-2 flex-shrink-0 mt-1">
-                        <button
-                          title="Download PDF"
-                          className="flex items-center gap-1.5 px-3 py-2
-                            bg-white/[0.04] border border-white/[0.08]
-                            rounded-lg font-['DM_Sans'] text-xs text-gray-400
-                            hover:text-white hover:border-white/[0.15]
-                            transition-all"
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <Download size={12} />
-                          PDF
-                        </button>
-                        <button
-                          title="Share report"
-                          className="flex items-center gap-1.5 px-3 py-2
-                            bg-white/[0.04] border border-white/[0.08]
-                            rounded-lg font-['DM_Sans'] text-xs text-gray-400
-                            hover:text-white hover:border-white/[0.15]
-                            transition-all"
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <Share2 size={12} />
-                          Share
-                        </button>
-                        <button
-                          title="Open full report"
-                          onClick={() => router.push(`/report/${report.domain}`)}
-                          className="flex items-center gap-1.5 px-4 py-2
-                            bg-indigo-500/15 border border-indigo-500/30
-                            rounded-lg font-['DM_Sans'] text-xs text-indigo-300
-                            hover:bg-indigo-500/25 hover:text-white
-                            transition-all"
-                        >
-                          <ExternalLink size={12} />
-                          View Report
-                        </button>
+                            <div className="flex items-center gap-3 mb-1">
+                              {isCompleted && (
+                                <span className="flex items-center gap-1 font-['DM_Sans'] text-xs text-emerald-400">
+                                  <CheckCircle size={11} />
+                                  Audit complete — ready to view
+                                </span>
+                              )}
+                              {isCrawling && (
+                                <span className="flex items-center gap-1 font-['DM_Sans'] text-xs text-amber-400">
+                                  <Loader2 size={11} className="animate-spin" />
+                                  Crawl in progress
+                                </span>
+                              )}
+                              {isFailed && (
+                                <span className="flex items-center gap-1 font-['DM_Sans'] text-xs text-red-400">
+                                  <AlertTriangle size={11} />
+                                  Crawl failed — try again
+                                </span>
+                              )}
+                              {project.pages_crawled != null && project.pages_total != null && (
+                                <span className="font-['DM_Sans'] text-xs text-gray-600">
+                                  {project.pages_crawled}/{project.pages_total} pages
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right: actions */}
+                        <div className="flex items-center gap-2 flex-shrink-0 mt-1">
+                          {isCompleted ? (
+                            <button
+                              title="Open full report"
+                              onClick={() =>
+                                router.push(`/audits/issues?domain=${encodeURIComponent(project.domain)}`)
+                              }
+                              className="flex items-center gap-1.5 px-4 py-2
+                                bg-indigo-500/15 border border-indigo-500/30
+                                rounded-lg font-['DM_Sans'] text-xs text-indigo-300
+                                hover:bg-indigo-500/25 hover:text-white
+                                transition-all"
+                            >
+                              <ExternalLink size={12} />
+                              View Report
+                            </button>
+                          ) : (
+                            <button
+                              title="Go to audits"
+                              onClick={() => router.push('/audits')}
+                              className="flex items-center gap-1.5 px-4 py-2
+                                bg-white/[0.04] border border-white/[0.08]
+                                rounded-lg font-['DM_Sans'] text-xs text-gray-400
+                                hover:text-white hover:border-white/[0.15]
+                                transition-all"
+                            >
+                              <ExternalLink size={12} />
+                              Go to Audit
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Bottom bar: progress */}
-                  <div className="h-0.5 w-full bg-white/[0.04]">
-                    <div
-                      className="h-full transition-all duration-700 rounded-full"
-                      style={{
-                        width: `${report.score}%`,
-                        background: score.text,
-                        opacity: 0.5,
-                      }}
-                    />
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                    {/* Bottom progress bar */}
+                    <div className="h-0.5 w-full bg-white/[0.04]">
+                      <div
+                        className="h-full transition-all duration-700 rounded-full"
+                        style={{
+                          width: isCompleted
+                            ? '100%'
+                            : isCrawling && project.pages_total
+                              ? `${Math.min(100, ((project.pages_crawled ?? 0) / project.pages_total) * 100)}%`
+                              : '0%',
+                          background: statusColor,
+                          opacity: 0.5,
+                        }}
+                      />
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
 
-          {/* Empty state */}
-          {filtered.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <FileText size={28} className="text-gray-700 mb-4" />
-              <p className="font-['DM_Sans'] text-gray-500 text-sm mb-2">
-                No reports found
-              </p>
-              <button
-                onClick={() => setShowInput(true)}
-                className="mt-2 flex items-center gap-2 px-4 py-2
-                  bg-indigo-500/15 border border-indigo-500/30
-                  rounded-xl font-['DM_Sans'] text-xs text-indigo-300
-                  hover:bg-indigo-500/25 transition-all"
-              >
-                <Plus size={12} />
-                Generate your first report
-              </button>
-            </div>
-          )}
-        </div>
+            {/* Empty state */}
+            {filtered.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <FileText size={28} className="text-gray-700 mb-4" />
+                <p className="font-['DM_Sans'] text-gray-500 text-sm mb-2">
+                  {projects.length === 0
+                    ? 'No audits yet. Start your first audit to see reports here.'
+                    : 'No reports match your search.'}
+                </p>
+                {projects.length === 0 && (
+                  <button
+                    onClick={() => router.push('/audits')}
+                    className="mt-2 flex items-center gap-2 px-4 py-2
+                      bg-indigo-500/15 border border-indigo-500/30
+                      rounded-xl font-['DM_Sans'] text-xs text-indigo-300
+                      hover:bg-indigo-500/25 transition-all"
+                  >
+                    <Plus size={12} />
+                    Start your first audit
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Upgrade CTA ── */}
         <motion.div
@@ -431,7 +417,7 @@ export default function ReportsPage() {
         >
           <div>
             <h3 className="font-['Fraunces'] text-lg font-bold text-white mb-1">
-              PDF export & shareable links coming soon
+              PDF export &amp; shareable links coming soon
             </h3>
             <p className="font-['DM_Sans'] text-gray-400 text-sm">
               Generate white-label reports and send them to clients in one click.

@@ -4,17 +4,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
-// Payment links mapped from Razorpay dashboard screenshot
-const PAYMENT_LINKS: Record<string, string> = {
-  starter_usd_monthly: "https://rzp.io/rzp/xCsGfhy",
-  pro_usd_monthly: "https://rzp.io/rzp/ZxZjm2W",
-  starter_usd_annual: "https://rzp.io/rzp/T1SKAzMw",
-  pro_usd_annual: "https://rzp.io/rzp/DHqvNC3",
-  starter_inr_monthly: "https://rzp.io/rzp/lkSdM6mU",
-  pro_inr_monthly: "https://rzp.io/rzp/8GYUq0N",
-  starter_inr_annual: "https://rzp.io/rzp/8vuMRQQS",
-  pro_inr_annual: "https://rzp.io/rzp/XJhqG27",
-};
 
 interface RazorpayCheckoutButtonProps {
   plan: "Starter" | "Pro";
@@ -38,38 +27,60 @@ export function RazorpayCheckoutButton({
   onClick,
 }: RazorpayCheckoutButtonProps) {
   const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState<string | null>(null);
 
-  const handleClick = () => {
+  const handleClick = async () => {
     onClick?.();
     setLoading(true);
+    setError(null);
 
-    const key = `${planSlug}_${currency.toLowerCase()}_${billing}`;
-    const link = PAYMENT_LINKS[key];
+    try {
+      // Create server-side payment link with user_id embedded in notes for webhook attribution
+      const res = await fetch("/api/payment/create-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planSlug, currency, billing }),
+      });
 
-    if (link) {
-      window.location.href = link;
-    } else {
-      setLoading(false);
-      console.error("Payment link not found for", key);
+      if (res.ok) {
+        const { url } = await res.json();
+        if (url) {
+          window.location.href = url;
+          return;
+        }
+      }
+
+      // Payment link creation failed — surface a clear error
+      setError("Payment unavailable. Please try again or contact support.");
+    } catch {
+      setError("Payment unavailable. Please try again or contact support.");
     }
+
+    setLoading(false);
   };
 
   return (
-    <Button
-      variant={variant}
-      size="lg"
-      className={className}
-      onClick={handleClick}
-      disabled={loading}
-    >
-      {loading ? (
-        <>
-          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-          Redirecting…
-        </>
-      ) : (
-        children ?? `Buy ${plan}`
+    <div className="flex flex-col items-center gap-1">
+      <Button
+        variant={variant}
+        size="lg"
+        className={className}
+        onClick={handleClick}
+        disabled={loading}
+        aria-busy={loading}
+      >
+        {loading ? (
+          <>
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            Redirecting…
+          </>
+        ) : (
+          children ?? `Buy ${plan}`
+        )}
+      </Button>
+      {error && (
+        <p className="text-xs text-red-500 text-center max-w-[220px]">{error}</p>
       )}
-    </Button>
+    </div>
   );
 }
