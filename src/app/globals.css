@@ -438,3 +438,95 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+
+/* ===== LANDING PAGE DESIGN SYSTEM ===== */
+/* Unified design tokens for marketing pages and homepage */
+
+:root {
+  /* Typography Scale */
+  --landing-h1-size: clamp(40px, 6vw, 72px);
+  --landing-h1-weight: 700;
+  --landing-h2-size: clamp(28px, 4vw, 44px);
+  --landing-h2-weight: 700;
+  --landing-h3-size: 1.5rem;
+  --landing-body-size: 1rem;
+  --landing-small-size: 0.875rem;
+
+  /* Color Palette (Dark Theme) */
+  --landing-bg-hero: #0d0f14;
+  --landing-bg-section: #0a0c10;
+  --landing-card-bg: #151B27;
+  --landing-border: rgba(255, 255, 255, 0.07);
+  --landing-accent-primary: #FF642D;  /* Brand orange */
+  --landing-accent-secondary: #6366f1; /* Indigo */
+  --landing-text-primary: #EDF0F7;
+  --landing-text-secondary: #8B9BB4;
+  --landing-text-muted: #4F5D7A;
+
+  /* Spacing & Layout */
+  --landing-section-py: 6rem;  /* 96px */
+  --landing-section-px: 1.5rem;
+  --landing-section-max-w: 80rem;
+}
+
+/* Typography Utility Classes */
+.h1 {
+  font-size: var(--landing-h1-size);
+  font-weight: var(--landing-h1-weight);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.h2 {
+  font-size: var(--landing-h2-size);
+  font-weight: var(--landing-h2-weight);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.h3 {
+  font-size: var(--landing-h3-size);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.body {
+  font-size: var(--landing-body-size);
+  line-height: 1.5;
+}
+
+.small {
+  font-size: var(--landing-small-size);
+  line-height: 1.5;
+}
+
+/* Button Classes */
+.btn {
+  @apply inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg font-medium transition-all duration-200;
+}
+
+.btn-primary {
+  @apply bg-[var(--landing-accent-primary)] text-white;
+  @apply hover:bg-[#e8541f] hover:-translate-y-0.5 hover:shadow-lg;
+  box-shadow: 0 0 0 0 var(--landing-accent-primary);
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 8px 16px rgba(255, 100, 45, 0.3);
+}
+
+.btn-secondary {
+  @apply border border-[var(--landing-border)] text-[var(--landing-text-secondary)];
+  @apply hover:border-[rgba(255,255,255,0.1)] hover:bg-white/4 hover:text-[var(--landing-text-primary)];
+}
+
+/* Card Classes */
+.card {
+  @apply rounded-xl border border-[var(--landing-border)] bg-[var(--landing-card-bg)] p-6;
+}
+
+.card-hover {
+  @apply transition-all duration-200;
+  @apply hover:border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.04)] hover:-translate-y-0.5;
+}

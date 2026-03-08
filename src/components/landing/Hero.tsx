@@ -231,8 +231,8 @@ export function Hero() {
           className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-white/8 bg-white/4 px-4 py-2"
         >
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-          <span className="font-['DM_Mono'] text-xs uppercase tracking-[2px] text-gray-600 dark:text-gray-400">
-            Free · No Signup · Results in 10 Seconds
+          <span className="small uppercase tracking-[2px] text-[var(--landing-text-muted)]">
+            Free · No signup · 30-second audit
           </span>
         </motion.div>
 
@@ -241,11 +241,10 @@ export function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-6 font-['Fraunces'] font-bold leading-[1.06] tracking-[-0.03em] text-foreground"
-          style={{ fontSize: "clamp(42px, 7vw, 76px)" }}
+          className="h1 mb-6 leading-[1.06] text-foreground"
         >
-          Get your SEO score{" "}
-          <span className="italic text-indigo-600 dark:text-indigo-400">in 10 seconds</span>
+          Find & fix the 3 SEO issues{" "}
+          <span className="italic text-[var(--landing-accent-secondary)]">that add 500+ visits/mo</span>
         </motion.h1>
 
         {/* Subheadline */}
@@ -253,11 +252,11 @@ export function Hero() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25, duration: 0.5 }}
-          className="mx-auto mb-10 max-w-2xl font-['DM_Sans'] text-xl leading-relaxed text-gray-600 dark:text-gray-400"
+          className="mx-auto mb-10 max-w-2xl text-xl leading-relaxed text-gray-600 dark:text-gray-400"
         >
-          Enter any website and see{" "}
-          <span className="text-foreground">exactly what&apos;s holding back your rankings</span>
-          {" "}— with step-by-step fixes and real traffic estimates. No jargon.
+          Get a complete SEO audit in 30 seconds. Then fix your highest-impact issues{" "}
+          <span className="text-foreground">with copy-ready guides.</span>
+          {" "}Most users fix their top 3 issues before lunch.
         </motion.p>
 
         {/* Input */}
@@ -293,12 +292,12 @@ export function Hero() {
             <button
               type="submit"
               disabled={isLoading || isScanning}
-              className="flex items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-indigo-500 px-7 py-4 font-['DM_Sans'] text-sm font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-indigo-400 hover:shadow-xl hover:shadow-indigo-500/30 active:translate-y-0 disabled:cursor-wait disabled:opacity-60 disabled:hover:translate-y-0"
+              className="btn btn-primary whitespace-nowrap"
             >
               {isLoading || isScanning ? (
                 <><Zap size={15} className="animate-pulse" />Scanning...</>
               ) : (
-                <><Zap size={15} />Get SEO Score</>
+                <><Zap size={15} />Scan Free</>
               )}
             </button>
           </form>
