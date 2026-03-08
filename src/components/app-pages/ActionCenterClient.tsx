@@ -1,82 +1,259 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Zap, Filter, CheckCircle, Clock, Play, ChevronRight, AlertTriangle,
+    Zap, CheckCircle, ChevronRight, AlertTriangle,
     XCircle, AlertCircle, ExternalLink, Check, X, Loader2,
+    ChevronDown, Copy, Target, Shield, Sparkles, Globe,
 } from "lucide-react";
+
+// ── Enriched Task interface (matches API v5 response) ────────────────────────
 
 interface Task {
     id: string;
+    issueId: string;
     title: string;
     description: string;
+    category: string;
     severity: "error" | "warning" | "notice";
     effort: "easy" | "medium" | "hard";
-    effortLabel?: string;
-    priorityReason?: string;
+    effortMinutes: number;
     estimatedPoints: number;
     affectedPages: number;
+    affectedPageUrls: string[];
     actionHref: string;
     status: "todo" | "in_progress" | "done";
     progress: number;
+    fixSteps: string[];
+    exampleFix: string | null;
+    templateSnippet: string | null;
+    ctrImpact: string | null;
+    trafficGain: string | null;
 }
 
-const STATUS_CONFIG = {
-    todo:        { label: "To Do",       color: "#8B9BB4", bg: "rgba(139,155,180,0.12)" },
-    in_progress: { label: "In Progress", color: "#FF9800", bg: "rgba(255,152,0,0.12)" },
-    done:        { label: "Done",        color: "#00C853", bg: "rgba(0,200,83,0.12)" },
-};
+interface ApiResponse {
+    tasks: Task[];
+    domain: string | null;
+    allDomains: string[];
+    seoScore: number;
+    projectedScore: number;
+    totalPoints: number;
+    earnedPoints: number;
+}
+
+// ── Config constants ─────────────────────────────────────────────────────────
 
 const SEVERITY_CONFIG = {
-    error:   { color: "#FF3D3D", bg: "rgba(255,61,61,0.12)",   icon: XCircle },
-    warning: { color: "#FF9800", bg: "rgba(255,152,0,0.12)",   icon: AlertTriangle },
-    notice:  { color: "#00B0FF", bg: "rgba(0,176,255,0.12)",   icon: AlertCircle },
+    error:   { label: "Critical", color: "#FF3D3D", bg: "rgba(255,61,61,0.12)",   icon: XCircle },
+    warning: { label: "Warning",  color: "#FF9800", bg: "rgba(255,152,0,0.12)",   icon: AlertTriangle },
+    notice:  { label: "Notice",   color: "#00B0FF", bg: "rgba(0,176,255,0.12)",   icon: AlertCircle },
 };
 
-const EFFORT_LABELS = { easy: "Easy fix", medium: "Medium effort", hard: "Complex fix" };
-
-const EFFORT_BADGE: Record<string, { bg: string; color: string }> = {
-    easy:   { bg: "rgba(34,197,94,0.15)",  color: "#22c55e" },
-    medium: { bg: "rgba(234,179,8,0.15)",  color: "#eab308" },
-    hard:   { bg: "rgba(239,68,68,0.15)",  color: "#ef4444" },
+const EFFORT_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
+    easy:   { label: "Easy fix",      bg: "rgba(0,200,83,0.12)",  color: "#00C853" },
+    medium: { label: "Medium effort", bg: "rgba(255,152,0,0.12)", color: "#FF9800" },
+    hard:   { label: "Complex fix",   bg: "rgba(255,61,61,0.12)", color: "#FF3D3D" },
 };
+
+const CATEGORY_TABS = [
+    { key: "all",         label: "All" },
+    { key: "Content",     label: "Content" },
+    { key: "Technical",   label: "Technical" },
+    { key: "Links",       label: "Links" },
+    { key: "Performance", label: "Performance" },
+];
+
+const STATUS_FILTERS = [
+    { key: "all",  label: "All Tasks" },
+    { key: "todo", label: "To Do" },
+    { key: "done", label: "Done" },
+];
+
+const GROUP_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+    error:   { label: "CRITICAL",  color: "#FF3D3D", bg: "rgba(255,61,61,0.06)" },
+    warning: { label: "WARNING",   color: "#FF9800", bg: "rgba(255,152,0,0.06)" },
+    notice:  { label: "NOTICE",    color: "#00B0FF", bg: "rgba(0,176,255,0.06)" },
+};
+
+// ── Score Ring (SVG circular progress) ────────────────────────────────────────
+
+function ScoreRing({ score, size = 80 }: { score: number; size?: number }) {
+    const strokeWidth = 6;
+    const radius = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (score / 100) * circumference;
+    const color = score >= 80 ? "#00C853" : score >= 60 ? "#FF9800" : "#FF3D3D";
+
+    return (
+        <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+            <svg width={size} height={size} className="-rotate-90">
+                <circle cx={size / 2} cy={size / 2} r={radius}
+                    stroke="#1E2940" strokeWidth={strokeWidth} fill="none" />
+                <motion.circle cx={size / 2} cy={size / 2} r={radius}
+                    stroke={color} strokeWidth={strokeWidth} fill="none"
+                    strokeLinecap="round"
+                    initial={{ strokeDashoffset: circumference }}
+                    animate={{ strokeDashoffset: offset }}
+                    transition={{ duration: 1.2, ease: "easeOut" }}
+                    style={{ strokeDasharray: circumference }} />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-xl font-black text-white tabular-nums">{score}</span>
+                <span className="text-[9px] font-medium" style={{ color: "#6B7A99" }}>/ 100</span>
+            </div>
+        </div>
+    );
+}
+
+// ── KPI Card ──────────────────────────────────────────────────────────────────
+
+function KpiCard({ icon: Icon, label, value, color }: {
+    icon: React.ElementType; label: string; value: string; color: string;
+}) {
+    return (
+        <div className="rounded-xl border p-4" style={{ background: "#151B27", borderColor: "#1E2940" }}>
+            <div className="flex items-start justify-between mb-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: `${color}18` }}>
+                    <Icon size={15} style={{ color }} />
+                </div>
+            </div>
+            <p className="text-xl font-black text-white tabular-nums">{value}</p>
+            <p className="text-[11px] mt-0.5 font-medium" style={{ color: "#6B7A99" }}>{label}</p>
+        </div>
+    );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
 
 export function ActionCenterClient() {
     const router = useRouter();
-    const [statusFilter, setStatusFilter] = useState<string>("all");
-    const [selectedTask, setSelectedTask] = useState<string | null>(null);
+
+    // Data state
     const [tasks, setTasks] = useState<Task[]>([]);
     const [domain, setDomain] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [allDomains, setAllDomains] = useState<string[]>([]);
+    const [seoScore, setSeoScore] = useState(0);
+    const [projectedScore, setProjectedScore] = useState(0);
 
-    useEffect(() => {
-        fetch("/api/action-center/tasks")
-            .then(r => r.ok ? r.json() : { tasks: [], domain: null })
-            .then(data => {
-                setTasks(data.tasks ?? []);
-                setDomain(data.domain ?? null);
-            })
-            .catch(() => setTasks([]))
-            .finally(() => setLoading(false));
+    // UI state
+    const [loading, setLoading] = useState(true);
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [categoryFilter, setCategoryFilter] = useState("all");
+    const [selectedTask, setSelectedTask] = useState<string | null>(null);
+    const [saving, setSaving] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
+    const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+    const [showAllUrls, setShowAllUrls] = useState(false);
+
+    // ── Fetch tasks ──────────────────────────────────────────────────────────
+
+    const fetchTasks = useCallback(async (targetDomain?: string) => {
+        setLoading(true);
+        try {
+            const url = targetDomain
+                ? `/api/action-center/tasks?domain=${encodeURIComponent(targetDomain)}`
+                : "/api/action-center/tasks";
+            const res = await fetch(url);
+            if (!res.ok) throw new Error();
+            const data: ApiResponse = await res.json();
+            setTasks(data.tasks);
+            setDomain(data.domain);
+            setAllDomains(data.allDomains);
+            setSeoScore(data.seoScore);
+            setProjectedScore(data.projectedScore);
+        } catch {
+            setTasks([]);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    const filtered = statusFilter === "all" ? tasks : tasks.filter(t => t.status === statusFilter);
+    useEffect(() => { fetchTasks(); }, [fetchTasks]);
+
+    // ── Persist task toggle ──────────────────────────────────────────────────
+
+    const toggleDone = async (task: Task) => {
+        if (!domain) return;
+        const newStatus = task.status === "done" ? "todo" : "done";
+        setSaving(task.id);
+
+        // Optimistic update
+        setTasks(prev => prev.map(t =>
+            t.id === task.id ? { ...t, status: newStatus as "todo" | "done", progress: newStatus === "done" ? 100 : 0 } : t
+        ));
+
+        try {
+            await fetch("/api/action-center/complete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ issueId: task.issueId, domain, status: newStatus }),
+            });
+        } catch {
+            // Revert on failure
+            setTasks(prev => prev.map(t =>
+                t.id === task.id ? { ...t, status: task.status, progress: task.progress } : t
+            ));
+        } finally {
+            setSaving(null);
+        }
+    };
+
+    // ── Copy to clipboard ────────────────────────────────────────────────────
+
+    const copyText = (text: string) => {
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    // ── Domain change ────────────────────────────────────────────────────────
+
+    const handleDomainChange = (newDomain: string) => {
+        setDomain(newDomain);
+        setSelectedTask(null);
+        fetchTasks(newDomain);
+    };
+
+    // ── Filtering ────────────────────────────────────────────────────────────
+
+    const filtered = tasks.filter(t => {
+        if (statusFilter !== "all" && t.status !== statusFilter) return false;
+        if (categoryFilter !== "all" && t.category !== categoryFilter) return false;
+        return true;
+    });
+
+    // Group by severity
+    const errorTasks = filtered.filter(t => t.severity === "error");
+    const warningTasks = filtered.filter(t => t.severity === "warning");
+    const noticeTasks = filtered.filter(t => t.severity === "notice");
+    const groups: [string, Task[]][] = [
+        ["error", errorTasks],
+        ["warning", warningTasks],
+        ["notice", noticeTasks],
+    ].filter(([, g]) => (g as Task[]).length > 0) as [string, Task[]][];
+
+    // Computed stats
     const doneTasks = tasks.filter(t => t.status === "done").length;
-    const projectedGain = tasks
-        .filter(t => t.status === "done")
-        .reduce((sum, t) => sum + t.estimatedPoints, 0);
-    const totalPossible = tasks.reduce((sum, t) => sum + t.estimatedPoints, 0);
+    const criticalRemaining = tasks.filter(t => t.severity === "error" && t.status !== "done").length;
+    const quickWins = tasks.filter(t => t.effort === "easy" && t.status !== "done").length;
+    const pointsRemaining = tasks.filter(t => t.status !== "done").reduce((s, t) => s + t.estimatedPoints, 0);
     const progressPct = tasks.length > 0 ? Math.round((doneTasks / tasks.length) * 100) : 0;
 
     const selectedTaskData = tasks.find(t => t.id === selectedTask);
 
-    const markDone = (taskId: string) => {
-        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: "done" as const, progress: 100 } : t));
+    const toggleGroup = (group: string) => {
+        setCollapsedGroups(prev => {
+            const next = new Set(prev);
+            if (next.has(group)) next.delete(group); else next.add(group);
+            return next;
+        });
     };
 
-    // ── Loading skeleton ───────────────────────────────────────────────────────
+    // ── Loading skeleton ─────────────────────────────────────────────────────
+
     if (loading) {
         return (
             <div className="flex items-center justify-center py-32">
@@ -85,61 +262,94 @@ export function ActionCenterClient() {
         );
     }
 
+    // ── RENDER ───────────────────────────────────────────────────────────────
+
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
-                        <Zap size={22} style={{ color: "#FF642D" }} /> Action Center
-                    </h1>
-                    <p className="text-sm mt-1" style={{ color: "#6B7A99" }}>
-                        {domain
-                            ? `Prioritized fixes for ${domain}`
-                            : "Prioritized fixes to boost your SEO score"}
-                    </p>
+        <div className="space-y-5">
+
+            {/* ═══ Header + Domain Selector ═══ */}
+            <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "rgba(255,100,45,0.12)" }}>
+                        <Zap size={18} style={{ color: "#FF642D" }} />
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-black text-white tracking-tight">Action Center</h1>
+                        <p className="text-[12px]" style={{ color: "#6B7A99" }}>
+                            {domain ? `Prioritized fixes for ${domain}` : "Prioritized fixes to boost your SEO score"}
+                        </p>
+                    </div>
                 </div>
-                {domain && (
-                    <button
-                        onClick={() => router.push(`/app/audit/${domain}`)}
-                        className="text-xs font-semibold flex items-center gap-1.5 px-3 py-2 rounded-lg border transition hover:bg-white/[0.04]"
-                        style={{ color: "#FF642D", borderColor: "#1E2940" }}>
-                        <ExternalLink size={12} /> View Audit
-                    </button>
-                )}
+                <div className="flex items-center gap-2">
+                    {/* Domain selector */}
+                    {allDomains.length > 1 && (
+                        <div className="relative">
+                            <Globe size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "#6B7A99" }} />
+                            <select
+                                value={domain ?? ""}
+                                onChange={(e) => handleDomainChange(e.target.value)}
+                                className="appearance-none text-xs font-semibold pl-8 pr-7 py-2 rounded-lg border bg-transparent cursor-pointer focus:outline-none focus:ring-1"
+                                style={{ color: "#C8D0E0", borderColor: "#1E2940", background: "#151B27" }}>
+                                {allDomains.map(d => (
+                                    <option key={d} value={d} style={{ background: "#151B27" }}>{d}</option>
+                                ))}
+                            </select>
+                            <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "#6B7A99" }} />
+                        </div>
+                    )}
+                    {domain && (
+                        <button onClick={() => router.push(`/app/audit/${domain}`)}
+                            className="text-xs font-semibold flex items-center gap-1.5 px-3 py-2 rounded-lg border transition hover:bg-white/[0.04]"
+                            style={{ color: "#FF642D", borderColor: "#1E2940" }}>
+                            <ExternalLink size={12} /> View Audit
+                        </button>
+                    )}
+                </div>
             </div>
 
-            {/* Progress Banner */}
+            {/* ═══ Command Bar: Score + KPI Cards ═══ */}
             {tasks.length > 0 && (
-                <div className="rounded-xl border px-5 py-4 flex flex-wrap items-center gap-5 relative overflow-hidden"
-                    style={{ background: "linear-gradient(135deg, rgba(21,27,39,0.95), rgba(13,20,36,0.98))", borderColor: "#1E2940" }}>
-                    <div className="absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(255,100,45,0.3), transparent)" }} />
-                    <div className="flex items-center gap-4 flex-1">
-                        <div>
-                            <p className="text-lg font-black text-white">{doneTasks} / {tasks.length} tasks done</p>
-                            <p className="text-[12px] mt-0.5" style={{ color: "#6B7A99" }}>
-                                SEO score improvement unlocked:{" "}
-                                <span className="font-bold" style={{ color: "#00C853" }}>+{projectedGain} pts</span>
-                                {totalPossible > 0 && (
-                                    <span style={{ color: "#4A5568" }}> of +{totalPossible} possible</span>
-                                )}
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                    {/* Score Ring Card */}
+                    <div className="col-span-2 lg:col-span-1 rounded-xl border p-4 flex flex-col items-center justify-center"
+                        style={{ background: "#151B27", borderColor: "#1E2940" }}>
+                        <ScoreRing score={seoScore} size={80} />
+                        <p className="text-[11px] font-medium mt-2" style={{ color: "#6B7A99" }}>SEO Score</p>
+                        {projectedScore > seoScore && (
+                            <p className="text-[10px] font-semibold mt-0.5" style={{ color: "#00C853" }}>
+                                → {projectedScore} if all fixed
                             </p>
-                        </div>
-                        <div className="flex-1 min-w-[120px]">
-                            <div className="h-2 rounded-full overflow-hidden" style={{ background: "#1E2940" }}>
-                                <motion.div className="h-full rounded-full"
-                                    style={{ background: "linear-gradient(90deg, #FF642D, #E8541F)" }}
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${progressPct}%` }}
-                                    transition={{ duration: 1, ease: "easeOut" }} />
+                        )}
+                    </div>
+
+                    {/* KPI Cards */}
+                    <KpiCard icon={XCircle} label="Critical Issues" value={String(criticalRemaining)} color="#FF3D3D" />
+                    <KpiCard icon={Sparkles} label="Quick Wins Left" value={String(quickWins)} color="#00C853" />
+                    <KpiCard icon={Target} label="Points to Unlock" value={String(pointsRemaining)} color="#FF642D" />
+
+                    {/* Progress Card */}
+                    <div className="rounded-xl border p-4" style={{ background: "#151B27", borderColor: "#1E2940" }}>
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                                style={{ background: "rgba(123,92,245,0.1)" }}>
+                                <Shield size={15} style={{ color: "#7B5CF5" }} />
                             </div>
-                            <p className="text-[11px] mt-1" style={{ color: "#6B7A99" }}>{progressPct}% complete</p>
+                            <span className="text-[11px] font-bold tabular-nums" style={{ color: "#7B5CF5" }}>{progressPct}%</span>
+                        </div>
+                        <p className="text-xl font-black text-white tabular-nums">{doneTasks}/{tasks.length}</p>
+                        <p className="text-[11px] mt-0.5 font-medium" style={{ color: "#6B7A99" }}>Tasks Complete</p>
+                        <div className="h-1.5 rounded-full overflow-hidden mt-2" style={{ background: "#1E2940" }}>
+                            <motion.div className="h-full rounded-full"
+                                style={{ background: "linear-gradient(90deg, #7B5CF5, #9B7DFF)" }}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${progressPct}%` }}
+                                transition={{ duration: 1, ease: "easeOut" }} />
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Empty state */}
+            {/* ═══ Empty State ═══ */}
             {tasks.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-24 rounded-xl border-2 border-dashed"
                     style={{ borderColor: "#1E2940" }}>
@@ -148,8 +358,7 @@ export function ActionCenterClient() {
                     <p className="text-sm mb-5" style={{ color: "#6B7A99" }}>
                         Run a site audit to generate actionable SEO tasks
                     </p>
-                    <button
-                        onClick={() => router.push("/app/audit")}
+                    <button onClick={() => router.push("/app/audit")}
                         className="px-5 py-2.5 rounded-lg text-sm font-bold text-white"
                         style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)" }}>
                         Start Audit →
@@ -159,97 +368,179 @@ export function ActionCenterClient() {
 
             {tasks.length > 0 && (
                 <>
-                    {/* Filters */}
-                    <div className="flex items-center gap-2">
-                        <Filter size={13} style={{ color: "#4A5568" }} />
-                        {[
-                            { key: "all",         label: "All Tasks" },
-                            { key: "todo",        label: "To Do" },
-                            { key: "in_progress", label: "In Progress" },
-                            { key: "done",        label: "Done" },
-                        ].map(f => (
-                            <button
-                                key={f.key}
-                                onClick={() => setStatusFilter(f.key)}
-                                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition"
-                                style={{
-                                    background: statusFilter === f.key ? "rgba(255,100,45,0.15)" : "rgba(255,255,255,0.04)",
-                                    color: statusFilter === f.key ? "#FF642D" : "#8B9BB4",
-                                    border: `1px solid ${statusFilter === f.key ? "rgba(255,100,45,0.3)" : "#1E2940"}`,
-                                }}>
-                                {f.label}
-                            </button>
-                        ))}
+                    {/* ═══ Filter Row: Categories + Status ═══ */}
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                        {/* Category tabs */}
+                        <div className="flex items-center gap-1.5">
+                            {CATEGORY_TABS.map(tab => {
+                                const count = tab.key === "all"
+                                    ? tasks.length
+                                    : tasks.filter(t => t.category === tab.key).length;
+                                if (tab.key !== "all" && count === 0) return null;
+                                return (
+                                    <button key={tab.key}
+                                        onClick={() => setCategoryFilter(tab.key)}
+                                        className="px-3 py-1.5 rounded-lg text-xs font-semibold transition"
+                                        style={{
+                                            background: categoryFilter === tab.key ? "rgba(255,100,45,0.15)" : "rgba(255,255,255,0.03)",
+                                            color: categoryFilter === tab.key ? "#FF642D" : "#8B9BB4",
+                                            border: `1px solid ${categoryFilter === tab.key ? "rgba(255,100,45,0.3)" : "#1E2940"}`,
+                                        }}>
+                                        {tab.label}{count > 0 ? ` (${count})` : ""}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Status filters */}
+                        <div className="flex items-center gap-1.5">
+                            {STATUS_FILTERS.map(f => (
+                                <button key={f.key}
+                                    onClick={() => setStatusFilter(f.key)}
+                                    className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition"
+                                    style={{
+                                        background: statusFilter === f.key ? "rgba(123,92,245,0.12)" : "transparent",
+                                        color: statusFilter === f.key ? "#7B5CF5" : "#4A5568",
+                                        border: `1px solid ${statusFilter === f.key ? "rgba(123,92,245,0.25)" : "transparent"}`,
+                                    }}>
+                                    {f.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
-                    {/* 2-col: Task list + Detail drawer */}
+                    {/* ═══ 2-Column: Task List + Detail Panel ═══ */}
                     <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
-                        {/* Task list */}
+                        {/* ── Task List (left) ── */}
                         <div className={selectedTask ? "xl:col-span-2" : "xl:col-span-5"}>
-                            <div className="rounded-xl border overflow-hidden" style={{ background: "#151B27", borderColor: "#1E2940" }}>
-                                {filtered.map((task) => {
-                                    const statusCfg = STATUS_CONFIG[task.status];
-                                    const sevCfg = SEVERITY_CONFIG[task.severity];
-                                    const SevIcon = sevCfg.icon;
-                                    const isSelected = selectedTask === task.id;
+                            <div className="space-y-3">
+                                {groups.map(([severity, groupTasks]) => {
+                                    const cfg = GROUP_CONFIG[severity];
+                                    const groupPts = groupTasks.reduce((s, t) => s + t.estimatedPoints, 0);
+                                    const isCollapsed = collapsedGroups.has(severity);
 
                                     return (
-                                        <div
-                                            key={task.id}
-                                            className={`flex items-center gap-4 px-5 py-4 cursor-pointer transition border-b hover:bg-white/[0.02] ${isSelected ? "bg-white/[0.03]" : ""}`}
-                                            style={{ borderColor: "#1E2940" }}
-                                            onClick={() => setSelectedTask(isSelected ? null : task.id)}>
-                                            {/* Status bubble */}
-                                            <div className="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0"
-                                                style={{ borderColor: task.status === "done" ? "#00C853" : "#1E2940", background: task.status === "done" ? "rgba(0,200,83,0.1)" : "transparent" }}>
-                                                {task.status === "done" && <Check size={11} style={{ color: "#00C853" }} />}
-                                            </div>
-
-                                            {/* Severity icon */}
-                                            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: sevCfg.bg }}>
-                                                <SevIcon size={15} style={{ color: sevCfg.color }} />
-                                            </div>
-
-                                            {/* Content */}
-                                            <div className="flex-1 min-w-0">
-                                                <p className={`text-sm font-semibold truncate ${task.status === "done" ? "line-through opacity-50" : "text-white"}`}>
-                                                    {task.title}
-                                                </p>
-                                                {task.priorityReason && (
-                                                    <p className="text-[11px] mt-0.5 truncate" style={{ color: "#4A5568" }}>
-                                                        {task.priorityReason}
-                                                    </p>
-                                                )}
-                                                <div className="flex items-center gap-2 mt-0.5">
-                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                                                        style={{ background: statusCfg.bg, color: statusCfg.color }}>
-                                                        {statusCfg.label}
+                                        <div key={severity} className="rounded-xl border overflow-hidden"
+                                            style={{ background: "#151B27", borderColor: "#1E2940" }}>
+                                            {/* Group header */}
+                                            <button onClick={() => toggleGroup(severity)}
+                                                className="w-full flex items-center justify-between px-4 py-2.5 transition hover:bg-white/[0.02]"
+                                                style={{ background: cfg.bg }}>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full" style={{ background: cfg.color }} />
+                                                    <span className="text-[10px] font-bold tracking-widest uppercase"
+                                                        style={{ color: cfg.color }}>
+                                                        {cfg.label} ({groupTasks.length})
                                                     </span>
-                                                    <span className="text-[10px]" style={{ color: "#4A5568" }}>
-                                                        +{task.estimatedPoints} pts
-                                                    </span>
-                                                    {task.effortLabel ? (
-                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                                                            style={{ background: EFFORT_BADGE[task.effort]?.bg, color: EFFORT_BADGE[task.effort]?.color }}>
-                                                            {task.effortLabel}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-[10px]" style={{ color: "#4A5568" }}>
-                                                            {EFFORT_LABELS[task.effort]}
-                                                        </span>
-                                                    )}
                                                 </div>
-                                            </div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-[10px] font-semibold" style={{ color: "#4A5568" }}>
+                                                        +{groupPts} pts
+                                                    </span>
+                                                    <ChevronDown size={13}
+                                                        className={`transition-transform ${isCollapsed ? "-rotate-90" : ""}`}
+                                                        style={{ color: "#4A5568" }} />
+                                                </div>
+                                            </button>
 
-                                            <ChevronRight size={14} style={{ color: "#4A5568" }}
-                                                className={`transition-transform shrink-0 ${isSelected ? "rotate-180" : ""}`} />
+                                            {/* Group tasks */}
+                                            <AnimatePresence initial={false}>
+                                                {!isCollapsed && (
+                                                    <motion.div
+                                                        initial={{ height: 0, opacity: 0 }}
+                                                        animate={{ height: "auto", opacity: 1 }}
+                                                        exit={{ height: 0, opacity: 0 }}
+                                                        transition={{ duration: 0.2 }}>
+                                                        {groupTasks.map((task) => {
+                                                            const sevCfg = SEVERITY_CONFIG[task.severity];
+                                                            const SevIcon = sevCfg.icon;
+                                                            const effortCfg = EFFORT_CONFIG[task.effort];
+                                                            const isSelected = selectedTask === task.id;
+                                                            const isDone = task.status === "done";
+                                                            const isSaving = saving === task.id;
+
+                                                            return (
+                                                                <div key={task.id}
+                                                                    className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer transition border-t hover:bg-white/[0.02] ${isSelected ? "bg-white/[0.04]" : ""}`}
+                                                                    style={{ borderColor: "#1E2940" }}
+                                                                    onClick={() => setSelectedTask(isSelected ? null : task.id)}>
+                                                                    {/* Status toggle */}
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); toggleDone(task); }}
+                                                                        disabled={isSaving}
+                                                                        className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition hover:border-[#00C853]"
+                                                                        style={{
+                                                                            borderColor: isDone ? "#00C853" : "#2E4166",
+                                                                            background: isDone ? "rgba(0,200,83,0.15)" : "transparent",
+                                                                        }}>
+                                                                        {isSaving ? (
+                                                                            <Loader2 size={9} className="animate-spin" style={{ color: "#6B7A99" }} />
+                                                                        ) : isDone ? (
+                                                                            <Check size={10} style={{ color: "#00C853" }} />
+                                                                        ) : null}
+                                                                    </button>
+
+                                                                    {/* Severity icon */}
+                                                                    <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
+                                                                        style={{ background: sevCfg.bg }}>
+                                                                        <SevIcon size={13} style={{ color: sevCfg.color }} />
+                                                                    </div>
+
+                                                                    {/* Content */}
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <p className={`text-[13px] font-semibold truncate ${isDone ? "line-through opacity-40" : "text-white"}`}>
+                                                                                {task.title}
+                                                                            </p>
+                                                                            {task.effort === "easy" && !isDone && (
+                                                                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0"
+                                                                                    style={{ background: "rgba(0,200,83,0.12)", color: "#00C853" }}>
+                                                                                    ⚡ Quick
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                                                                                style={{ background: "rgba(255,255,255,0.04)", color: "#6B7A99" }}>
+                                                                                {task.category}
+                                                                            </span>
+                                                                            <span className="text-[10px] font-semibold" style={{ color: "#FF642D" }}>
+                                                                                +{task.estimatedPoints} pts
+                                                                            </span>
+                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold"
+                                                                                style={{ background: effortCfg.bg, color: effortCfg.color }}>
+                                                                                {effortCfg.label}
+                                                                            </span>
+                                                                            <span className="text-[10px]" style={{ color: "#4A5568" }}>
+                                                                                {task.affectedPages} page{task.affectedPages !== 1 ? "s" : ""}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <ChevronRight size={13}
+                                                                        className={`shrink-0 transition-transform ${isSelected ? "rotate-90" : ""}`}
+                                                                        style={{ color: "#2E4166" }} />
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
                                         </div>
                                     );
                                 })}
+
+                                {/* No results for filter */}
+                                {filtered.length === 0 && tasks.length > 0 && (
+                                    <div className="flex flex-col items-center py-12 text-center">
+                                        <p className="text-sm font-semibold text-white mb-1">No matching tasks</p>
+                                        <p className="text-xs" style={{ color: "#6B7A99" }}>Try adjusting your filters</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        {/* Task Detail Drawer */}
+                        {/* ── Detail Panel (right, sticky) ── */}
                         <AnimatePresence>
                             {selectedTask && selectedTaskData && (
                                 <motion.div
@@ -257,10 +548,12 @@ export function ActionCenterClient() {
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 20 }}
-                                    className="xl:col-span-3 rounded-xl border overflow-hidden sticky top-20"
+                                    transition={{ duration: 0.2 }}
+                                    className="xl:col-span-3 rounded-xl border overflow-hidden xl:sticky xl:top-20 xl:self-start"
                                     style={{ background: "#151B27", borderColor: "#1E2940" }}>
-                                    {/* Drawer header */}
-                                    <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "#1E2940" }}>
+
+                                    {/* Panel header */}
+                                    <div className="flex items-center justify-between px-5 py-3.5 border-b" style={{ borderColor: "#1E2940" }}>
                                         <h3 className="text-sm font-bold text-white">Fix Details</h3>
                                         <button onClick={() => setSelectedTask(null)}
                                             className="p-1 rounded transition hover:bg-white/[0.06]"
@@ -269,63 +562,169 @@ export function ActionCenterClient() {
                                         </button>
                                     </div>
 
-                                    <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
-                                        {/* Title + badges */}
+                                    <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto custom-scrollbar">
+
+                                        {/* Title + Badges */}
                                         <div>
-                                            <p className="text-base font-bold text-white mb-2">{selectedTaskData.title}</p>
-                                            <div className="flex flex-wrap gap-2">
-                                                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                                                    style={{ background: "rgba(255,100,45,0.12)", color: "#FF642D" }}>
-                                                    +{selectedTaskData.estimatedPoints} pts potential
-                                                </span>
-                                                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                                                    style={{ background: "rgba(139,155,180,0.12)", color: "#8B9BB4" }}>
-                                                    {EFFORT_LABELS[selectedTaskData.effort]}
-                                                </span>
-                                                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                                            <p className="text-base font-bold text-white mb-2.5">{selectedTaskData.title}</p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase"
                                                     style={{ background: SEVERITY_CONFIG[selectedTaskData.severity].bg, color: SEVERITY_CONFIG[selectedTaskData.severity].color }}>
-                                                    {selectedTaskData.severity}
+                                                    {SEVERITY_CONFIG[selectedTaskData.severity].label}
                                                 </span>
-                                                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                                    style={{ background: EFFORT_CONFIG[selectedTaskData.effort].bg, color: EFFORT_CONFIG[selectedTaskData.effort].color }}>
+                                                    {EFFORT_CONFIG[selectedTaskData.effort].label} · ~{selectedTaskData.effortMinutes}min
+                                                </span>
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                                    style={{ background: "rgba(255,100,45,0.12)", color: "#FF642D" }}>
+                                                    +{selectedTaskData.estimatedPoints} pts
+                                                </span>
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                                                     style={{ background: "rgba(123,92,245,0.12)", color: "#7B5CF5" }}>
-                                                    {selectedTaskData.affectedPages} pages affected
+                                                    {selectedTaskData.affectedPages} page{selectedTaskData.affectedPages !== 1 ? "s" : ""}
+                                                </span>
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                                    style={{ background: "rgba(255,255,255,0.04)", color: "#6B7A99" }}>
+                                                    {selectedTaskData.category}
                                                 </span>
                                             </div>
                                         </div>
 
-                                        {/* Why it matters */}
-                                        <div className="rounded-lg p-4" style={{ background: "rgba(255,152,0,0.06)", border: "1px solid rgba(255,152,0,0.15)" }}>
-                                            <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: "#FF9800" }}>Why It Matters</p>
-                                            <p className="text-[13px]" style={{ color: "#C8D0E0" }}>
-                                                {selectedTaskData.description || "Fixing this issue will improve your site's search visibility and rankings."}
+                                        {/* WHY IT MATTERS */}
+                                        <div className="rounded-lg p-4" style={{ background: "rgba(255,152,0,0.05)", border: "1px solid rgba(255,152,0,0.12)" }}>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#FF9800" }}>
+                                                Why It Matters
                                             </p>
+                                            <p className="text-[13px] leading-relaxed" style={{ color: "#C8D0E0" }}>
+                                                {selectedTaskData.description}
+                                            </p>
+                                            {selectedTaskData.ctrImpact && (
+                                                <div className="flex items-start gap-2 mt-2.5 pt-2.5" style={{ borderTop: "1px solid rgba(255,152,0,0.1)" }}>
+                                                    <AlertTriangle size={12} className="shrink-0 mt-0.5" style={{ color: "#FF9800" }} />
+                                                    <p className="text-[12px]" style={{ color: "#C8D0E0" }}>
+                                                        <strong style={{ color: "#FF9800" }}>CTR Impact:</strong> {selectedTaskData.ctrImpact}
+                                                    </p>
+                                                </div>
+                                            )}
+                                            {selectedTaskData.trafficGain && (
+                                                <div className="flex items-start gap-2 mt-1.5">
+                                                    <Sparkles size={12} className="shrink-0 mt-0.5" style={{ color: "#00C853" }} />
+                                                    <p className="text-[12px]" style={{ color: "#C8D0E0" }}>
+                                                        <strong style={{ color: "#00C853" }}>Traffic Gain:</strong> {selectedTaskData.trafficGain}
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
 
-                                        {/* Score impact */}
-                                        <div className="rounded-lg p-4" style={{ background: "rgba(255,100,45,0.06)", border: "1px solid rgba(255,100,45,0.15)" }}>
-                                            <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: "#FF642D" }}>Estimated Impact</p>
-                                            <p className="text-[13px]" style={{ color: "#C8D0E0" }}>
-                                                Fixing this issue across <strong className="text-white">{selectedTaskData.affectedPages} page{selectedTaskData.affectedPages !== 1 ? "s" : ""}</strong>{" "}
-                                                could improve your SEO score by up to{" "}
-                                                <strong className="text-white">+{selectedTaskData.estimatedPoints} points</strong>.
+                                        {/* FIX GUIDE */}
+                                        {selectedTaskData.fixSteps.length > 0 && (
+                                            <div className="rounded-lg p-4" style={{ background: "rgba(0,200,83,0.04)", border: "1px solid rgba(0,200,83,0.12)" }}>
+                                                <p className="text-[10px] font-bold uppercase tracking-wider mb-3" style={{ color: "#00C853" }}>
+                                                    Fix Guide
+                                                </p>
+                                                <ol className="space-y-2">
+                                                    {selectedTaskData.fixSteps.map((step, i) => (
+                                                        <li key={i} className="flex gap-2.5">
+                                                            <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold"
+                                                                style={{ background: "rgba(0,200,83,0.15)", color: "#00C853" }}>
+                                                                {i + 1}
+                                                            </span>
+                                                            <p className="text-[12px] leading-relaxed pt-0.5" style={{ color: "#C8D0E0" }}>
+                                                                {step}
+                                                            </p>
+                                                        </li>
+                                                    ))}
+                                                </ol>
+
+                                                {/* Code example */}
+                                                {selectedTaskData.exampleFix && (
+                                                    <div className="mt-3 pt-3" style={{ borderTop: "1px solid rgba(0,200,83,0.1)" }}>
+                                                        <div className="flex items-center justify-between mb-1.5">
+                                                            <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#6B7A99" }}>Example</p>
+                                                            <button onClick={() => copyText(selectedTaskData.exampleFix!)}
+                                                                className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded transition hover:bg-white/[0.06]"
+                                                                style={{ color: copied ? "#00C853" : "#6B7A99" }}>
+                                                                {copied ? <Check size={10} /> : <Copy size={10} />}
+                                                                {copied ? "Copied!" : "Copy"}
+                                                            </button>
+                                                        </div>
+                                                        <pre className="text-[11px] p-3 rounded-lg overflow-x-auto font-mono whitespace-pre-wrap"
+                                                            style={{ background: "#0D1424", color: "#8B9BB4", border: "1px solid #1E2940" }}>
+                                                            {selectedTaskData.exampleFix}
+                                                        </pre>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* AFFECTED PAGES */}
+                                        {selectedTaskData.affectedPageUrls.length > 0 && (
+                                            <div className="rounded-lg p-4" style={{ background: "rgba(123,92,245,0.04)", border: "1px solid rgba(123,92,245,0.12)" }}>
+                                                <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#7B5CF5" }}>
+                                                    Affected Pages
+                                                </p>
+                                                <div className="space-y-1">
+                                                    {(showAllUrls ? selectedTaskData.affectedPageUrls : selectedTaskData.affectedPageUrls.slice(0, 3)).map((url, i) => (
+                                                        <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                                                            className="flex items-center gap-2 text-[11px] py-1 px-2 rounded transition hover:bg-white/[0.04] group"
+                                                            style={{ color: "#8B9BB4" }}>
+                                                            <ExternalLink size={10} className="shrink-0 opacity-50 group-hover:opacity-100" />
+                                                            <span className="truncate">{url.replace(/^https?:\/\/(www\.)?/, "")}</span>
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                                {selectedTaskData.affectedPageUrls.length > 3 && (
+                                                    <button onClick={() => setShowAllUrls(!showAllUrls)}
+                                                        className="text-[10px] font-semibold mt-2 transition"
+                                                        style={{ color: "#7B5CF5" }}>
+                                                        {showAllUrls
+                                                            ? "Show less"
+                                                            : `+${selectedTaskData.affectedPageUrls.length - 3} more`}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* ESTIMATED IMPACT */}
+                                        <div className="rounded-lg p-4" style={{ background: "rgba(255,100,45,0.04)", border: "1px solid rgba(255,100,45,0.12)" }}>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#FF642D" }}>
+                                                Estimated Impact
                                             </p>
+                                            <div className="flex items-center gap-4">
+                                                <div>
+                                                    <p className="text-[12px]" style={{ color: "#C8D0E0" }}>
+                                                        Fixing this across{" "}
+                                                        <strong className="text-white">{selectedTaskData.affectedPages} page{selectedTaskData.affectedPages !== 1 ? "s" : ""}</strong>{" "}
+                                                        could improve your score by{" "}
+                                                        <strong style={{ color: "#FF642D" }}>+{selectedTaskData.estimatedPoints} points</strong>.
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        {/* Actions */}
-                                        <div className="flex gap-3">
-                                            <button
-                                                onClick={() => markDone(selectedTaskData.id)}
-                                                disabled={selectedTaskData.status === "done"}
-                                                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-50"
-                                                style={{ background: "linear-gradient(135deg, #00C853, #00A846)" }}>
-                                                <CheckCircle size={14} />
-                                                {selectedTaskData.status === "done" ? "Completed ✓" : "Mark as Fixed"}
+                                        {/* ACTION BUTTONS */}
+                                        <div className="flex gap-2.5 pt-1">
+                                            <button onClick={() => toggleDone(selectedTaskData)}
+                                                disabled={saving === selectedTaskData.id}
+                                                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-60"
+                                                style={{
+                                                    background: selectedTaskData.status === "done"
+                                                        ? "rgba(139,155,180,0.15)"
+                                                        : "linear-gradient(135deg, #00C853, #00A846)",
+                                                    color: selectedTaskData.status === "done" ? "#8B9BB4" : "#fff",
+                                                }}>
+                                                {saving === selectedTaskData.id ? (
+                                                    <Loader2 size={14} className="animate-spin" />
+                                                ) : (
+                                                    <CheckCircle size={14} />
+                                                )}
+                                                {selectedTaskData.status === "done" ? "Undo — Mark as To Do" : "Mark as Fixed"}
                                             </button>
-                                            <button
-                                                onClick={() => router.push(selectedTaskData.actionHref)}
+                                            <button onClick={() => router.push(selectedTaskData.actionHref)}
                                                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition hover:bg-white/[0.06]"
                                                 style={{ color: "#8B9BB4", border: "1px solid #1E2940" }}>
-                                                <Play size={13} /> View Issue
+                                                <ExternalLink size={13} /> Audit
                                             </button>
                                         </div>
                                     </div>

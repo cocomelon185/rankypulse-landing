@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -54,7 +55,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "OPTIMIZATION",
     items: [
-      { label: "Action Center", href: "/app/action-center", icon: Zap, badge: "3" },
+      { label: "Action Center", href: "/app/action-center", icon: Zap, badge: "__dynamic__" },
       { label: "Content Ideas", href: "/app/content", icon: BookOpen },
     ],
   },
@@ -157,12 +158,27 @@ function ProPlanBlock({ onUpgrade }: { onUpgrade: () => void }) {
   );
 }
 
+// ── Dynamic badge hook ────────────────────────────────────────────────────────
+function useActionCenterBadge(): string | undefined {
+  const [count, setCount] = useState<number | null>(null);
+  useEffect(() => {
+    fetch("/api/action-center/count")
+      .then((r) => (r.ok ? r.json() : { count: 0 }))
+      .then((d) => setCount(d.count ?? 0))
+      .catch(() => setCount(0));
+  }, []);
+  if (count === null || count === 0) return undefined;
+  return String(count);
+}
+
 // ── Shared Nav Content ────────────────────────────────────────────────────────
 function NavContent({ pathname, onClick }: { pathname: string; onClick?: () => void }) {
   const isActive = (href: string) => {
     if (href === "/app/dashboard") return pathname === "/app/dashboard";
     return pathname.startsWith(href);
   };
+
+  const actionCenterBadge = useActionCenterBadge();
 
   return (
     <nav className="flex-1 overflow-y-auto py-2 px-3 custom-scrollbar" onClick={onClick}>
@@ -174,9 +190,15 @@ function NavContent({ pathname, onClick }: { pathname: string; onClick?: () => v
             </p>
           )}
           <div className="space-y-0.5">
-            {group.items.map((item) => (
-              <NavLink key={item.href} item={item} active={isActive(item.href)} />
-            ))}
+            {group.items.map((item) => {
+              // Replace the __dynamic__ badge placeholder with the real count
+              const resolvedItem = item.badge === "__dynamic__"
+                ? { ...item, badge: actionCenterBadge }
+                : item;
+              return (
+                <NavLink key={item.href} item={resolvedItem} active={isActive(item.href)} />
+              );
+            })}
           </div>
         </div>
       ))}
