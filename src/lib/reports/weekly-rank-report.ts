@@ -63,6 +63,16 @@ export async function sendWeeklyRankReport(params: WeeklyRankParams): Promise<vo
     }
   }
 
+  // Top 3 open SEO opportunities for this domain (Phase 5.2)
+  const { data: topOpportunities } = await supabaseAdmin
+    .from("seo_opportunities")
+    .select("keyword, current_position, search_volume, estimated_traffic_gain")
+    .eq("user_id", userId)
+    .eq("domain", domain)
+    .eq("status", "open")
+    .order("estimated_traffic_gain", { ascending: false })
+    .limit(3);
+
   const from =
     process.env.RESEND_FROM ?? "RankyPulse <reports@rankypulse.com>";
 
@@ -79,6 +89,7 @@ export async function sendWeeklyRankReport(params: WeeklyRankParams): Promise<vo
       losers,
       entering_top10,
       leaving_top10,
+      topOpportunities: topOpportunities ?? [],
     }),
   });
 }

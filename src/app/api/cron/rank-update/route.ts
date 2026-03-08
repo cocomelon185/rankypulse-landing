@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { refreshDomainRankings } from "@/lib/rank-engine";
+import { detectAndSaveOpportunities } from "@/lib/opportunity-engine";
 
 // POST /api/cron/rank-update
 // Daily cron: refresh SERP positions for all tracked keywords
@@ -53,11 +54,24 @@ export async function POST(req: Request) {
   const totalProcessed = results.reduce((s, r) => s + r.processed, 0);
   const totalErrors = results.reduce((s, r) => s + r.errors, 0);
 
+  // ── Phase 5.2: Detect SEO opportunities after rankings are refreshed ──────
+  // Run once per unique user (not per domain) so audit cache is shared efficiently
+  const uniqueUsers = [...new Set(unique.map(p => p.user_id))];
+  const opportunityResults: Array<{ user_id: string; detected: number; errors: number }> = [];
+  for (const userId of uniqueUsers) {
+    const oppResult = await detectAndSaveOpportunities(userId);
+    opportunityResults.push({ user_id: userId, ...oppResult });
+  }
+
   return NextResponse.json({
     message: "Rank update complete",
     domains: unique.length,
     processed: totalProcessed,
     errors: totalErrors,
     results,
+    opportunities: {
+      usersScanned: uniqueUsers.length,
+      totalDetected: opportunityResults.reduce((s, r) => s + r.detected, 0),
+    },
   });
 }

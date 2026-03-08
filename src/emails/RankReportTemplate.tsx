@@ -20,6 +20,13 @@ interface RankItem {
   position: number;
 }
 
+interface OpportunityItem {
+  keyword: string;
+  current_position: number;
+  search_volume: number;
+  estimated_traffic_gain: number;
+}
+
 interface RankReportTemplateProps {
   domain: string;
   userName?: string;
@@ -29,6 +36,7 @@ interface RankReportTemplateProps {
   losers: RankItem[];
   entering_top10: string[];
   leaving_top10: string[];
+  topOpportunities?: OpportunityItem[];
 }
 
 export const RankReportTemplate = ({
@@ -40,6 +48,7 @@ export const RankReportTemplate = ({
   losers = [],
   entering_top10 = [],
   leaving_top10 = [],
+  topOpportunities = [],
 }: RankReportTemplateProps) => {
   const visPositive = visibilityChange >= 0;
   const visText = visPositive
@@ -86,6 +95,39 @@ export const RankReportTemplate = ({
                   </Column>
                 </Row>
               ))}
+              <Hr style={hr} />
+            </>
+          )}
+
+          {/* Top SEO Opportunities */}
+          {topOpportunities.length > 0 && (
+            <>
+              <Text style={sectionTitle}>🚀 Top SEO Opportunities</Text>
+              <Text style={oppSubtitle}>
+                Keywords in positions 11–20 ready to break onto page 1
+              </Text>
+              {topOpportunities.map((opp, i) => (
+                <Row key={opp.keyword} style={rankRow}>
+                  <Column style={rankKeyword}>
+                    <span style={{ color: "#6B7280", marginRight: "6px" }}>{i + 1}.</span>
+                    <strong>{opp.keyword}</strong>
+                  </Column>
+                  <Column style={{ ...rankPos, color: "#FF9800" }}>
+                    #{opp.current_position}
+                  </Column>
+                  <Column style={{ ...rankChange, color: "#FF9800" }}>
+                    +{opp.estimated_traffic_gain}/mo
+                  </Column>
+                </Row>
+              ))}
+              <Section style={oppCta}>
+                <Text style={{ ...oppSubtitle, marginBottom: "0" }}>
+                  Fix these keywords to gain up to{" "}
+                  <strong style={{ color: "#FF9800" }}>
+                    +{topOpportunities.reduce((s, o) => s + o.estimated_traffic_gain, 0).toLocaleString()} visits/mo
+                  </strong>
+                </Text>
+              </Section>
               <Hr style={hr} />
             </>
           )}
@@ -288,4 +330,19 @@ const footer = {
   padding: "0 48px",
   textAlign: "center" as const,
   marginTop: "32px",
+};
+
+const oppSubtitle = {
+  fontSize: "12px",
+  color: "#6B7280",
+  margin: "0 0 12px",
+  padding: "0 48px",
+};
+
+const oppCta = {
+  padding: "12px 48px",
+  backgroundColor: "rgba(255,152,0,0.06)",
+  borderRadius: "6px",
+  margin: "8px 48px 16px",
+  border: "1px solid rgba(255,152,0,0.2)",
 };

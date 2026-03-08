@@ -7,6 +7,8 @@ import { Zap, Search, TrendingUp, Clock, Eye } from "lucide-react";
 import { extractAuditDomain, isValidExtractedDomain } from "@/lib/url-validation";
 import { useAuth } from "@/hooks/useAuth";
 import CountUp from "react-countup";
+import { InstantPreview } from "@/components/landing/InstantPreview";
+import type { PreviewResult, PreviewError } from "@/components/landing/InstantPreview";
 
 const STATS = [
   { num: 12400, suffix: "+", label: "Sites audited", color: "#6366f1", decimals: 0 },
@@ -107,8 +109,11 @@ function FloatingScorePreview() {
 export function Hero() {
   const [domain, setDomain] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState("");
   const [auditLimitError, setAuditLimitError] = useState("");
+  const [previewData, setPreviewData] = useState<PreviewResult | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
   const statsRef = useRef<HTMLDivElement>(null);
   const statsInView = useInView(statsRef, { once: true, margin: "-50px" });
   const router = useRouter();
@@ -122,12 +127,14 @@ export function Hero() {
       return;
     }
 
-    setAuditLimitError("");
-    setIsLoading(true);
     setError("");
+    setScanError(null);
+    setAuditLimitError("");
+    setPreviewData(null);
 
-    // For authenticated users, check server-side quota
+    // ── Authenticated path: navigate to full report ──
     if (isAuthenticated) {
+      setIsLoading(true);
       try {
         const res = await fetch("/api/usage/audit", {
           method: "POST",
@@ -143,10 +150,43 @@ export function Hero() {
       } catch {
         // Fail open — proceed with audit on network error
       }
+      router.push(`/report/${cleaned}`);
+      return;
     }
 
-    // Navigate immediately — AuditLoadingScreen handles the wait experience
-    router.push(`/report/${cleaned}`);
+    // ── Unauthenticated path: inline preview ──
+    setIsScanning(true);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+
+    try {
+      const res = await fetch(`/api/crawl?domain=${encodeURIComponent(cleaned)}`, {
+        signal: controller.signal,
+      });
+      const data = await res.json() as PreviewResult | PreviewError;
+
+      if ("error" in data && data.error) {
+        const errData = data as PreviewError;
+        if (errData.error === "rate_limited") {
+          setScanError("Too many requests — please wait a minute and try again.");
+        } else if (errData.error === "unreachable") {
+          setScanError(`Could not reach ${cleaned}. The site may be blocking crawlers.`);
+        } else {
+          setScanError("Something went wrong. Please try again.");
+        }
+      } else {
+        setPreviewData(data as PreviewResult);
+      }
+    } catch (err) {
+      setScanError(
+        err instanceof Error && err.name === "AbortError"
+          ? "The scan took too long. Please try again."
+          : "Network error. Please try again."
+      );
+    } finally {
+      clearTimeout(timeout);
+      setIsScanning(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -159,7 +199,7 @@ export function Hero() {
 
   const handleQuickLink = (demo: string) => {
     setDomain(demo);
-    // Brief delay so user sees the domain populate before navigating
+    // Brief delay so user sees the domain populate before scanning
     setTimeout(() => void runAudit(demo), 350);
   };
 
@@ -192,7 +232,7 @@ export function Hero() {
         >
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
           <span className="font-['DM_Mono'] text-xs uppercase tracking-[2px] text-gray-600 dark:text-gray-400">
-            Free Audit · No Signup · 30 Seconds
+            Free · No Signup · Results in 10 Seconds
           </span>
         </motion.div>
 
@@ -204,11 +244,8 @@ export function Hero() {
           className="mb-6 font-['Fraunces'] font-bold leading-[1.06] tracking-[-0.03em] text-foreground"
           style={{ fontSize: "clamp(42px, 7vw, 76px)" }}
         >
-          Your website is{" "}
-          <span className="italic text-indigo-600 dark:text-indigo-400">invisible</span>
-          {" "}to Google.
-          <br />
-          <span className="text-gray-600 dark:text-gray-300">We&apos;ll show you why.</span>
+          Get your SEO score{" "}
+          <span className="italic text-indigo-600 dark:text-indigo-400">in 10 seconds</span>
         </motion.h1>
 
         {/* Subheadline */}
@@ -218,9 +255,9 @@ export function Hero() {
           transition={{ delay: 0.25, duration: 0.5 }}
           className="mx-auto mb-10 max-w-2xl font-['DM_Sans'] text-xl leading-relaxed text-gray-600 dark:text-gray-400"
         >
-          Enter any domain. Get a complete SEO audit with step-by-step fix guides
-          and real traffic estimates — in under 30 seconds. No jargon. No overwhelm.{" "}
-          <span className="text-foreground">Just fixes that work.</span>
+          Enter any website and see{" "}
+          <span className="text-foreground">exactly what&apos;s holding back your rankings</span>
+          {" "}— with step-by-step fixes and real traffic estimates. No jargon.
         </motion.p>
 
         {/* Input */}
@@ -243,20 +280,25 @@ export function Hero() {
                 type="text"
                 autoComplete="off"
                 value={domain}
-                onChange={(e) => { setDomain(e.target.value); setError(""); }}
+                onChange={(e) => {
+                  setDomain(e.target.value);
+                  setError("");
+                  if (previewData) setPreviewData(null);
+                  if (scanError) setScanError(null);
+                }}
                 placeholder="yoursite.com"
                 className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 py-4 pl-10 pr-4 font-['DM_Sans'] text-sm text-foreground placeholder-gray-500 dark:placeholder-gray-600 transition-all duration-200 focus:border-indigo-500/60 focus:bg-indigo-500/4 focus:outline-none"
               />
             </div>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isScanning}
               className="flex items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-indigo-500 px-7 py-4 font-['DM_Sans'] text-sm font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-indigo-400 hover:shadow-xl hover:shadow-indigo-500/30 active:translate-y-0 disabled:cursor-wait disabled:opacity-60 disabled:hover:translate-y-0"
             >
-              {isLoading ? (
+              {isLoading || isScanning ? (
                 <><Zap size={15} className="animate-pulse" />Scanning...</>
               ) : (
-                <><Zap size={15} />Run Free Audit</>
+                <><Zap size={15} />Get SEO Score</>
               )}
             </button>
           </form>
@@ -281,40 +323,77 @@ export function Hero() {
           )}
         </motion.div>
 
-        {/* Trust pills */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mb-6 flex flex-wrap items-center justify-center gap-5"
-        >
-          {TRUST_PILLS.map(({ icon: Icon, text }) => (
-            <div key={text} className="flex items-center gap-1.5">
-              <Icon size={13} className="text-indigo-400" />
-              <span className="font-['DM_Sans'] text-xs text-gray-500">{text}</span>
+        {/* Scanning animation */}
+        {isScanning && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-auto mb-4 flex max-w-xl flex-col items-center gap-3 py-4"
+          >
+            <div className="flex items-center gap-2">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <motion.div
+                  key={i}
+                  className="h-1.5 w-1.5 rounded-full bg-indigo-500"
+                  animate={{ opacity: [0.3, 1, 0.3], scaleY: [1, 2, 1] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
+                />
+              ))}
             </div>
-          ))}
-        </motion.div>
+            <span className="font-['DM_Mono'] text-xs text-gray-500">
+              Analyzing {domain}…
+            </span>
+          </motion.div>
+        )}
 
-        {/* Quick-launch links */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.55 }}
-          className="mb-14 flex flex-wrap items-center justify-center gap-2"
-        >
-          <span className="font-['DM_Mono'] text-xs text-gray-700">Try it on:</span>
-          {["stripe.com", "notion.so", "linear.app", "vercel.com"].map((demo) => (
-            <button
-              key={demo}
-              type="button"
-              onClick={() => handleQuickLink(demo)}
-              className="rounded-lg border border-black/10 dark:border-white/8 bg-black/5 dark:bg-white/4 px-3 py-1.5 font-['DM_Mono'] text-xs text-gray-500 dark:text-gray-400 transition-all duration-150 hover:border-black/20 hover:bg-black/10 hover:text-foreground dark:hover:border-white/15 dark:hover:bg-white/8"
+        {/* Scan error */}
+        {scanError && !isScanning && (
+          <motion.p
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-auto mb-4 max-w-xl pl-1 text-left font-['DM_Sans'] text-sm text-red-400"
+          >
+            {scanError}
+          </motion.p>
+        )}
+
+        {/* Trust pills + quick links — hidden once scanning starts or preview is shown */}
+        {!isScanning && !previewData && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="mb-6 flex flex-wrap items-center justify-center gap-5"
             >
-              {demo}
-            </button>
-          ))}
-        </motion.div>
+              {TRUST_PILLS.map(({ icon: Icon, text }) => (
+                <div key={text} className="flex items-center gap-1.5">
+                  <Icon size={13} className="text-indigo-400" />
+                  <span className="font-['DM_Sans'] text-xs text-gray-500">{text}</span>
+                </div>
+              ))}
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.55 }}
+              className="mb-14 flex flex-wrap items-center justify-center gap-2"
+            >
+              <span className="font-['DM_Mono'] text-xs text-gray-700">Try it on:</span>
+              {["stripe.com", "shopify.com", "notion.so"].map((demo) => (
+                <button
+                  key={demo}
+                  type="button"
+                  onClick={() => handleQuickLink(demo)}
+                  className="rounded-lg border border-black/10 dark:border-white/8 bg-black/5 dark:bg-white/4 px-3 py-1.5 font-['DM_Mono'] text-xs text-gray-500 dark:text-gray-400 transition-all duration-150 hover:border-black/20 hover:bg-black/10 hover:text-foreground dark:hover:border-white/15 dark:hover:bg-white/8"
+                >
+                  {demo}
+                </button>
+              ))}
+            </motion.div>
+          </>
+        )}
 
         {/* Stat cards */}
         <motion.div
@@ -350,27 +429,43 @@ export function Hero() {
         </motion.div>
       </div>
 
-      {/* Floating preview */}
-      <div className="relative mx-auto w-full max-w-4xl px-6">
-        <FloatingScorePreview />
+      {/* Preview area — min-h prevents layout jump while scanning */}
+      <div className="relative mx-auto w-full max-w-4xl px-6 min-h-[260px]">
+        {previewData ? (
+          <InstantPreview
+            domain={previewData.domain}
+            score={previewData.score}
+            issues={previewData.issues}
+            estimatedTrafficLoss={previewData.estimatedTrafficLoss}
+            onRunAnother={() => {
+              setPreviewData(null);
+              setScanError(null);
+              setDomain("");
+            }}
+          />
+        ) : !isScanning ? (
+          <FloatingScorePreview />
+        ) : null}
       </div>
 
-      {/* Scroll indicator */}
-      <motion.div
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2.2 }}
-      >
-        <span className="font-['DM_Mono'] text-[10px] uppercase tracking-widest text-gray-700">
-          Scroll
-        </span>
+      {/* Scroll indicator — hidden when preview is active */}
+      {!previewData && (
         <motion.div
-          className="h-8 w-px rounded-full bg-gradient-to-b from-gray-700 to-transparent"
-          animate={{ scaleY: [1, 0.4, 1] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </motion.div>
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 2.2 }}
+        >
+          <span className="font-['DM_Mono'] text-[10px] uppercase tracking-widest text-gray-700">
+            Scroll
+          </span>
+          <motion.div
+            className="h-8 w-px rounded-full bg-gradient-to-b from-gray-700 to-transparent"
+            animate={{ scaleY: [1, 0.4, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </motion.div>
+      )}
     </section>
   );
 }
