@@ -65,6 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       className={`${inter.variable} ${dmMono.variable}`}
+      suppressHydrationWarning
     >
       <head>
         {GA_ID ? (
@@ -130,7 +131,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         ></script>
         <SessionProvider>
-          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          <ThemeProvider attribute="class" forcedTheme="dark" enableSystem={false}>
             {children}
             <Toaster position="bottom-center" richColors closeButton />
             <Suspense fallback={null}>
