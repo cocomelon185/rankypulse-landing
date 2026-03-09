@@ -34,72 +34,70 @@ export default function SignInClientPage() {
 
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const identifierVal = identifier.trim();
+    const passwordVal = password;
+
+    if (!identifierVal || !passwordVal) {
+      setStatus("error");
+      setErrorMsg("Please enter your email and password.");
+      return;
+    }
+
     setStatus("loading");
     setErrorMsg("");
 
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Request timeout")), 15000)
-    );
-
     try {
-      console.log("[Auth] Starting sign in with identifier:", identifier.trim());
+      // Step 1: Get CSRF token required by NextAuth
+      const csrfRes = await fetch("/api/auth/csrf");
+      if (!csrfRes.ok) throw new Error("Failed to get CSRF token");
+      const { csrfToken } = (await csrfRes.json()) as { csrfToken: string };
 
-      const signInPromise = signIn("credentials", {
-        identifier: identifier.trim(),
-        password,
-        redirect: false,
-        callbackUrl,
+      // Step 2: POST credentials directly to NextAuth callback endpoint
+      const res = await fetch("/api/auth/callback/credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          csrfToken,
+          identifier: identifierVal,
+          password: passwordVal,
+          callbackUrl,
+          json: "true",
+        }).toString(),
+        redirect: "follow",
       });
 
-      const res = await Promise.race([signInPromise, timeoutPromise]) as any;
+      const data = (await res.json()) as { url?: string; error?: string };
 
-      console.log("[Auth] Sign in response:", res);
-
-      if (res?.error) {
-        if (res.error === "CredentialsSignin") {
-          // Check if this is a Google-only account so we can show a helpful message
-          try {
-            const check = await fetch(
-              `/api/auth/check-login-method?identifier=${encodeURIComponent(identifier.trim())}`
+      if (!data.url || data.url.includes("error=")) {
+        // Check if this is a Google-only account so we can show a helpful message
+        try {
+          const check = await fetch(
+            `/api/auth/check-login-method?identifier=${encodeURIComponent(identifierVal)}`
+          );
+          const methodData = (await check.json()) as {
+            exists: boolean;
+            hasPassword: boolean;
+            hasGoogle: boolean;
+          };
+          if (methodData.exists && methodData.hasGoogle && !methodData.hasPassword) {
+            setErrorMsg(
+              'This account uses Google sign-in. Please click "Continue with Google" above.'
             );
-            const data = (await check.json()) as {
-              exists: boolean;
-              hasPassword: boolean;
-              hasGoogle: boolean;
-            };
-            if (data.exists && data.hasGoogle && !data.hasPassword) {
-              setErrorMsg(
-                'This account uses Google sign-in. Please click "Continue with Google" above.'
-              );
-            } else {
-              setErrorMsg("Invalid email/username or password");
-            }
-          } catch {
+          } else {
             setErrorMsg("Invalid email/username or password");
           }
-        } else {
-          setErrorMsg(res.error);
+        } catch {
+          setErrorMsg("Invalid email/username or password");
         }
         setStatus("error");
         return;
       }
-      if (res?.url) {
-        console.log("[Auth] Redirecting to:", res.url);
-        window.location.href = res.url;
-        return;
-      }
-      console.warn("[Auth] Unexpected response:", res);
-      setStatus("error");
-      setErrorMsg("Sign in failed — try again.");
+
+      // Success — navigate to dashboard (or callbackUrl)
+      window.location.href = data.url;
     } catch (err) {
-      console.error("[Auth] Sign in error:", err);
       setStatus("error");
-      const errorMsg = err instanceof Error ? err.message : "Something went wrong";
-      setErrorMsg(
-        errorMsg === "Request timeout"
-          ? "Sign in took too long. Please check your connection and try again."
-          : errorMsg
-      );
+      setErrorMsg("Something went wrong — please try again.");
     }
   };
 
@@ -205,6 +203,8 @@ export default function SignInClientPage() {
           <form onSubmit={handleCredentialsSubmit} className="space-y-4">
             <input
               type="text"
+              id="identifier"
+              name="identifier"
               autoComplete="username"
               placeholder="Email or username"
               value={identifier}
@@ -215,6 +215,8 @@ export default function SignInClientPage() {
             />
             <input
               type="password"
+              id="password"
+              name="password"
               autoComplete="current-password"
               placeholder="Password"
               value={password}
