@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "backlinks",
+  "title": "Backlinks Response",
+  "description": "Shape returned by GET /api/backlinks",
+  "type": "object",
+  "properties": {
+    "snapshot": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["domain", "snapshot_date"],
+          "properties": {
+            "id": { "type": "string" },
+            "domain": { "type": "string" },
+            "total_backlinks": { "type": ["integer", "null"], "minimum": 0 },
+            "referring_domains": { "type": ["integer", "null"], "minimum": 0 },
+            "trust_score": { "type": ["number", "null"] },
+            "spam_score": { "type": ["number", "null"] },
+            "snapshot_date": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "trend": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string" },
+          "totalBacklinks": { "type": ["integer", "null"] },
+          "referringDomains": { "type": ["integer", "null"] }
+        }
+      }
+    },
+    "cached": { "type": "boolean" }
+  }
+}

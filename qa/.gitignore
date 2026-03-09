@@ -1,0 +1,21 @@
+# QA Artifacts (generated test outputs)
+artifacts/
+dist/
+*.log
+
+# Playwright
+test-results/
+playwright-report/
+
+# Lighthouse
+.lighthouseci/
+
+# Visual regression
+visual/baselines/*.tmp
+visual/diffs/
+
+# Node/build
+node_modules/
+.next/
+.swc/
+*.tsbuildinfo

@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "user-plan",
+  "title": "User Plan Response",
+  "description": "Shape returned by GET /api/user/plan",
+  "type": "object",
+  "required": ["plan"],
+  "properties": {
+    "plan": {
+      "type": "string",
+      "enum": ["free", "starter", "pro"]
+    },
+    "planStartedAt": { "type": ["string", "null"] },
+    "planExpiresAt": { "type": ["string", "null"] },
+    "keywordsUsed": { "type": "integer", "minimum": 0 },
+    "keywordCap": { "type": "integer", "minimum": 1 },
+    "userId": { "type": "string" }
+  }
+}

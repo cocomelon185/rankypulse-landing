@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "auth-session",
+  "title": "NextAuth Session Response",
+  "description": "Shape returned by GET /api/auth/session when authenticated",
+  "type": "object",
+  "required": ["user"],
+  "properties": {
+    "user": {
+      "type": "object",
+      "required": ["email"],
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": ["string", "null"] },
+        "image": { "type": ["string", "null"] }
+      }
+    },
+    "expires": { "type": "string" }
+  }
+}

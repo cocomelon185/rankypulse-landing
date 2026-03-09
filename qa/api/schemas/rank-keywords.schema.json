@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "rank-keywords",
+  "title": "Rank Keywords Response",
+  "description": "Shape returned by GET /api/rank/keywords",
+  "type": "object",
+  "required": ["keywords"],
+  "properties": {
+    "keywords": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "keyword", "domain"],
+        "properties": {
+          "id": { "type": "string" },
+          "keyword": { "type": "string", "minLength": 1 },
+          "domain": { "type": "string" },
+          "country": { "type": "string" },
+          "device": { "type": "string", "enum": ["desktop", "mobile"] },
+          "search_volume": { "type": ["integer", "null"], "minimum": 0 },
+          "current_position": { "type": ["integer", "null"], "minimum": 1 },
+          "previous_position": { "type": ["integer", "null"], "minimum": 1 },
+          "created_at": { "type": "string" }
+        }
+      }
+    },
+    "total": { "type": "integer", "minimum": 0 },
+    "plan": { "type": "string" },
+    "keywordCap": { "type": "integer", "minimum": 1 },
+    "keywordsUsed": { "type": "integer", "minimum": 0 }
+  }
+}

@@ -11,7 +11,20 @@
     "test:unit": "vitest run",
     "test:headed": "playwright test --headed",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "db:seed": "node scripts/seed-users.mjs"
+    "db:seed": "node scripts/seed-users.mjs",
+    "qa:smoke": "playwright test --config=playwright.qa.config.ts qa/playwright/smoke.spec.ts",
+    "qa:auth": "playwright test --config=playwright.qa.config.ts qa/playwright/auth.spec.ts",
+    "qa:full": "playwright test --config=playwright.qa.config.ts qa/playwright/",
+    "qa:crawl": "tsx qa/crawler/crawl.ts",
+    "qa:discover-routes": "tsx qa/crawler/route-discovery.ts",
+    "qa:discover-routes:prod": "BASE_URL=https://rankypulse.com tsx qa/crawler/route-discovery.ts",
+    "qa:api": "tsx qa/api/api-health.ts",
+    "qa:lighthouse": "tsx qa/lighthouse/run-lighthouse.ts",
+    "qa:visual:baseline": "MODE=baseline tsx qa/visual/capture.ts",
+    "qa:visual:current": "MODE=current tsx qa/visual/capture.ts",
+    "qa:visual:compare": "tsx qa/visual/compare.ts",
+    "qa:report": "tsx qa/reporting/generate-report.ts",
+    "qa:all": "npm run qa:discover-routes && npm run qa:crawl && npm run qa:api && npm run qa:report"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
@@ -50,7 +63,9 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "fast-xml-parser": "^5.4.2",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^4.0.18"
   }

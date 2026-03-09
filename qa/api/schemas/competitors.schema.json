@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "competitors",
+  "title": "Competitors Response",
+  "description": "Shape returned by GET /api/competitors",
+  "type": "object",
+  "required": ["competitors"],
+  "properties": {
+    "competitors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["competitor_domain", "intersections"],
+        "properties": {
+          "competitor_domain": { "type": "string" },
+          "intersections": { "type": "integer", "minimum": 0 },
+          "avg_position": { "type": ["number", "null"] },
+          "overlap_percent": { "type": ["number", "null"] },
+          "competitor_se_type": { "type": "string" },
+          "snapshot_date": { "type": "string" }
+        }
+      }
+    },
+    "cached": { "type": "boolean" }
+  }
+}
