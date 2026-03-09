@@ -130,7 +130,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         ></script>
         <SessionProvider>
-          <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
             {children}
             <Toaster position="bottom-center" richColors closeButton />
             <Suspense fallback={null}>

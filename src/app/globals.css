@@ -2,6 +2,11 @@
 
 @import "tailwindcss";
 
+/* Enable class-based dark mode: dark: utilities apply when any ancestor has .dark class.
+   Without this, Tailwind v4 defaults to prefers-color-scheme media query, which means
+   the ThemeProvider's class toggling has no effect on Tailwind utilities. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   /* ── SEMrush-Inspired Light Theme ── */
   --background: #ffffff;
