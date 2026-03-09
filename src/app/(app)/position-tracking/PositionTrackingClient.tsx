@@ -12,7 +12,8 @@ import {
     Filter,
     Download,
     MoreHorizontal,
-    Info
+    Info,
+    Zap
 } from "lucide-react";
 import { Card } from "@/components/horizon";
 import { LineAreaChart } from "@/components/charts/LineAreaChart";
@@ -34,6 +35,8 @@ interface VisibilityTrendPoint {
     score: number;
 }
 
+interface PlanInfo { plan: string; keywordsUsed: number; keywordCap: number; }
+
 export default function PositionTrackingClient() {
     const [keywords, setKeywords] = useState<RankKeyword[]>([]);
     const [overview, setOverview] = useState<Overview | null>(null);
@@ -41,6 +44,7 @@ export default function PositionTrackingClient() {
     const [domain, setDomain] = useState<string>("");
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
+    const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null);
 
     useEffect(() => {
         const raw = localStorage.getItem("rankypulse_last_url") ?? "";
@@ -82,6 +86,18 @@ export default function PositionTrackingClient() {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    // Fetch plan + quota info
+    useEffect(() => {
+        fetch("/api/user/plan")
+            .then((r) => r.json())
+            .then((d) => {
+                if (d.keywordCap !== undefined) {
+                    setPlanInfo({ plan: d.plan ?? "free", keywordsUsed: d.keywordsUsed ?? 0, keywordCap: d.keywordCap ?? 10 });
+                }
+            })
+            .catch(() => {});
+    }, []);
 
     // Summary stat cards derived from real overview data
     const visChange = overview?.visibility_change ?? 0;
@@ -178,16 +194,37 @@ export default function PositionTrackingClient() {
 
             {/* ── Keyword Table ── */}
             <Card extra="bg-[#13161f] border-white/5 overflow-hidden" default={true}>
-                <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                <div className="p-6 border-b border-white/5 flex items-center justify-between gap-4">
                     <h3 className="text-md font-bold text-white">Tracked Keywords</h3>
-                    <Button
-                        size="sm"
-                        className="bg-indigo-500 hover:bg-indigo-600 text-white text-xs h-8"
-                        onClick={() => setModalOpen(true)}
-                        disabled={!domain}
-                    >
-                        <Plus size={14} className="mr-2" /> Add Keywords
-                    </Button>
+                    <div className="flex items-center gap-3">
+                        {planInfo && (
+                            <div className="hidden sm:flex items-center gap-2">
+                                <span
+                                    className="text-[11px] font-semibold px-2 py-0.5 rounded border"
+                                    style={{
+                                        background: planInfo.keywordsUsed >= planInfo.keywordCap ? "rgba(239,68,68,0.1)" : "rgba(99,102,241,0.08)",
+                                        borderColor: planInfo.keywordsUsed >= planInfo.keywordCap ? "rgba(239,68,68,0.3)" : "rgba(99,102,241,0.2)",
+                                        color: planInfo.keywordsUsed >= planInfo.keywordCap ? "#EF4444" : "#818CF8",
+                                    }}
+                                >
+                                    {planInfo.keywordsUsed}/{planInfo.keywordCap}
+                                </span>
+                                {planInfo.keywordsUsed / planInfo.keywordCap >= 0.8 && (
+                                    <a href="/app/billing" className="text-[11px] font-bold text-indigo-400 hover:opacity-80 flex items-center gap-1">
+                                        <Zap size={10} /> Upgrade
+                                    </a>
+                                )}
+                            </div>
+                        )}
+                        <Button
+                            size="sm"
+                            className="bg-indigo-500 hover:bg-indigo-600 text-white text-xs h-8"
+                            onClick={() => setModalOpen(true)}
+                            disabled={!domain}
+                        >
+                            <Plus size={14} className="mr-2" /> Add Keywords
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Plus, Monitor, Smartphone } from "lucide-react";
+import { TrendingUp, TrendingDown, Plus, Monitor, Smartphone, Zap } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { TrackKeywordModal } from "@/components/modals/TrackKeywordModal";
 import type { RankKeyword } from "@/lib/rank-engine";
@@ -12,6 +12,8 @@ interface VisibilityPoint {
     visibility: number;
 }
 
+interface PlanInfo { plan: string; keywordsUsed: number; keywordCap: number; }
+
 export function RankTrackingClient() {
     const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
     const [keywords, setKeywords] = useState<RankKeyword[]>([]);
@@ -19,6 +21,7 @@ export function RankTrackingClient() {
     const [domain, setDomain] = useState<string>("");
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
+    const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null);
 
     // Resolve domain from localStorage (same key used by the audit flow)
     useEffect(() => {
@@ -30,6 +33,18 @@ export function RankTrackingClient() {
             .toLowerCase()
             .trim();
         setDomain(cleaned || "");
+    }, []);
+
+    // Fetch plan + quota info
+    useEffect(() => {
+        fetch("/api/user/plan")
+            .then((r) => r.json())
+            .then((d) => {
+                if (d.keywordCap !== undefined) {
+                    setPlanInfo({ plan: d.plan ?? "free", keywordsUsed: d.keywordsUsed ?? 0, keywordCap: d.keywordCap ?? 10 });
+                }
+            })
+            .catch(() => {});
     }, []);
 
     const fetchData = useCallback(async () => {
@@ -80,21 +95,43 @@ export function RankTrackingClient() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-black text-white tracking-tight">Rank Tracking</h1>
                     <p className="text-sm mt-1" style={{ color: "#6B7A99" }}>
                         {domain ? `Monitoring ${domain}` : "Monitor keyword positions daily"}
                     </p>
                 </div>
-                <button
-                    onClick={() => setModalOpen(true)}
-                    disabled={!domain}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition disabled:opacity-40"
-                    style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)" }}
-                >
-                    <Plus size={14} /> Track Keyword
-                </button>
+                <div className="flex items-center gap-3">
+                    {/* Quota badge */}
+                    {planInfo && (
+                        <div className="hidden sm:flex items-center gap-2">
+                            <span
+                                className="text-[11px] font-semibold px-2.5 py-1 rounded-lg border"
+                                style={{
+                                    background: planInfo.keywordsUsed >= planInfo.keywordCap ? "rgba(239,68,68,0.1)" : "rgba(255,100,45,0.08)",
+                                    borderColor: planInfo.keywordsUsed >= planInfo.keywordCap ? "rgba(239,68,68,0.3)" : "rgba(255,100,45,0.2)",
+                                    color: planInfo.keywordsUsed >= planInfo.keywordCap ? "#EF4444" : "#FF642D",
+                                }}
+                            >
+                                {planInfo.keywordsUsed}/{planInfo.keywordCap} keywords
+                            </span>
+                            {planInfo.keywordsUsed / planInfo.keywordCap >= 0.8 && (
+                                <a href="/app/billing" className="text-[11px] font-bold flex items-center gap-1 hover:opacity-80 transition" style={{ color: "#FF642D" }}>
+                                    <Zap size={10} /> Upgrade
+                                </a>
+                            )}
+                        </div>
+                    )}
+                    <button
+                        onClick={() => setModalOpen(true)}
+                        disabled={!domain}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition disabled:opacity-40"
+                        style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)" }}
+                    >
+                        <Plus size={14} /> Track Keyword
+                    </button>
+                </div>
             </div>
 
             {/* Visibility Trend + Winners/Losers */}

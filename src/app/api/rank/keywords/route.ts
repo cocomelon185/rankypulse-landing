@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { fetchRanking, fetchSearchVolumes } from "@/lib/rank-engine";
+import { logApiCost, getKeywordCap } from "@/lib/cost-engine";
 
 // GET /api/rank/keywords?domain=example.com
 // Returns all tracked keywords for the user+domain with latest position + change
@@ -98,6 +99,32 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "device must be desktop or mobile" }, { status: 400 });
   }
 
+  // ── Quota enforcement (server-authoritative) ─────────────────────────────
+  const { data: userRow } = await supabaseAdmin
+    .from("users")
+    .select("plan")
+    .eq("id", userId)
+    .single();
+  const plan = userRow?.plan ?? "free";
+  const cap = getKeywordCap(plan);
+
+  const { count: keywordCount } = await supabaseAdmin
+    .from("rank_keywords")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  if ((keywordCount ?? 0) >= cap) {
+    return NextResponse.json(
+      {
+        error: `Keyword limit reached. Your ${plan} plan allows ${cap} tracked keywords.`,
+        limitReached: true,
+        cap,
+        plan,
+      },
+      { status: 429 }
+    );
+  }
+
   // Insert keyword (upsert to handle duplicates gracefully)
   const { data: inserted, error: insertError } = await supabaseAdmin
     .from("rank_keywords")
@@ -130,6 +157,8 @@ export async function POST(req: Request) {
         .update({ volume, cpc })
         .eq("id", inserted.id);
     }
+    // Log cost (fire-and-forget)
+    logApiCost({ userId, operation: "keyword_volume", units: 1 });
   } catch {
     // Non-critical
   }
@@ -153,6 +182,8 @@ export async function POST(req: Request) {
       ranked_url,
       search_engine: "google",
     });
+    // Log cost (fire-and-forget)
+    logApiCost({ userId, operation: "serp_query", units: 1 });
   } catch {
     // Non-critical
   }

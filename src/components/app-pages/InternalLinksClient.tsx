@@ -15,6 +15,7 @@ import {
   ChevronUp,
   Globe,
   ExternalLink,
+  Download,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -862,6 +863,29 @@ export function InternalLinksClient() {
   const orphanUrls = new Set(data?.overview?.orphanPages ?? []);
   const heavyUrls = new Set(data?.overview?.heavyPages ?? []);
 
+  // CSV export for the Pages tab
+  function exportPagesCsv() {
+    if (!data?.pages?.length) return;
+    const headers = ["URL", "Inbound Links", "Outbound Links", "Depth", "Issues"];
+    const rows = data.pages.map((p) => [
+      p.url,
+      p.inboundCount,
+      p.outboundCount,
+      p.depth,
+      p.issues.join("; ") || "",
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `internal-links-${data.domain}-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   const tabs: { id: TabId; label: string; badge?: number }[] = [
     { id: "overview", label: "Overview" },
     {
@@ -915,6 +939,18 @@ export function InternalLinksClient() {
               </select>
               <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: TEXT_MUTED }} />
             </div>
+          )}
+
+          {/* Export CSV — only show when on Pages tab and data is loaded */}
+          {!isLoading && data?.pages?.length && activeTab === "pages" && (
+            <button
+              onClick={exportPagesCsv}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors hover:opacity-80"
+              style={{ borderColor: BORDER, color: TEXT_DIM }}
+            >
+              <Download size={14} />
+              Export CSV
+            </button>
           )}
 
           {/* Refresh */}

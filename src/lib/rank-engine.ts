@@ -306,7 +306,77 @@ export async function getWinnersLosers(params: {
   return { winners: winners.slice(0, 5), losers: losers.slice(0, 5) };
 }
 
+// ── SERP batch: fetch rankings for up to 50 keywords in one API call ──────────
+/**
+ * Fetches SERP rankings for multiple keywords in a single DataForSEO request.
+ * DataForSEO accepts an array of tasks; we map results back by index.
+ * Returns a map of keywordId → { position, ranked_url }.
+ */
+export async function fetchRankingsBatch(params: {
+  items: Array<{ keywordId: string; keyword: string; device: string; country: string }>;
+  domain: string;
+}): Promise<Record<string, { position: number | null; ranked_url: string | null }>> {
+  const { items, domain } = params;
+  if (items.length === 0) return {};
+
+  if (!process.env.DATAFORSEO_LOGIN || !process.env.DATAFORSEO_PASSWORD) {
+    throw new Error("DataForSEO credentials not configured");
+  }
+
+  const body = items.map((item) => ({
+    keyword: item.keyword,
+    language_code: "en",
+    location_code: getLocationCode(item.country),
+    device: item.device,
+    depth: 100,
+  }));
+
+  const res = await fetch(
+    "https://api.dataforseo.com/v3/serp/google/organic/live/regular",
+    { method: "POST", headers: dfsHeaders(), body: JSON.stringify(body) }
+  );
+
+  if (!res.ok) throw new Error(`DataForSEO batch SERP error: ${res.status}`);
+
+  const json = await res.json();
+  const cleanDomain = domain
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .split("/")[0]
+    .toLowerCase();
+
+  const results: Record<string, { position: number | null; ranked_url: string | null }> = {};
+
+  (json.tasks ?? []).forEach((task: any, idx: number) => {
+    const item = items[idx];
+    if (!item) return;
+    const organicItems: Array<{ type: string; rank_absolute: number; url: string; domain: string }> =
+      task?.result?.[0]?.items ?? [];
+    const match = organicItems.find((r) => {
+      if (r.type !== "organic") return false;
+      const d = (r.domain ?? r.url ?? "")
+        .replace(/^https?:\/\//, "")
+        .replace(/^www\./, "")
+        .split("/")[0]
+        .toLowerCase();
+      return d === cleanDomain;
+    });
+    results[item.keywordId] = {
+      position: match ? match.rank_absolute : null,
+      ranked_url: match ? match.url : null,
+    };
+  });
+
+  return results;
+}
+
 // ── Daily refresh: fetch all keywords for a domain, store history ─────────────
+/**
+ * Refreshes rankings for all keywords of a user+domain pair.
+ * Uses batch SERP calls (50 keywords per request) instead of sequential calls.
+ * Bulk-inserts all rank_history rows in one DB call.
+ * ~90% fewer API calls vs the old sequential approach.
+ */
 export async function refreshDomainRankings(params: {
   userId: string;
   domain: string;
@@ -315,70 +385,66 @@ export async function refreshDomainRankings(params: {
 
   const { data: keywords, error } = await supabaseAdmin
     .from("rank_keywords")
-    .select("id, keyword, device, country")
+    .select("id, keyword, device, country, volume")
     .eq("user_id", userId)
     .eq("domain", domain);
 
-  if (error || !keywords) return { processed: 0, errors: 1 };
+  if (error || !keywords || keywords.length === 0) return { processed: 0, errors: error ? 1 : 0 };
 
-  let processed = 0;
+  const BATCH_SIZE = 50;
+  const allRankings: Record<string, { position: number | null; ranked_url: string | null }> = {};
   let errors = 0;
 
-  for (const kw of keywords) {
+  // Process in batches of 50 — each batch = 1 DataForSEO API call
+  for (let i = 0; i < keywords.length; i += BATCH_SIZE) {
+    const batch = keywords.slice(i, i + BATCH_SIZE);
     try {
-      const { position, ranked_url } = await fetchRanking({
-        keyword: kw.keyword,
+      const batchResults = await fetchRankingsBatch({
+        items: batch.map((k) => ({
+          keywordId: k.id,
+          keyword: k.keyword,
+          device: k.device,
+          country: k.country,
+        })),
         domain,
-        device: kw.device as "desktop" | "mobile",
-        country: kw.country,
       });
-
-      await supabaseAdmin.from("rank_history").insert({
-        keyword_id: kw.id,
-        position,
-        ranked_url,
-        checked_at: new Date().toISOString(),
-        search_engine: "google",
-      });
-
-      processed++;
+      Object.assign(allRankings, batchResults);
     } catch {
-      errors++;
+      errors += batch.length;
     }
-
-    // Brief pause between calls to respect DataForSEO rate limits
-    await new Promise((r) => setTimeout(r, 300));
+    // 500ms pause between batches (not between individual keywords)
+    if (i + BATCH_SIZE < keywords.length) {
+      await new Promise((r) => setTimeout(r, 500));
+    }
   }
+
+  // Bulk insert all rank_history rows in a single DB call
+  const checkedAt = new Date().toISOString();
+  const historyRows = keywords
+    .filter((kw) => allRankings[kw.id] !== undefined)
+    .map((kw) => ({
+      keyword_id: kw.id,
+      position: allRankings[kw.id]?.position ?? null,
+      ranked_url: allRankings[kw.id]?.ranked_url ?? null,
+      checked_at: checkedAt,
+      search_engine: "google",
+    }));
+
+  if (historyRows.length > 0) {
+    await supabaseAdmin.from("rank_history").insert(historyRows);
+  }
+
+  const processed = historyRows.length;
 
   // Compute and store visibility snapshot for today
   if (processed > 0) {
     try {
-      // Fetch latest position + volume for each keyword
-      const { data: latest } = await supabaseAdmin
-        .from("rank_history")
-        .select("keyword_id, position")
-        .in("keyword_id", keywords.map((k) => k.id))
-        .gte(
-          "checked_at",
-          new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-        )
-        .order("checked_at", { ascending: false });
-
-      const seen = new Set<string>();
-      const rankingRows: Array<{ position: number; volume: number | null }> = [];
-
-      for (const row of latest ?? []) {
-        if (seen.has(row.keyword_id) || row.position === null) continue;
-        seen.add(row.keyword_id);
-        const kw = keywords.find((k) => k.id === row.keyword_id);
-        // Volume not stored in rank_history, fetch from rank_keywords
-        const { data: kwData } = await supabaseAdmin
-          .from("rank_keywords")
-          .select("volume")
-          .eq("id", row.keyword_id)
-          .single();
-        rankingRows.push({ position: row.position, volume: kwData?.volume ?? null });
-      }
+      const rankingRows = keywords
+        .filter((kw) => allRankings[kw.id]?.position !== null)
+        .map((kw) => ({
+          position: allRankings[kw.id]!.position!,
+          volume: kw.volume ?? null,
+        }));
 
       const score = computeVisibilityScore(rankingRows);
       const today = new Date().toISOString().split("T")[0];
