@@ -57,5 +57,8 @@ export const metadata: Metadata = {
 };
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  // Force dark theme on all marketing/landing pages regardless of user's stored
+  // theme preference. The in-app experience uses the ThemeProvider toggle; the
+  // marketing site is always dark to match the brand aesthetic.
+  return <div className="dark bg-background min-h-screen">{children}</div>;
 }
