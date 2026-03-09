@@ -36,13 +36,25 @@ export default function SignInClientPage() {
     e.preventDefault();
     setStatus("loading");
     setErrorMsg("");
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Request timeout")), 15000)
+    );
+
     try {
-      const res = await signIn("credentials", {
+      console.log("[Auth] Starting sign in with identifier:", identifier.trim());
+
+      const signInPromise = signIn("credentials", {
         identifier: identifier.trim(),
         password,
         redirect: false,
         callbackUrl,
       });
+
+      const res = await Promise.race([signInPromise, timeoutPromise]) as any;
+
+      console.log("[Auth] Sign in response:", res);
+
       if (res?.error) {
         if (res.error === "CredentialsSignin") {
           // Check if this is a Google-only account so we can show a helpful message
@@ -72,14 +84,22 @@ export default function SignInClientPage() {
         return;
       }
       if (res?.url) {
+        console.log("[Auth] Redirecting to:", res.url);
         window.location.href = res.url;
         return;
       }
+      console.warn("[Auth] Unexpected response:", res);
       setStatus("error");
       setErrorMsg("Sign in failed — try again.");
-    } catch {
+    } catch (err) {
+      console.error("[Auth] Sign in error:", err);
       setStatus("error");
-      setErrorMsg("Something went wrong — try again.");
+      const errorMsg = err instanceof Error ? err.message : "Something went wrong";
+      setErrorMsg(
+        errorMsg === "Request timeout"
+          ? "Sign in took too long. Please check your connection and try again."
+          : errorMsg
+      );
     }
   };
 
