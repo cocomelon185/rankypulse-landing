@@ -12,7 +12,7 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { parse as parseXml } from "fast-xml-parser";
+import { XMLParser } from "fast-xml-parser";
 import { URL } from "url";
 
 interface DiscoveredRoute {
@@ -110,10 +110,11 @@ async function parseSitemap(baseUrl: string): Promise<string[]> {
     }
 
     const xml = await response.text();
-    const parsed = parseXml(xml, {
+    const parser = new XMLParser({
       ignoreAttributes: false,
       attributeNamePrefix: "",
     });
+    const parsed = parser.parse(xml);
 
     const urls: string[] = [];
     if (parsed.urlset?.url) {
