@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -13,6 +13,9 @@ import {
   Zap,
   Globe,
   ChevronDown,
+  CheckSquare,
+  Square,
+  ArrowRight,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -103,7 +106,7 @@ function TrackButton({
       ) : (
         <Plus size={10} />
       )}
-      {state === "error" ? "Retry" : "Track"}
+      {state === "error" ? "Retry" : "Track Ranking"}
     </button>
   );
 }
@@ -124,6 +127,12 @@ export function KeywordsClient() {
   const [volumeFilter, setVolumeFilter] = useState<VolumeFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("volume");
 
+  // Multi-select for batch tracking
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [batchState, setBatchState] = useState<"idle" | "running" | "done">("idle");
+  const [batchProgress, setBatchProgress] = useState(0);
+  const batchRef = useRef(false);
+
   // Load domain from localStorage
   useEffect(() => {
     const raw = localStorage.getItem("rankypulse_last_url") ?? "";
@@ -143,6 +152,8 @@ export function KeywordsClient() {
     setLoading(true);
     setError(null);
     setHasSearched(true);
+    setSelected(new Set());
+    setBatchState("idle");
 
     // First try to load from cache (GET)
     try {
@@ -182,6 +193,36 @@ export function KeywordsClient() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function trackSelected() {
+    const keywords = Array.from(selected);
+    if (!keywords.length || batchState === "running") return;
+    batchRef.current = true;
+    setBatchState("running");
+    setBatchProgress(0);
+
+    for (let i = 0; i < keywords.length; i++) {
+      if (!batchRef.current) break;
+      await fetch("/api/rank/keywords", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain, keyword: keywords[i], country }),
+      });
+      setBatchProgress(i + 1);
+    }
+
+    setBatchState("done");
+    setSelected(new Set());
+  }
+
+  function toggleSelect(kw: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(kw)) next.delete(kw);
+      else next.add(kw);
+      return next;
+    });
   }
 
   // Filter & sort
@@ -290,7 +331,7 @@ export function KeywordsClient() {
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <p className="text-sm font-semibold text-white">
-                  {filtered.length}{suggestions.length !== filtered.length ? ` / ${suggestions.length}` : ""} keywords
+                  {filtered.length}{suggestions.length !== filtered.length ? ` / ${suggestions.length}` : ""} keywords found
                 </p>
                 {fromCache && (
                   <span
@@ -300,6 +341,9 @@ export function KeywordsClient() {
                     Cached
                   </span>
                 )}
+                <span className="hidden sm:inline text-[11px]" style={{ color: TEXT_MUTED }}>
+                  — click &quot;Track Ranking&quot; to monitor positions daily
+                </span>
               </div>
 
               <div className="flex items-center gap-2">
@@ -337,6 +381,65 @@ export function KeywordsClient() {
               </div>
             </div>
 
+            {/* Batch action bar */}
+            <AnimatePresence>
+              {selected.size > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl"
+                  style={{ background: "rgba(255,100,45,0.1)", border: "1px solid rgba(255,100,45,0.25)" }}
+                >
+                  <div className="flex items-center gap-2">
+                    <CheckSquare size={16} style={{ color: ACCENT }} />
+                    <span className="text-sm font-semibold text-white">
+                      {selected.size} keyword{selected.size !== 1 ? "s" : ""} selected
+                    </span>
+                    {batchState === "running" && (
+                      <span className="text-xs" style={{ color: TEXT_MUTED }}>
+                        — adding {batchProgress}/{selected.size + batchProgress}…
+                      </span>
+                    )}
+                    {batchState === "done" && (
+                      <span className="text-xs text-green-400">— all added to rank tracking!</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setSelected(new Set())}
+                      className="text-xs px-2 py-1 rounded-lg transition hover:opacity-80"
+                      style={{ color: TEXT_MUTED }}
+                    >
+                      Clear
+                    </button>
+                    <button
+                      onClick={trackSelected}
+                      disabled={batchState === "running"}
+                      className="flex items-center gap-1.5 text-sm font-semibold px-4 py-1.5 rounded-lg text-white transition disabled:opacity-60"
+                      style={{ background: `linear-gradient(135deg, ${ACCENT}, #E8541F)` }}
+                    >
+                      {batchState === "running" ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : (
+                        <ArrowRight size={13} />
+                      )}
+                      Track Selected ({selected.size})
+                    </button>
+                    {batchState === "done" && (
+                      <a
+                        href="/app/position-tracking"
+                        className="text-xs font-semibold underline"
+                        style={{ color: ACCENT }}
+                      >
+                        View Rank Tracking →
+                      </a>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Table */}
             {filtered.length === 0 ? (
               <div
@@ -355,6 +458,24 @@ export function KeywordsClient() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr style={{ background: "#0D1424", borderBottom: `1px solid ${BORDER}` }}>
+                      <th className="px-4 py-3 w-8">
+                        <button
+                          onClick={() => {
+                            if (selected.size === filtered.length) {
+                              setSelected(new Set());
+                            } else {
+                              setSelected(new Set(filtered.map((s) => s.keyword)));
+                            }
+                          }}
+                          className="text-gray-500 hover:text-white transition"
+                          title={selected.size === filtered.length ? "Deselect all" : "Select all"}
+                        >
+                          {selected.size === filtered.length && filtered.length > 0
+                            ? <CheckSquare size={14} style={{ color: ACCENT }} />
+                            : <Square size={14} />
+                          }
+                        </button>
+                      </th>
                       <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
                         Keyword
                       </th>
@@ -387,9 +508,23 @@ export function KeywordsClient() {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: Math.min(i * 0.03, 0.5) }}
-                          className="border-b hover:bg-white/[0.02] transition"
-                          style={{ borderColor: BORDER, background: i % 2 === 0 ? CARD_BG : "#0D1424" }}
+                          className="border-b hover:bg-white/[0.02] transition cursor-pointer"
+                          style={{
+                            borderColor: BORDER,
+                            background: selected.has(s.keyword)
+                              ? "rgba(255,100,45,0.05)"
+                              : i % 2 === 0 ? CARD_BG : "#0D1424",
+                          }}
+                          onClick={() => toggleSelect(s.keyword)}
                         >
+                          <td className="px-4 py-3 w-8" onClick={(e) => e.stopPropagation()}>
+                            <button onClick={() => toggleSelect(s.keyword)} className="transition">
+                              {selected.has(s.keyword)
+                                ? <CheckSquare size={14} style={{ color: ACCENT }} />
+                                : <Square size={14} className="text-gray-600" />
+                              }
+                            </button>
+                          </td>
                           <td className="px-4 py-3 font-medium text-white">
                             {s.keyword}
                           </td>
@@ -410,7 +545,7 @@ export function KeywordsClient() {
                               {comp.label}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-right">
+                          <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                             <TrackButton keyword={s.keyword} domain={domain} country={country} />
                           </td>
                         </motion.tr>
@@ -427,7 +562,7 @@ export function KeywordsClient() {
       {/* Initial empty state */}
       {!hasSearched && !loading && (
         <div
-          className="rounded-2xl border p-12 flex flex-col items-center gap-4"
+          className="rounded-2xl border p-12 flex flex-col items-center gap-6"
           style={{ background: CARD_BG, borderColor: BORDER }}
         >
           <div
@@ -439,10 +574,26 @@ export function KeywordsClient() {
           <div className="text-center max-w-sm">
             <h3 className="text-base font-bold text-white mb-1">Discover keyword opportunities</h3>
             <p className="text-sm" style={{ color: TEXT_MUTED }}>
-              Enter a seed keyword to find related keywords with search volumes, CPC, and competition data. Then add them to rank tracking.
+              Enter any topic to find related keywords your audience searches for — with volume, CPC, and competition data.
             </p>
           </div>
-          <div className="flex items-center gap-4 flex-wrap justify-center mt-2">
+          {/* 3-step guide */}
+          <div className="flex gap-3 flex-wrap justify-center text-left max-w-lg w-full">
+            {[
+              { step: "①", title: "Enter seed keyword", desc: "Any topic related to your business" },
+              { step: "②", title: "Browse results", desc: "Filter by volume, sort by CPC or difficulty" },
+              { step: "③", title: "Track Ranking", desc: "Add high-potential keywords to daily rank tracking" },
+            ].map(({ step, title, desc }) => (
+              <div key={step} className="flex items-start gap-2 flex-1 min-w-[140px]">
+                <span className="text-lg font-black shrink-0" style={{ color: ACCENT }}>{step}</span>
+                <div>
+                  <p className="text-xs font-bold text-white">{title}</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: TEXT_MUTED }}>{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-4 flex-wrap justify-center">
             {[
               { icon: <BarChart2 size={14} />, text: "Search volume data" },
               { icon: <DollarSign size={14} />, text: "CPC estimates" },

@@ -562,19 +562,43 @@ export function OpportunitiesClient() {
 
       {/* ── No rank tracking set up ─────────────────────────────────────────── */}
       {!loading && !error && !hasRankData && opportunities.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <div className="flex flex-col items-center justify-center py-16 gap-6">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: "rgba(123,92,245,0.1)" }}>
             <Target size={28} style={{ color: PURPLE }} />
           </div>
-          <div className="text-center max-w-sm">
-            <h3 className="text-lg font-semibold text-white mb-2">No opportunities detected yet</h3>
-            <p className="text-sm" style={{ color: TEXT_MUTED }}>
-              Start tracking keywords with volume ≥ 1,000. Opportunities (positions 11–20) are detected automatically after each daily ranking refresh.
+          <div className="text-center max-w-md">
+            <h3 className="text-lg font-semibold text-white mb-2">SEO Opportunities — your quickest path to page 1</h3>
+            <p className="text-sm mb-5" style={{ color: TEXT_MUTED }}>
+              Keywords ranked 11–20 are just one push away from page 1. A small content improvement on the right page can double your traffic.
             </p>
+            {/* 3-step funnel */}
+            <div className="flex items-start gap-0 text-left">
+              {[
+                { step: "1", title: "Track keywords", desc: "Add keywords with volume ≥ 1,000 to Rank Tracking" },
+                { step: "2", title: "Rankings refresh", desc: "Positions update daily — positions 11–20 are flagged" },
+                { step: "3", title: "Opportunities appear", desc: "Each card shows traffic estimate + recommended fixes" },
+              ].map(({ step, title, desc }, i) => (
+                <div key={step} className="flex flex-col items-center flex-1">
+                  <div className="flex items-center w-full">
+                    <div
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0"
+                      style={{ background: "rgba(123,92,245,0.15)", color: PURPLE }}
+                    >
+                      {step}
+                    </div>
+                    {i < 2 && <div className="flex-1 h-px" style={{ background: BORDER }} />}
+                  </div>
+                  <div className="mt-2 pr-2">
+                    <p className="text-xs font-semibold text-white">{title}</p>
+                    <p className="text-[11px] mt-0.5" style={{ color: TEXT_MUTED }}>{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
           <button
             onClick={() => router.push("/app/rank-tracking")}
-            className="mt-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
             style={{ background: `linear-gradient(135deg, ${ACCENT}, #E8541F)` }}
           >
             Set Up Rank Tracking
@@ -671,10 +695,19 @@ export function OpportunitiesClient() {
               <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "rgba(0,200,83,0.1)" }}>
                 <TrendingUp size={20} className="text-green-400" />
               </div>
-              <h3 className="text-sm font-semibold text-white">No page-2 opportunities right now</h3>
-              <p className="text-xs max-w-xs" style={{ color: TEXT_MUTED }}>
-                Opportunities are detected automatically after the daily ranking refresh. Track keywords with volume ≥ 1,000 to see opportunities here.
+              <h3 className="text-sm font-semibold text-white">No page-2 opportunities found yet</h3>
+              <p className="text-xs max-w-sm" style={{ color: TEXT_MUTED }}>
+                This could be good news — your tracked keywords may already be on page 1, or they need more data.
+                Opportunities are auto-detected after each daily ranking refresh.
+                Try adding more keywords with volume ≥ 1,000 to uncover new opportunities.
               </p>
+              <button
+                onClick={() => router.push("/app/keyword-research")}
+                className="mt-1 px-4 py-2 rounded-lg text-xs font-semibold text-white transition hover:opacity-90"
+                style={{ background: `linear-gradient(135deg, ${PURPLE}, #5B4CC4)` }}
+              >
+                Discover More Keywords
+              </button>
             </Card>
           )}
 

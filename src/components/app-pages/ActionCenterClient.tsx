@@ -407,15 +407,33 @@ export function ActionCenterClient() {
 
             {/* ═══ Empty State ═══ */}
             {tasks.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-24 rounded-xl border-2 border-dashed"
+                <div className="flex flex-col items-center justify-center py-16 rounded-xl border-2 border-dashed gap-5"
                     style={{ borderColor: "#1E2940" }}>
-                    <CheckCircle size={40} className="mb-4" style={{ color: "#00C853" }} />
-                    <p className="text-lg font-bold text-white mb-2">No tasks yet</p>
-                    <p className="text-sm mb-5" style={{ color: "#6B7A99" }}>
-                        Run a site audit to generate actionable SEO tasks
-                    </p>
+                    <CheckCircle size={40} style={{ color: "#00C853" }} />
+                    <div className="text-center max-w-md">
+                        <p className="text-lg font-bold text-white mb-2">Your SEO task list starts here</p>
+                        <p className="text-sm mb-6" style={{ color: "#6B7A99" }}>
+                            The Action Center turns your site audit into a prioritized fix list — each task shows exactly what to fix, why it matters, and how to do it.
+                        </p>
+                        {/* 2-step guide */}
+                        <div className="flex gap-4 text-left mb-6">
+                            {[
+                                { n: "①", title: "Run a Site Audit", desc: "Crawl any domain to detect SEO issues, broken links, and missing metadata." },
+                                { n: "②", title: "Get your fix list", desc: "Come back here — tasks appear with severity, effort estimate, and step-by-step fix instructions." },
+                            ].map(({ n, title, desc }) => (
+                                <div key={n} className="flex-1 rounded-xl p-4" style={{ background: "rgba(255,100,45,0.05)", border: "1px solid rgba(255,100,45,0.1)" }}>
+                                    <p className="text-lg font-black mb-1" style={{ color: "#FF642D" }}>{n}</p>
+                                    <p className="text-xs font-bold text-white mb-1">{title}</p>
+                                    <p className="text-[11px] leading-relaxed" style={{ color: "#6B7A99" }}>{desc}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <p className="text-xs mb-4" style={{ color: "#4A5568" }}>
+                            Your SEO Score improves as you complete tasks — track your progress toward 100.
+                        </p>
+                    </div>
                     <button onClick={() => router.push("/app/audit")}
-                        className="px-5 py-2.5 rounded-lg text-sm font-bold text-white"
+                        className="px-6 py-2.5 rounded-lg text-sm font-bold text-white"
                         style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)" }}>
                         Start Audit →
                     </button>

@@ -45,8 +45,10 @@ export async function GET(req: Request) {
   }
 
   const today = new Date().toISOString().split("T")[0];
+  const yesterday = new Date(Date.now() - 86_400_000).toISOString().split("T")[0];
 
-  const { data } = await supabaseAdmin
+  // Try today first, fall back to yesterday (avoids forcing a fresh API call on first load of a new day)
+  const { data: todayData } = await supabaseAdmin
     .from("competitor_snapshots")
     .select("*")
     .eq("user_id", userId)
@@ -55,7 +57,24 @@ export async function GET(req: Request) {
     .order("intersections", { ascending: false })
     .limit(10);
 
-  return NextResponse.json({ competitors: data ?? [], cached: (data?.length ?? 0) > 0 });
+  if (todayData && todayData.length > 0) {
+    return NextResponse.json({ competitors: todayData, cached: true, cacheDate: today });
+  }
+
+  const { data: yesterdayData } = await supabaseAdmin
+    .from("competitor_snapshots")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("domain", domain)
+    .eq("snapshot_date", yesterday)
+    .order("intersections", { ascending: false })
+    .limit(10);
+
+  return NextResponse.json({
+    competitors: yesterdayData ?? [],
+    cached: (yesterdayData?.length ?? 0) > 0,
+    cacheDate: yesterdayData && yesterdayData.length > 0 ? yesterday : null,
+  });
 }
 
 // ── POST: fetch from DataForSEO ────────────────────────────────────────────────
@@ -114,6 +133,12 @@ export async function POST(req: Request) {
       { method: "POST", headers: dfsHeaders(), body: JSON.stringify(requestBody) }
     );
 
+    if (res.status === 401 || res.status === 403) {
+      return NextResponse.json(
+        { error: "DataForSEO Labs access not enabled for your account. You can still manually track competitor domains below.", code: "DFS_LABS_REQUIRED" },
+        { status: 503 }
+      );
+    }
     if (!res.ok) {
       throw new Error(`DataForSEO competitors error: ${res.status}`);
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Target,
@@ -12,6 +13,8 @@ import {
   ExternalLink,
   BarChart2,
   Plus,
+  Lock,
+  Search,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -104,6 +107,96 @@ function TrackCompetitorBtn({
   );
 }
 
+// ── Manual competitor entry (fallback when Labs unavailable) ──────────────────
+function ManualCompetitorEntry({ myDomain, country }: { myDomain: string; country: string }) {
+  const [input, setInput] = useState("");
+  const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [tracked, setTracked] = useState<string[]>([]);
+
+  async function addCompetitor() {
+    const cleaned = input.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].trim().toLowerCase();
+    if (!cleaned) return;
+    setState("loading");
+    try {
+      const res = await fetch("/api/rank/keywords", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: myDomain,
+          keyword: `site:${cleaned}`,
+          country,
+          device: "desktop",
+        }),
+      });
+      if (res.ok) {
+        setTracked((prev) => [...prev, cleaned]);
+        setInput("");
+        setState("done");
+        setTimeout(() => setState("idle"), 2000);
+      } else {
+        setState("error");
+        setTimeout(() => setState("idle"), 2000);
+      }
+    } catch {
+      setState("error");
+      setTimeout(() => setState("idle"), 2000);
+    }
+  }
+
+  return (
+    <div
+      className="rounded-xl border p-5 space-y-4"
+      style={{ background: "rgba(123,92,245,0.05)", borderColor: "rgba(123,92,245,0.15)" }}
+    >
+      <div className="flex items-center gap-2">
+        <Search size={15} style={{ color: "#7B5CF5" }} />
+        <h3 className="text-sm font-bold text-white">Manually track competitor domains</h3>
+      </div>
+      <p className="text-xs" style={{ color: TEXT_DIM }}>
+        Enter a competitor domain to monitor their search presence via rank tracking.
+        We&apos;ll track <code className="text-orange-400">site:competitor.com</code> as a keyword signal.
+      </p>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          placeholder="e.g. competitor.com"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addCompetitor()}
+          className="flex-1 px-3 py-2 rounded-lg border text-sm bg-transparent text-white placeholder-slate-500 focus:outline-none focus:border-orange-500/50"
+          style={{ borderColor: BORDER }}
+        />
+        <button
+          onClick={addCompetitor}
+          disabled={!input.trim() || state === "loading"}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition disabled:opacity-50"
+          style={{ background: `linear-gradient(135deg, ${ACCENT}, #E8541F)` }}
+        >
+          <Plus size={14} />
+          {state === "loading" ? "Adding…" : state === "done" ? "Added!" : "Track"}
+        </button>
+      </div>
+      {tracked.length > 0 && (
+        <div className="space-y-1">
+          {tracked.map((d) => (
+            <div key={d} className="flex items-center gap-2 text-xs" style={{ color: "#22C55E" }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+              {d} — now tracking via Rank Tracking
+            </div>
+          ))}
+          <Link
+            href="/app/position-tracking"
+            className="text-xs font-semibold underline"
+            style={{ color: ACCENT }}
+          >
+            View in Rank Tracking →
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function CompetitorIntelligenceClient() {
@@ -113,7 +206,8 @@ export function CompetitorIntelligenceClient() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fromCache, setFromCache] = useState(false);
+  const [labsUnavailable, setLabsUnavailable] = useState(false);
+  const [cacheDate, setCacheDate] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
 
   // Resolve domain from localStorage
@@ -131,8 +225,9 @@ export function CompetitorIntelligenceClient() {
   const fetchData = useCallback(
     async (d: string, c: string, forceRefresh = false) => {
       if (!d) return;
-      forceRefresh ? setRefreshing(true) : setLoading(true);
+      if (forceRefresh) { setRefreshing(true); } else { setLoading(true); }
       setError(null);
+      setLabsUnavailable(false);
 
       try {
         if (forceRefresh) {
@@ -142,9 +237,15 @@ export function CompetitorIntelligenceClient() {
             body: JSON.stringify({ domain: d, country: c }),
           });
           const data = await res.json();
-          if (!res.ok) throw new Error(data.error ?? "Failed to fetch competitors");
+          if (!res.ok) {
+            if (data.code === "DFS_LABS_REQUIRED") {
+              setLabsUnavailable(true);
+              return;
+            }
+            throw new Error(data.error ?? "Failed to fetch competitors");
+          }
           setCompetitors(data.competitors ?? []);
-          setFromCache(data.cached ?? false);
+          setCacheDate(data.cacheDate ?? null);
         } else {
           const res = await fetch(`/api/competitors?domain=${encodeURIComponent(d)}&country=${c}`);
           const data = await res.json();
@@ -152,7 +253,7 @@ export function CompetitorIntelligenceClient() {
 
           if (data.competitors && data.competitors.length > 0) {
             setCompetitors(data.competitors);
-            setFromCache(data.cached ?? true);
+            setCacheDate(data.cacheDate ?? null);
           } else {
             await fetchData(d, c, true);
             return;
@@ -166,7 +267,6 @@ export function CompetitorIntelligenceClient() {
         setHasLoaded(true);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
@@ -175,6 +275,9 @@ export function CompetitorIntelligenceClient() {
   }, [domain, country, fetchData]);
 
   const topCompetitor = competitors[0] ?? null;
+
+  const today = new Date().toISOString().split("T")[0];
+  const cacheDateLabel = cacheDate === today ? "Cached today" : cacheDate ? `Last updated ${cacheDate}` : null;
 
   return (
     <div className="space-y-6">
@@ -190,7 +293,9 @@ export function CompetitorIntelligenceClient() {
           <div>
             <h1 className="text-xl font-bold text-white">Competitor Intelligence</h1>
             <p className="text-sm" style={{ color: TEXT_MUTED }}>
-              {domain ? `Competitors of ${domain}` : "Discover who competes with you in search"}
+              {domain
+                ? `Discover who competes with ${domain} in search`
+                : "Discover who competes with you in search"}
             </p>
           </div>
         </div>
@@ -213,8 +318,8 @@ export function CompetitorIntelligenceClient() {
             <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: TEXT_MUTED }} />
           </div>
 
-          {fromCache && (
-            <span className="text-[11px]" style={{ color: TEXT_MUTED }}>Cached today</span>
+          {cacheDateLabel && (
+            <span className="text-[11px]" style={{ color: TEXT_MUTED }}>{cacheDateLabel}</span>
           )}
 
           <button
@@ -242,8 +347,28 @@ export function CompetitorIntelligenceClient() {
         </div>
       )}
 
-      {/* Error */}
-      {!loading && error && (
+      {/* Labs unavailable — show manual entry fallback */}
+      {!loading && labsUnavailable && domain && (
+        <div className="space-y-5">
+          <div
+            className="rounded-xl border p-5 flex items-start gap-4"
+            style={{ background: "rgba(245,158,11,0.06)", borderColor: "rgba(245,158,11,0.2)" }}
+          >
+            <Lock size={18} className="text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-amber-400 font-semibold">Automatic competitor detection not available</p>
+              <p className="text-xs mt-1" style={{ color: "#D4A850" }}>
+                Competitor analysis uses DataForSEO Labs, which requires a Labs subscription.
+                You can still manually track competitor domains using the form below — they&apos;ll appear in your Rank Tracking dashboard.
+              </p>
+            </div>
+          </div>
+          <ManualCompetitorEntry myDomain={domain} country={country} />
+        </div>
+      )}
+
+      {/* Generic error */}
+      {!loading && error && !labsUnavailable && (
         <div
           className="rounded-xl border p-5 flex items-center gap-3"
           style={{ background: "rgba(239,68,68,0.06)", borderColor: "rgba(239,68,68,0.2)" }}
@@ -257,27 +382,30 @@ export function CompetitorIntelligenceClient() {
       )}
 
       {/* No domain */}
-      {!loading && !error && !domain && (
+      {!loading && !error && !labsUnavailable && !domain && (
         <div
           className="rounded-2xl border p-16 flex flex-col items-center gap-4"
           style={{ background: CARD_BG, borderColor: BORDER }}
         >
           <Globe size={40} style={{ color: TEXT_MUTED, opacity: 0.4 }} />
-          <p className="text-sm text-center" style={{ color: TEXT_MUTED }}>
-            Run a site audit first to set your domain, then return here.
-          </p>
-          <a
+          <div className="text-center space-y-1">
+            <p className="text-sm font-semibold text-white">No domain selected</p>
+            <p className="text-sm" style={{ color: TEXT_MUTED }}>
+              Run a site audit first to set your active domain, then return here.
+            </p>
+          </div>
+          <Link
             href="/app/audit"
             className="text-sm font-semibold px-4 py-2 rounded-lg text-white"
             style={{ background: `linear-gradient(135deg, ${ACCENT}, #E8541F)` }}
           >
             Go to Site Audit
-          </a>
+          </Link>
         </div>
       )}
 
       {/* No competitors yet */}
-      {hasLoaded && !loading && !error && domain && competitors.length === 0 && (
+      {hasLoaded && !loading && !error && !labsUnavailable && domain && competitors.length === 0 && (
         <div
           className="rounded-2xl border p-16 flex flex-col items-center gap-4"
           style={{ background: CARD_BG, borderColor: BORDER }}
@@ -302,7 +430,7 @@ export function CompetitorIntelligenceClient() {
       )}
 
       {/* Main content */}
-      {!loading && !error && competitors.length > 0 && (
+      {!loading && !error && !labsUnavailable && competitors.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}

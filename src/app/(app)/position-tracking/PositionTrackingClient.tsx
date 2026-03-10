@@ -134,8 +134,24 @@ export default function PositionTrackingClient() {
         new Date(t.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
     );
 
+    // Show pending banner when keywords exist but none have positions yet
+    const allPending = keywords.length > 0 && keywords.every((kw) => kw.position == null);
+
     return (
         <div className="flex flex-col gap-6">
+            {/* ── Pending Rankings Banner ── */}
+            {!loading && allPending && (
+                <div className="flex items-start gap-3 p-4 rounded-xl border border-indigo-500/15 bg-indigo-500/5 text-gray-400 text-xs">
+                    <Info size={14} className="text-indigo-400 shrink-0 mt-0.5" />
+                    <div>
+                        <p className="font-semibold text-indigo-300 mb-0.5">Rankings updating soon</p>
+                        <p>
+                            Your keywords are tracked and will show positions after the next daily refresh (runs at 6am UTC).
+                            Check back tomorrow — or ask your admin to trigger a manual rank update.
+                        </p>
+                    </div>
+                </div>
+            )}
             {/* ── Summary Stats ── */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {stats.map((stat, i) => (
@@ -180,8 +196,11 @@ export default function PositionTrackingClient() {
                             <div className="w-5 h-5 rounded-full border-2 border-indigo-500/30 border-t-indigo-500 animate-spin" />
                         </div>
                     ) : chartData.length === 0 ? (
-                        <div className="h-full flex items-center justify-center text-xs text-gray-600">
-                            No visibility data yet. Add keywords and run a rank update.
+                        <div className="h-full flex flex-col items-center justify-center gap-2">
+                            <p className="text-xs text-gray-600 text-center">No visibility data yet.</p>
+                            <p className="text-[11px] text-gray-700 text-center max-w-xs">
+                                Rankings refresh automatically every day at 6am UTC. Your first chart data will appear after the next scheduled update.
+                            </p>
                         </div>
                     ) : (
                         <LineAreaChart
@@ -233,8 +252,17 @@ export default function PositionTrackingClient() {
                             <div className="w-5 h-5 rounded-full border-2 border-indigo-500/30 border-t-indigo-500 animate-spin" />
                         </div>
                     ) : keywords.length === 0 ? (
-                        <div className="px-6 py-8 text-center text-xs text-gray-600">
-                            No keywords tracked yet. Click &quot;Add Keywords&quot; to get started.
+                        <div className="px-6 py-12 flex flex-col items-center gap-3 text-center">
+                            <p className="text-sm font-semibold text-gray-400">No keywords tracked yet</p>
+                            <p className="text-xs text-gray-600 max-w-xs">
+                                Add keywords to start monitoring your Google rankings. Positions refresh daily — you&apos;ll see data after the first update.
+                            </p>
+                            <button
+                                onClick={() => setModalOpen(true)}
+                                className="mt-1 flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-indigo-500 hover:bg-indigo-600 transition"
+                            >
+                                <Plus size={12} /> Add Your First Keyword
+                            </button>
                         </div>
                     ) : (
                         <table className="w-full text-left">

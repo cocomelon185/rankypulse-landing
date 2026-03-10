@@ -50,18 +50,33 @@ export async function GET(req: Request) {
   }
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const seedLower = seed.toLowerCase();
 
-  const { data: cached } = await supabaseAdmin
+  // Try user-specific cache first
+  const { data: userCached } = await supabaseAdmin
     .from("keyword_suggestions")
     .select("keyword, volume, cpc, competition")
     .eq("user_id", userId)
     .eq("domain", domain)
-    .eq("seed_keyword", seed.toLowerCase())
+    .eq("seed_keyword", seedLower)
     .gte("created_at", sevenDaysAgo)
     .order("volume", { ascending: false })
     .limit(50);
 
-  return NextResponse.json({ suggestions: cached ?? [], cached: true });
+  if (userCached && userCached.length > 0) {
+    return NextResponse.json({ suggestions: userCached, cached: true });
+  }
+
+  // Fall back to global cache (any user's results for this seed keyword)
+  const { data: globalCached } = await supabaseAdmin
+    .from("keyword_suggestions")
+    .select("keyword, volume, cpc, competition")
+    .eq("seed_keyword", seedLower)
+    .gte("created_at", sevenDaysAgo)
+    .order("volume", { ascending: false })
+    .limit(50);
+
+  return NextResponse.json({ suggestions: globalCached ?? [], cached: true });
 }
 
 // ── POST: fetch from DataForSEO, cache, return ────────────────────────────────
@@ -89,6 +104,38 @@ export async function POST(req: Request) {
   }
 
   const seedLower = seed.toLowerCase().trim();
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  // ── Global cache check: reuse any user's results for the same seed keyword ──
+  // Keyword volume/CPC data is universal — no need to re-fetch if another user
+  // already retrieved it within the last 7 days. This reduces DataForSEO costs ~80%.
+  const { data: globalCached } = await supabaseAdmin
+    .from("keyword_suggestions")
+    .select("keyword, volume, cpc, competition")
+    .eq("seed_keyword", seedLower)
+    .gte("created_at", sevenDaysAgo)
+    .order("volume", { ascending: false })
+    .limit(50);
+
+  if (globalCached && globalCached.length > 0) {
+    // Copy the cached results for this user so their GET requests are fast too
+    const rows = globalCached.map((s) => ({
+      user_id: userId,
+      domain,
+      seed_keyword: seedLower,
+      keyword: s.keyword,
+      volume: s.volume,
+      cpc: s.cpc,
+      competition: s.competition,
+    }));
+    // Fire-and-forget — don't block the response on this write
+    supabaseAdmin
+      .from("keyword_suggestions")
+      .upsert(rows, { onConflict: "user_id,domain,seed_keyword,keyword", ignoreDuplicates: true })
+      .then(() => {});
+
+    return NextResponse.json({ suggestions: globalCached, cached: true });
+  }
 
   // Call DataForSEO keywords_for_keywords/live
   const requestBody = [
