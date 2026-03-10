@@ -1,24 +1,29 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { isDataProviderUnavailableCode } from "@/lib/data-provider";
 import {
-  Search,
-  TrendingUp,
-  Plus,
-  Loader2,
-  Filter,
-  BarChart2,
-  DollarSign,
-  Zap,
-  Globe,
-  ChevronDown,
-  CheckSquare,
-  Square,
   ArrowRight,
+  BarChart2,
+  BookmarkPlus,
+  Check,
+  CheckSquare,
+  ChevronDown,
+  DollarSign,
+  Download,
+  FolderPlus,
+  Globe,
+  Loader2,
+  Search,
+  Sparkles,
+  Square,
+  Target,
+  TrendingUp,
+  X,
+  Zap,
 } from "lucide-react";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
 interface Suggestion {
   keyword: string;
   volume: number | null;
@@ -26,8 +31,14 @@ interface Suggestion {
   competition: number | null;
 }
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+type VolumeFilter = "all" | "1k" | "5k" | "10k";
+type DifficultyFilter = "all" | "low" | "medium" | "high";
+type CpcFilter = "all" | "low" | "mid" | "high";
+type IntentFilter = "all" | "informational" | "commercial" | "transactional" | "navigational";
+type SortKey = "volume" | "cpc" | "competition" | "opportunity";
+
 const CARD_BG = "#151B27";
+const CARD_BG_ALT = "#0D1424";
 const BORDER = "#1E2940";
 const ACCENT = "#FF642D";
 const TEXT_MUTED = "#64748B";
@@ -43,14 +54,22 @@ const COUNTRIES = [
   { code: "FR", label: "France" },
 ];
 
-type VolumeFilter = "all" | "1k" | "5k" | "10k";
-type SortKey = "volume" | "cpc" | "competition";
+const SUGGESTED_KEYWORDS = [
+  "seo audit",
+  "website audit",
+  "technical seo",
+  "backlink checker",
+  "competitor analysis",
+  "rank tracker",
+];
 
-function competitionLabel(c: number | null): { label: string; color: string } {
-  if (c === null) return { label: "—", color: TEXT_MUTED };
-  if (c < 0.33) return { label: "Low", color: "#22C55E" };
-  if (c < 0.66) return { label: "Medium", color: "#F59E0B" };
-  return { label: "High", color: "#EF4444" };
+function normalizeDomainInput(raw: string): string {
+  return raw
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .split("/")[0]
+    .toLowerCase()
+    .trim();
 }
 
 function formatVolume(v: number | null): string {
@@ -60,16 +79,201 @@ function formatVolume(v: number | null): string {
   return String(v);
 }
 
-// ── Tracking state per keyword ────────────────────────────────────────────────
-function TrackButton({
-  keyword,
-  domain,
-  country,
+function formatCurrency(v: number | null): string {
+  if (v === null) return "—";
+  return `$${v.toFixed(2)}`;
+}
+
+function competitionLabel(c: number | null): { label: "Low" | "Medium" | "High" | "—"; color: string; tone: string } {
+  if (c === null) return { label: "—", color: TEXT_MUTED, tone: "rgba(100,116,139,0.16)" };
+  if (c < 0.33) return { label: "Low", color: "#22C55E", tone: "rgba(34,197,94,0.14)" };
+  if (c < 0.66) return { label: "Medium", color: "#F59E0B", tone: "rgba(245,158,11,0.14)" };
+  return { label: "High", color: "#EF4444", tone: "rgba(239,68,68,0.14)" };
+}
+
+function classifyIntent(keyword: string): IntentFilter {
+  const value = keyword.toLowerCase();
+  if (/\b(buy|pricing|price|demo|service|agency|software|tool|platform)\b/.test(value)) return "transactional";
+  if (/\b(best|top|vs|review|compare|comparison|alternative|competitor)\b/.test(value)) return "commercial";
+  if (/\b(login|signin|sign in|docs|documentation|github|youtube)\b/.test(value)) return "navigational";
+  return "informational";
+}
+
+function intentLabel(intent: IntentFilter): string {
+  if (intent === "all") return "All intents";
+  return intent.charAt(0).toUpperCase() + intent.slice(1);
+}
+
+function cpcBand(value: number | null): CpcFilter {
+  if (value === null) return "low";
+  if (value < 2) return "low";
+  if (value < 8) return "mid";
+  return "high";
+}
+
+function trendMeta(suggestion: Suggestion): { label: string; color: string; tone: string } {
+  const volume = suggestion.volume ?? 0;
+  const competition = suggestion.competition ?? 1;
+  if (volume >= 5000 && competition < 0.5) {
+    return { label: "Rising", color: "#22C55E", tone: "rgba(34,197,94,0.14)" };
+  }
+  if (volume >= 1000) {
+    return { label: "Steady", color: "#60A5FA", tone: "rgba(96,165,250,0.14)" };
+  }
+  return { label: "Niche", color: "#A78BFA", tone: "rgba(167,139,250,0.14)" };
+}
+
+function opportunityScore(suggestion: Suggestion): number {
+  const volume = suggestion.volume ?? 0;
+  const cpc = suggestion.cpc ?? 0;
+  const competition = suggestion.competition ?? 1;
+  return volume * (1.25 - competition) + cpc * 100;
+}
+
+function getKDScore(competition: number | null): number {
+  if (competition === null) return -1;
+  return Math.round(competition * 100);
+}
+
+function getKDColor(kd: number): string {
+  if (kd < 0) return TEXT_MUTED;
+  if (kd < 34) return "#22C55E";
+  if (kd < 67) return "#F59E0B";
+  return "#EF4444";
+}
+
+function getKDLabel(kd: number): string {
+  if (kd < 0) return "—";
+  if (kd < 34) return "Easy";
+  if (kd < 67) return "Medium";
+  return "Hard";
+}
+
+function isQuickWin(suggestion: Suggestion): boolean {
+  return (suggestion.competition ?? 1) < 0.33 && (suggestion.volume ?? 0) >= 500;
+}
+
+function exportCSV(rows: Suggestion[], seed: string): void {
+  const header = "Keyword,Monthly Volume,CPC ($),KD Score,KD Label,Intent";
+  const lines = rows.map((s) => {
+    const kd = getKDScore(s.competition);
+    const intent = classifyIntent(s.keyword);
+    const cpc = s.cpc != null ? s.cpc.toFixed(2) : "";
+    return `"${s.keyword.replace(/"/g, '""')}",${s.volume ?? ""},${cpc},${kd >= 0 ? kd : ""},${kd >= 0 ? getKDLabel(kd) : ""},${intent}`;
+  });
+  const csv = [header, ...lines].join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `keywords-${seed.replace(/\s+/g, "-")}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function extractKeywordAverage(values: Array<number | null>): string {
+  const valid = values.filter((value): value is number => typeof value === "number");
+  if (!valid.length) return "—";
+  const avg = valid.reduce((sum, value) => sum + value, 0) / valid.length;
+  return avg >= 1000 ? formatVolume(Math.round(avg)) : avg.toFixed(1);
+}
+
+function SummaryCard({
+  label,
+  value,
+  note,
+  icon,
 }: {
-  keyword: string;
-  domain: string;
-  country: string;
+  label: string;
+  value: string;
+  note: string;
+  icon: React.ReactNode;
 }) {
+  return (
+    <div
+      className="rounded-xl border p-4"
+      style={{ background: CARD_BG, borderColor: BORDER }}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: TEXT_MUTED }}>
+          {label}
+        </p>
+        <span style={{ color: ACCENT }}>{icon}</span>
+      </div>
+      <p className="mt-3 text-2xl font-black tracking-tight text-white">{value}</p>
+      <p className="mt-1 text-xs" style={{ color: TEXT_DIM }}>{note}</p>
+    </div>
+  );
+}
+
+function DataCard({
+  title,
+  description,
+  icon,
+}: {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div
+      className="rounded-xl border p-4"
+      style={{ background: CARD_BG, borderColor: BORDER }}
+    >
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "rgba(255,100,45,0.12)", color: ACCENT }}>
+        {icon}
+      </div>
+      <h3 className="mt-4 text-sm font-bold text-white">{title}</h3>
+      <p className="mt-1 text-sm leading-6" style={{ color: TEXT_DIM }}>{description}</p>
+    </div>
+  );
+}
+
+function KeywordTableSkeleton() {
+  return (
+    <div className="rounded-xl border overflow-hidden" style={{ borderColor: BORDER }}>
+      <div className="grid grid-cols-[2.4fr_1fr_0.8fr_1.1fr_1fr_1.4fr] gap-3 border-b px-4 py-3" style={{ background: CARD_BG_ALT, borderColor: BORDER }}>
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div key={index} className="h-3 rounded bg-white/10 animate-pulse" />
+        ))}
+      </div>
+      {Array.from({ length: 6 }).map((_, row) => (
+        <div key={row} className="grid grid-cols-[2.4fr_1fr_0.8fr_1.1fr_1fr_1.4fr] gap-3 border-b px-4 py-4" style={{ background: row % 2 === 0 ? CARD_BG : CARD_BG_ALT, borderColor: BORDER }}>
+          {Array.from({ length: 6 }).map((_, col) => (
+            <div key={col} className={`h-4 rounded bg-white/8 animate-pulse ${col === 0 ? "w-4/5" : col === 5 ? "w-full" : "w-3/4"}`} />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function KDCell({ competition }: { competition: number | null }) {
+  const kd = getKDScore(competition);
+  const color = getKDColor(kd);
+  const label = getKDLabel(kd);
+
+  if (kd < 0) {
+    return <span style={{ color: TEXT_MUTED }}>—</span>;
+  }
+
+  return (
+    <div className="flex flex-col gap-1" style={{ minWidth: 56 }}>
+      <div className="flex items-baseline gap-1">
+        <span className="text-sm font-black tabular-nums" style={{ color }}>{kd}</span>
+        <span className="text-[10px] font-semibold" style={{ color: TEXT_MUTED }}>{label}</span>
+      </div>
+      <div className="w-full rounded-full overflow-hidden" style={{ height: 5, background: "rgba(255,255,255,0.07)" }}>
+        <div
+          className="h-full rounded-full"
+          style={{ width: `${kd}%`, background: color, opacity: 0.9 }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function TrackButton({ keyword, domain, country }: { keyword: string; domain: string; country: string }) {
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
 
   async function track() {
@@ -86,110 +290,154 @@ function TrackButton({
     }
   }
 
-  if (state === "done") {
-    return (
-      <span className="text-[11px] font-bold text-green-400 flex items-center gap-1">
-        <TrendingUp size={11} /> Tracking
-      </span>
-    );
-  }
-
   return (
     <button
+      type="button"
       onClick={track}
-      disabled={state === "loading"}
-      className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg transition hover:opacity-80 disabled:opacity-50"
-      style={{ background: "rgba(255,100,45,0.12)", color: ACCENT }}
+      disabled={state === "loading" || state === "done"}
+      className="inline-flex min-w-[118px] items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+      style={{
+        background: state === "done" ? "rgba(34,197,94,0.14)" : `linear-gradient(135deg, ${ACCENT}, #E8541F)`,
+        color: state === "done" ? "#22C55E" : "#fff",
+      }}
     >
       {state === "loading" ? (
-        <Loader2 size={10} className="animate-spin" />
+        <Loader2 size={12} className="animate-spin" />
+      ) : state === "done" ? (
+        <Check size={12} />
       ) : (
-        <Plus size={10} />
+        <Target size={12} />
       )}
-      {state === "error" ? "Retry" : "Track Ranking"}
+      {state === "done" ? "Tracking" : state === "error" ? "Retry Track" : "Track"}
     </button>
   );
 }
-
-// ── Main component ────────────────────────────────────────────────────────────
 
 export function KeywordsClient() {
   const [domain, setDomain] = useState("");
   const [seed, setSeed] = useState("");
   const [country, setCountry] = useState("US");
+  const [lastAuditDomain, setLastAuditDomain] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [providerUnavailable, setProviderUnavailable] = useState(false);
   const [fromCache, setFromCache] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-
-  // Filters & sort
   const [volumeFilter, setVolumeFilter] = useState<VolumeFilter>("all");
-  const [sortKey, setSortKey] = useState<SortKey>("volume");
-
-  // Multi-select for batch tracking
+  const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>("all");
+  const [cpcFilter, setCpcFilter] = useState<CpcFilter>("all");
+  const [intentFilter, setIntentFilter] = useState<IntentFilter>("all");
+  const [sortKey, setSortKey] = useState<SortKey>("opportunity");
+  const [keywordSearch, setKeywordSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [saved, setSaved] = useState<Set<string>>(new Set());
+  const [projectAdded, setProjectAdded] = useState<Set<string>>(new Set());
   const [batchState, setBatchState] = useState<"idle" | "running" | "done">("idle");
   const [batchProgress, setBatchProgress] = useState(0);
   const batchRef = useRef(false);
+  const seededFromAuditRef = useRef(false);
 
-  // Load domain from localStorage
+  function resetResults() {
+    batchRef.current = false;
+    setSuggestions([]);
+    setLoading(false);
+    setError(null);
+    setProviderUnavailable(false);
+    setFromCache(false);
+    setHasSearched(false);
+    setSelected(new Set());
+    setBatchState("idle");
+    setBatchProgress(0);
+    setKeywordSearch("");
+  }
+
+  function clearSearch() {
+    setSeed("");
+    resetResults();
+  }
+
   useEffect(() => {
-    const raw = localStorage.getItem("rankypulse_last_url") ?? "";
-    const cleaned = raw
-      .replace(/^https?:\/\//, "")
-      .replace(/^www\./, "")
-      .split("/")[0]
-      .toLowerCase()
-      .trim();
-    setDomain(cleaned || "");
+    const raw = typeof window !== "undefined" ? localStorage.getItem("rankypulse_last_url") ?? "" : "";
+    const cleaned = normalizeDomainInput(raw);
+    setLastAuditDomain(cleaned);
+    setDomain(cleaned);
+    resetResults();
+
+    return () => {
+      batchRef.current = false;
+      resetResults();
+    };
   }, []);
+
+  function handleDomainChange(nextDomain: string) {
+    setDomain(normalizeDomainInput(nextDomain));
+    resetResults();
+  }
+
+  function handleSeedChange(nextSeed: string) {
+    setSeed(nextSeed);
+    resetResults();
+  }
+
+  function handleCountryChange(nextCountry: string) {
+    setCountry(nextCountry);
+    resetResults();
+  }
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    if (!seed.trim() || !domain) return;
+    const cleanedSeed = seed.trim();
+    if (!cleanedSeed || !domain) return;
 
     setLoading(true);
     setError(null);
+    setProviderUnavailable(false);
+    setFromCache(false);
     setHasSearched(true);
     setSelected(new Set());
     setBatchState("idle");
+    setBatchProgress(0);
 
-    // First try to load from cache (GET)
     try {
       const cacheRes = await fetch(
-        `/api/keywords/research?domain=${encodeURIComponent(domain)}&seed=${encodeURIComponent(seed.trim())}`
+        `/api/keywords/research?domain=${encodeURIComponent(domain)}&seed=${encodeURIComponent(cleanedSeed)}`
       );
       if (cacheRes.ok) {
-        const { suggestions: cached } = await cacheRes.json();
-        if (cached && cached.length > 0) {
-          setSuggestions(cached);
-          setFromCache(true);
+        const cacheJson = await cacheRes.json() as { suggestions?: Suggestion[]; cached?: boolean };
+        if (cacheJson.suggestions && cacheJson.suggestions.length > 0) {
+          setSuggestions(cacheJson.suggestions);
+          setFromCache(Boolean(cacheJson.cached));
           setLoading(false);
           return;
         }
       }
     } catch {
-      // ignore — fall through to fresh fetch
+      // Fall through to live request.
     }
 
-    // Fresh fetch from DataForSEO
     try {
       const res = await fetch("/api/keywords/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain, seed: seed.trim(), country }),
+        body: JSON.stringify({ domain, seed: cleanedSeed, country }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Failed to fetch keyword suggestions");
+        if (isDataProviderUnavailableCode(data.code)) {
+          setProviderUnavailable(true);
+          setSuggestions([]);
+          return;
+        }
+        setError(data.error ?? "Failed to fetch keyword opportunities.");
         setSuggestions([]);
       } else {
         setSuggestions(data.suggestions ?? []);
-        setFromCache(false);
+        setFromCache(Boolean(data.cached));
       }
     } catch {
       setError("Network error. Please try again.");
+      setSuggestions([]);
     } finally {
       setLoading(false);
     }
@@ -202,351 +450,592 @@ export function KeywordsClient() {
     setBatchState("running");
     setBatchProgress(0);
 
-    for (let i = 0; i < keywords.length; i++) {
+    for (let index = 0; index < keywords.length; index += 1) {
       if (!batchRef.current) break;
       await fetch("/api/rank/keywords", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain, keyword: keywords[i], country }),
+        body: JSON.stringify({ domain, keyword: keywords[index], country }),
       });
-      setBatchProgress(i + 1);
+      setBatchProgress(index + 1);
     }
 
     setBatchState("done");
     setSelected(new Set());
   }
 
-  function toggleSelect(kw: string) {
+  function toggleSelect(keyword: string) {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(kw)) next.delete(kw);
-      else next.add(kw);
+      if (next.has(keyword)) next.delete(keyword);
+      else next.add(keyword);
       return next;
     });
   }
 
-  // Filter & sort
-  const filtered = suggestions
-    .filter((s) => {
-      if (volumeFilter === "all") return true;
-      if (volumeFilter === "1k") return (s.volume ?? 0) >= 1_000;
-      if (volumeFilter === "5k") return (s.volume ?? 0) >= 5_000;
-      if (volumeFilter === "10k") return (s.volume ?? 0) >= 10_000;
-      return true;
-    })
-    .sort((a, b) => {
-      if (sortKey === "volume") return (b.volume ?? 0) - (a.volume ?? 0);
-      if (sortKey === "cpc") return (b.cpc ?? 0) - (a.cpc ?? 0);
-      if (sortKey === "competition") return (b.competition ?? 0) - (a.competition ?? 0);
-      return 0;
+  function toggleSaved(keyword: string) {
+    setSaved((prev) => {
+      const next = new Set(prev);
+      if (next.has(keyword)) next.delete(keyword);
+      else next.add(keyword);
+      return next;
     });
+  }
+
+  function toggleProjectAdded(keyword: string) {
+    setProjectAdded((prev) => {
+      const next = new Set(prev);
+      if (next.has(keyword)) next.delete(keyword);
+      else next.add(keyword);
+      return next;
+    });
+  }
+
+  const maxVolume = useMemo(
+    () => Math.max(1, ...suggestions.map((s) => s.volume ?? 0)),
+    [suggestions]
+  );
+
+  const filtered = useMemo(
+    () =>
+      suggestions
+        .filter((suggestion) => {
+          const volume = suggestion.volume ?? 0;
+          const difficulty = competitionLabel(suggestion.competition).label.toLowerCase();
+          const intent = classifyIntent(suggestion.keyword);
+          const cpc = cpcBand(suggestion.cpc);
+
+          if (volumeFilter === "1k" && volume < 1000) return false;
+          if (volumeFilter === "5k" && volume < 5000) return false;
+          if (volumeFilter === "10k" && volume < 10000) return false;
+          if (difficultyFilter !== "all" && difficulty !== difficultyFilter) return false;
+          if (intentFilter !== "all" && intent !== intentFilter) return false;
+          if (cpcFilter !== "all" && cpc !== cpcFilter) return false;
+          if (keywordSearch && !suggestion.keyword.toLowerCase().includes(keywordSearch.toLowerCase())) return false;
+          return true;
+        })
+        .sort((left, right) => {
+          if (sortKey === "volume") return (right.volume ?? 0) - (left.volume ?? 0);
+          if (sortKey === "cpc") return (right.cpc ?? 0) - (left.cpc ?? 0);
+          if (sortKey === "competition") return (left.competition ?? 0) - (right.competition ?? 0);
+          return opportunityScore(right) - opportunityScore(left);
+        }),
+    [suggestions, volumeFilter, difficultyFilter, intentFilter, cpcFilter, keywordSearch, sortKey]
+  );
+
+  const totalKeywordsFound = suggestions.length;
+  const lowCompetitionCount = suggestions.filter((item) => (item.competition ?? 1) < 0.33).length;
+  const peopleAlsoSearchFor = filtered
+    .filter((item) => item.keyword.toLowerCase() !== seed.trim().toLowerCase())
+    .slice(0, 5);
+
+  useEffect(() => {
+    if (seededFromAuditRef.current) return;
+    if (!lastAuditDomain) return;
+    seededFromAuditRef.current = true;
+  }, [lastAuditDomain]);
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-black text-white tracking-tight">Keyword Research</h1>
-        <p className="text-sm mt-1" style={{ color: TEXT_MUTED }}>
-          Discover keyword opportunities, search volumes, and competition data.
-        </p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-white tracking-tight">Keyword Research</h1>
+          <p className="text-sm mt-1" style={{ color: "#6B7A99" }}>
+            {domain ? `Researching keywords for ${domain}` : "Discover keyword opportunities for your website"}
+          </p>
+        </div>
       </div>
 
-      {/* Search form */}
       <div
-        className="rounded-2xl border p-5"
+        className="rounded-xl border p-4"
         style={{ background: CARD_BG, borderColor: BORDER }}
       >
-        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
-          {/* Domain display */}
-          <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-mono min-w-0"
-            style={{ background: "#0D1424", borderColor: BORDER, color: "#8B9BB4" }}
-          >
-            <Globe size={13} style={{ color: TEXT_MUTED, flexShrink: 0 }} />
-            <span className="truncate">{domain || "no domain"}</span>
-          </div>
-
-          {/* Seed keyword */}
-          <div className="relative flex-1 min-w-0">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: TEXT_MUTED }} />
-            <input
-              value={seed}
-              onChange={(e) => setSeed(e.target.value)}
-              placeholder="Enter a seed keyword (e.g. seo audit)"
-              required
-              className="w-full rounded-lg border pl-9 pr-4 py-2.5 text-sm bg-transparent focus:outline-none focus:border-orange-500/50 text-white placeholder-gray-600"
-              style={{ borderColor: BORDER }}
-            />
-          </div>
-
-          {/* Country */}
-          <div className="relative">
-            <select
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              className="rounded-lg border px-3 py-2.5 text-sm appearance-none bg-transparent text-white pr-8 focus:outline-none focus:border-orange-500/50"
-              style={{ background: "#0D1424", borderColor: BORDER }}
-            >
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code} style={{ background: "#151B27" }}>
-                  {c.code}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: TEXT_MUTED }} />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading || !seed.trim() || !domain}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition disabled:opacity-50 whitespace-nowrap"
-            style={{ background: `linear-gradient(135deg, ${ACCENT}, #E8541F)` }}
-          >
-            {loading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
-            Research
-          </button>
-        </form>
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div
-          className="rounded-xl border p-4 text-sm text-red-400"
-          style={{ background: "rgba(239,68,68,0.08)", borderColor: "rgba(239,68,68,0.2)" }}
-        >
-          {error}
-        </div>
-      )}
-
-      {/* Results */}
-      {!loading && hasSearched && !error && (
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={seed + country}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-            className="space-y-4"
-          >
-            {/* Stats + filters bar */}
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-white">
-                  {filtered.length}{suggestions.length !== filtered.length ? ` / ${suggestions.length}` : ""} keywords found
-                </p>
-                {fromCache && (
-                  <span
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: "rgba(99,102,241,0.12)", color: "#818CF8" }}
-                  >
-                    Cached
-                  </span>
-                )}
-                <span className="hidden sm:inline text-[11px]" style={{ color: TEXT_MUTED }}>
-                  — click &quot;Track Ranking&quot; to monitor positions daily
-                </span>
+        <div className="flex flex-col gap-4">
+          <form onSubmit={handleSearch} className="grid gap-3 xl:grid-cols-[1.2fr_2.4fr_0.7fr_1fr_auto]">
+            <label className="space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: TEXT_MUTED }}>
+                Website domain
+              </span>
+              <div className="relative">
+                <Globe size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: TEXT_MUTED }} />
+                <input
+                  value={domain}
+                  onChange={(e) => handleDomainChange(e.target.value)}
+                  placeholder="yourdomain.com"
+                  autoComplete="off"
+                  className="w-full rounded-xl border bg-transparent py-3 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-orange-500/60 focus:outline-none focus:ring-4 focus:ring-orange-500/10"
+                  style={{ borderColor: BORDER, background: CARD_BG_ALT }}
+                />
               </div>
+              {lastAuditDomain && lastAuditDomain === domain && (
+                <p className="text-[11px]" style={{ color: TEXT_DIM }}>
+                  Suggested from your latest audit.
+                </p>
+              )}
+            </label>
 
-              <div className="flex items-center gap-2">
-                {/* Volume filter */}
-                <div className="flex items-center gap-1 rounded-lg p-0.5 border" style={{ borderColor: BORDER }}>
-                  {(["all", "1k", "5k", "10k"] as VolumeFilter[]).map((f) => (
-                    <button
-                      key={f}
-                      onClick={() => setVolumeFilter(f)}
-                      className="px-2.5 py-1 text-[11px] font-semibold rounded-md transition"
-                      style={{
-                        background: volumeFilter === f ? "rgba(255,100,45,0.15)" : "transparent",
-                        color: volumeFilter === f ? ACCENT : TEXT_DIM,
-                      }}
-                    >
-                      {f === "all" ? "All" : `${f}+`}
-                    </button>
+            <label className="space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: TEXT_MUTED }}>
+                Seed keyword
+              </span>
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: TEXT_MUTED }} />
+                <input
+                  value={seed}
+                  onChange={(e) => handleSeedChange(e.target.value)}
+                  placeholder="Enter a keyword (example: seo audit, website audit, technical seo)"
+                  required
+                  autoComplete="off"
+                  className="w-full rounded-xl border bg-transparent py-3 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-orange-500/60 focus:outline-none focus:ring-4 focus:ring-orange-500/10"
+                  style={{ borderColor: BORDER, background: CARD_BG_ALT }}
+                />
+              </div>
+              <p className="text-[11px]" style={{ color: TEXT_DIM }}>
+                Tip: broad topics help discovery, longer-tail terms help find lower competition ideas.
+              </p>
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: TEXT_MUTED }}>
+                Country
+              </span>
+              <div className="relative">
+                <select
+                  value={country}
+                  onChange={(e) => handleCountryChange(e.target.value)}
+                  className="w-full appearance-none rounded-xl border bg-transparent px-3 py-3 pr-9 text-sm text-white focus:border-orange-500/60 focus:outline-none focus:ring-4 focus:ring-orange-500/10"
+                  style={{ borderColor: BORDER, background: CARD_BG_ALT }}
+                  aria-label="Country selector"
+                >
+                  {COUNTRIES.map((item) => (
+                    <option key={item.code} value={item.code} style={{ background: CARD_BG }}>
+                      {item.label}
+                    </option>
                   ))}
-                </div>
+                </select>
+                <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: TEXT_MUTED }} />
+              </div>
+            </label>
 
-                {/* Sort */}
-                <div className="relative">
-                  <select
-                    value={sortKey}
-                    onChange={(e) => setSortKey(e.target.value as SortKey)}
-                    className="rounded-lg border pl-3 pr-7 py-1.5 text-[11px] appearance-none bg-transparent focus:outline-none"
-                    style={{ borderColor: BORDER, color: TEXT_DIM, background: CARD_BG }}
-                  >
-                    <option value="volume" style={{ background: "#151B27" }}>Sort: Volume</option>
-                    <option value="cpc" style={{ background: "#151B27" }}>Sort: CPC</option>
-                    <option value="competition" style={{ background: "#151B27" }}>Sort: Competition</option>
-                  </select>
-                  <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: TEXT_MUTED }} />
-                </div>
+            <div className="space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: TEXT_MUTED }}>
+                Search quality
+              </span>
+              <div className="flex h-[50px] items-center rounded-xl border px-3 text-xs" style={{ borderColor: BORDER, background: CARD_BG_ALT, color: TEXT_DIM }}>
+                <Sparkles size={13} className="mr-2" style={{ color: ACCENT }} />
+                {fromCache ? "Cached results cost $0" : "Fresh query when needed"}
               </div>
             </div>
 
-            {/* Batch action bar */}
-            <AnimatePresence>
-              {selected.size > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 8 }}
-                  className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl"
-                  style={{ background: "rgba(255,100,45,0.1)", border: "1px solid rgba(255,100,45,0.25)" }}
-                >
-                  <div className="flex items-center gap-2">
-                    <CheckSquare size={16} style={{ color: ACCENT }} />
-                    <span className="text-sm font-semibold text-white">
-                      {selected.size} keyword{selected.size !== 1 ? "s" : ""} selected
-                    </span>
-                    {batchState === "running" && (
-                      <span className="text-xs" style={{ color: TEXT_MUTED }}>
-                        — adding {batchProgress}/{selected.size + batchProgress}…
-                      </span>
-                    )}
-                    {batchState === "done" && (
-                      <span className="text-xs text-green-400">— all added to rank tracking!</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setSelected(new Set())}
-                      className="text-xs px-2 py-1 rounded-lg transition hover:opacity-80"
-                      style={{ color: TEXT_MUTED }}
-                    >
-                      Clear
-                    </button>
-                    <button
-                      onClick={trackSelected}
-                      disabled={batchState === "running"}
-                      className="flex items-center gap-1.5 text-sm font-semibold px-4 py-1.5 rounded-lg text-white transition disabled:opacity-60"
-                      style={{ background: `linear-gradient(135deg, ${ACCENT}, #E8541F)` }}
-                    >
-                      {batchState === "running" ? (
-                        <Loader2 size={13} className="animate-spin" />
-                      ) : (
-                        <ArrowRight size={13} />
-                      )}
-                      Track Selected ({selected.size})
-                    </button>
-                    {batchState === "done" && (
-                      <a
-                        href="/app/position-tracking"
-                        className="text-xs font-semibold underline"
-                        style={{ color: ACCENT }}
-                      >
-                        View Rank Tracking →
-                      </a>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Table */}
-            {filtered.length === 0 ? (
-              <div
-                className="rounded-xl border p-12 text-center"
-                style={{ background: CARD_BG, borderColor: BORDER }}
+            <div className="flex flex-col gap-2 self-end">
+              <button
+                type="submit"
+                disabled={loading || !seed.trim() || !domain.trim()}
+                className="inline-flex h-[50px] items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                style={{ background: `linear-gradient(135deg, ${ACCENT}, #E8541F)` }}
               >
-                <Filter size={32} className="mx-auto mb-3 opacity-30" style={{ color: TEXT_MUTED }} />
-                <p className="text-sm" style={{ color: TEXT_MUTED }}>
-                  {suggestions.length === 0
-                    ? "No keyword suggestions found. Try a different seed keyword."
-                    : "No keywords match the current volume filter."}
-                </p>
+                {loading ? <Loader2 size={15} className="animate-spin" /> : <Search size={15} />}
+                Find Keyword Opportunities
+              </button>
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="inline-flex h-[42px] items-center justify-center gap-1.5 rounded-xl border px-4 text-xs font-semibold transition hover:bg-white/[0.03]"
+                style={{ borderColor: BORDER, color: TEXT_DIM }}
+              >
+                <X size={12} />
+                Clear search
+              </button>
+            </div>
+          </form>
+
+          <div className="flex flex-wrap gap-2">
+            {SUGGESTED_KEYWORDS.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => handleSeedChange(item)}
+                className="rounded-full border px-3 py-1.5 text-xs font-semibold transition hover:border-orange-500/30 hover:text-white"
+                style={{ borderColor: BORDER, color: TEXT_DIM, background: CARD_BG_ALT }}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+
+      {loading && (
+        <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {["Total Keywords Found", "Avg Search Volume", "Avg CPC", "Low Competition Opportunities"].map((label) => (
+              <SummaryCard
+                key={label}
+                label={label}
+                value="…"
+                note="Fetching live keyword data"
+                icon={<Loader2 size={16} className="animate-spin" />}
+              />
+            ))}
+          </div>
+          <KeywordTableSkeleton />
+        </div>
+      )}
+
+      {error && !loading && (
+        <div className="rounded-xl border p-5" style={{ background: "rgba(239,68,68,0.08)", borderColor: "rgba(239,68,68,0.22)" }}>
+          <p className="text-sm font-semibold text-red-300">Couldn&apos;t load keyword opportunities</p>
+          <p className="mt-1 text-sm text-red-200/80">{error}</p>
+        </div>
+      )}
+
+      {!loading && providerUnavailable && (
+        <div className="rounded-xl border p-6 space-y-3" style={{ background: "rgba(123,92,245,0.05)", borderColor: "rgba(123,92,245,0.16)" }}>
+          <div className="flex items-center gap-2">
+            <Zap size={16} style={{ color: "#A78BFA" }} />
+            <p className="text-sm font-semibold text-white">Keyword ideas are temporarily unavailable</p>
+          </div>
+          <p className="text-sm leading-7" style={{ color: TEXT_DIM }}>
+            Automatic suggestions are unavailable right now. Your saved keywords and rank tracking continue to work normally.
+          </p>
+          <a
+            href="/app/rank-tracking"
+            className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white"
+            style={{ background: `linear-gradient(135deg, ${ACCENT}, #E8541F)` }}
+          >
+            <ArrowRight size={14} />
+            Open Rank Tracking
+          </a>
+        </div>
+      )}
+
+      {!loading && hasSearched && !error && !providerUnavailable && (
+        <div className="space-y-5">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <SummaryCard
+              label="Total Keywords Found"
+              value={String(totalKeywordsFound)}
+              note={fromCache ? "Loaded from cache. No additional provider cost." : "Fresh keyword pull for this search."}
+              icon={<Search size={16} />}
+            />
+            <SummaryCard
+              label="Avg Search Volume"
+              value={extractKeywordAverage(suggestions.map((item) => item.volume))}
+              note="Average monthly demand across these keyword ideas."
+              icon={<BarChart2 size={16} />}
+            />
+            <SummaryCard
+              label="Avg CPC"
+              value={extractKeywordAverage(suggestions.map((item) => item.cpc))}
+              note="Commercial value signal from paid-search bids."
+              icon={<DollarSign size={16} />}
+            />
+            <SummaryCard
+              label="Low Competition Opportunities"
+              value={String(lowCompetitionCount)}
+              note="Keywords currently classified as lower competition."
+              icon={<Target size={16} />}
+            />
+          </div>
+
+          <div className="rounded-xl border p-4" style={{ background: CARD_BG, borderColor: BORDER }}>
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div>
+                  <p className="text-lg font-bold text-white">
+                    {filtered.length}
+                    {filtered.length !== suggestions.length ? ` / ${suggestions.length}` : ""} keyword opportunities
+                  </p>
+                  <p className="mt-1 text-sm" style={{ color: TEXT_DIM }}>
+                    {fromCache ? "Loaded from cache · $0 provider cost for this repeat search." : "Fresh search pulled from DataForSEO."}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => exportCSV(filtered, seed.trim())}
+                  disabled={filtered.length === 0}
+                  className="inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition hover:border-orange-500/30 hover:text-white disabled:opacity-40"
+                  style={{ borderColor: BORDER, color: TEXT_DIM, background: CARD_BG_ALT }}
+                >
+                  <Download size={13} />
+                  Export CSV
+                </button>
               </div>
-            ) : (
-              <div className="rounded-xl border overflow-hidden" style={{ borderColor: BORDER }}>
-                <table className="w-full text-sm">
+
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+                <div className="relative">
+                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: TEXT_MUTED }} />
+                  <input
+                    value={keywordSearch}
+                    onChange={(e) => setKeywordSearch(e.target.value)}
+                    placeholder="Search keywords…"
+                    className="w-full rounded-xl border pl-8 pr-3 py-2.5 text-xs focus:border-orange-500/60 focus:outline-none focus:ring-4 focus:ring-orange-500/10 text-white placeholder:text-slate-500"
+                    style={{ borderColor: BORDER, background: CARD_BG_ALT }}
+                  />
+                </div>
+                <div className="relative">
+                  <select
+                    value={volumeFilter}
+                    onChange={(e) => setVolumeFilter(e.target.value as VolumeFilter)}
+                    className="w-full appearance-none rounded-xl border px-3 py-2.5 pr-8 text-xs font-semibold focus:border-orange-500/60 focus:outline-none"
+                    style={{ borderColor: BORDER, background: CARD_BG_ALT, color: TEXT_DIM }}
+                    aria-label="Volume filter"
+                  >
+                    <option value="all">Volume: All</option>
+                    <option value="1k">Volume: 1K+</option>
+                    <option value="5k">Volume: 5K+</option>
+                    <option value="10k">Volume: 10K+</option>
+                  </select>
+                  <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: TEXT_MUTED }} />
+                </div>
+
+                <div className="relative">
+                  <select
+                    value={difficultyFilter}
+                    onChange={(e) => setDifficultyFilter(e.target.value as DifficultyFilter)}
+                    className="w-full appearance-none rounded-xl border px-3 py-2.5 pr-8 text-xs font-semibold focus:border-orange-500/60 focus:outline-none"
+                    style={{ borderColor: BORDER, background: CARD_BG_ALT, color: TEXT_DIM }}
+                    aria-label="Difficulty filter"
+                  >
+                    <option value="all">Difficulty: All</option>
+                    <option value="low">Difficulty: Low</option>
+                    <option value="medium">Difficulty: Medium</option>
+                    <option value="high">Difficulty: High</option>
+                  </select>
+                  <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: TEXT_MUTED }} />
+                </div>
+
+                <div className="relative">
+                  <select
+                    value={cpcFilter}
+                    onChange={(e) => setCpcFilter(e.target.value as CpcFilter)}
+                    className="w-full appearance-none rounded-xl border px-3 py-2.5 pr-8 text-xs font-semibold focus:border-orange-500/60 focus:outline-none"
+                    style={{ borderColor: BORDER, background: CARD_BG_ALT, color: TEXT_DIM }}
+                    aria-label="CPC filter"
+                  >
+                    <option value="all">CPC: All</option>
+                    <option value="low">CPC: Low</option>
+                    <option value="mid">CPC: Mid</option>
+                    <option value="high">CPC: High</option>
+                  </select>
+                  <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: TEXT_MUTED }} />
+                </div>
+
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <select
+                      value={intentFilter}
+                      onChange={(e) => setIntentFilter(e.target.value as IntentFilter)}
+                      className="w-full appearance-none rounded-xl border px-3 py-2.5 pr-8 text-xs font-semibold focus:border-orange-500/60 focus:outline-none"
+                      style={{ borderColor: BORDER, background: CARD_BG_ALT, color: TEXT_DIM }}
+                      aria-label="Keyword intent filter"
+                    >
+                      <option value="all">Intent: All</option>
+                      <option value="informational">Intent: Informational</option>
+                      <option value="commercial">Intent: Commercial</option>
+                      <option value="transactional">Intent: Transactional</option>
+                      <option value="navigational">Intent: Navigational</option>
+                    </select>
+                    <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: TEXT_MUTED }} />
+                  </div>
+
+                  <div className="relative min-w-[164px]">
+                    <select
+                      value={sortKey}
+                      onChange={(e) => setSortKey(e.target.value as SortKey)}
+                      className="w-full appearance-none rounded-xl border px-3 py-2.5 pr-8 text-xs font-semibold focus:border-orange-500/60 focus:outline-none"
+                      style={{ borderColor: BORDER, background: CARD_BG_ALT, color: TEXT_DIM }}
+                      aria-label="Sort keywords"
+                    >
+                      <option value="opportunity">Sort: Opportunity</option>
+                      <option value="volume">Sort: Volume</option>
+                      <option value="cpc">Sort: CPC</option>
+                      <option value="competition">Sort: Competition</option>
+                    </select>
+                    <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: TEXT_MUTED }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {selected.size > 0 && (
+            <div className="flex flex-col gap-3 rounded-xl border px-4 py-4 sm:flex-row sm:items-center sm:justify-between" style={{ background: "rgba(255,100,45,0.1)", borderColor: "rgba(255,100,45,0.24)" }}>
+              <div className="flex items-center gap-2">
+                <CheckSquare size={16} style={{ color: ACCENT }} />
+                <span className="text-sm font-semibold text-white">
+                  {selected.size} keyword{selected.size === 1 ? "" : "s"} selected
+                </span>
+                {batchState === "running" && (
+                  <span className="text-xs" style={{ color: TEXT_DIM }}>
+                    Tracking {batchProgress}/{selected.size + batchProgress}
+                  </span>
+                )}
+                {batchState === "done" && (
+                  <span className="text-xs text-emerald-400">Tracked successfully.</span>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelected(new Set())}
+                  className="rounded-lg px-3 py-2 text-xs font-semibold transition hover:bg-white/[0.05]"
+                  style={{ color: TEXT_DIM }}
+                >
+                  Clear selection
+                </button>
+                <button
+                  type="button"
+                  onClick={trackSelected}
+                  disabled={batchState === "running"}
+                  className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                  style={{ background: `linear-gradient(135deg, ${ACCENT}, #E8541F)` }}
+                >
+                  {batchState === "running" ? <Loader2 size={13} className="animate-spin" /> : <ArrowRight size={13} />}
+                  Track selected
+                </button>
+              </div>
+            </div>
+          )}
+
+          {filtered.length === 0 ? (
+            <div className="rounded-xl border p-10 text-center" style={{ background: CARD_BG, borderColor: BORDER }}>
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl" style={{ background: "rgba(255,100,45,0.12)", color: ACCENT }}>
+                <Search size={24} />
+              </div>
+              <h3 className="mt-4 text-lg font-bold text-white">No results match these filters</h3>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-7" style={{ color: TEXT_DIM }}>
+                Try relaxing the volume, difficulty, CPC, or intent filters. Broad seeds and lower CPC filters usually surface more beginner-friendly opportunities.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-xl border overflow-hidden" style={{ borderColor: BORDER }}>
+              <div className="overflow-x-auto">
+                <table className="min-w-[1000px] w-full text-sm">
                   <thead>
-                    <tr style={{ background: "#0D1424", borderBottom: `1px solid ${BORDER}` }}>
-                      <th className="px-4 py-3 w-8">
+                    <tr style={{ background: CARD_BG_ALT, borderBottom: `1px solid ${BORDER}` }}>
+                      <th className="px-4 py-3 w-10">
                         <button
+                          type="button"
                           onClick={() => {
-                            if (selected.size === filtered.length) {
-                              setSelected(new Set());
-                            } else {
-                              setSelected(new Set(filtered.map((s) => s.keyword)));
-                            }
+                            if (selected.size === filtered.length) setSelected(new Set());
+                            else setSelected(new Set(filtered.map((item) => item.keyword)));
                           }}
-                          className="text-gray-500 hover:text-white transition"
-                          title={selected.size === filtered.length ? "Deselect all" : "Select all"}
+                          className="transition hover:text-white"
+                          style={{ color: TEXT_DIM }}
+                          aria-label={selected.size === filtered.length ? "Deselect all keywords" : "Select all keywords"}
                         >
-                          {selected.size === filtered.length && filtered.length > 0
-                            ? <CheckSquare size={14} style={{ color: ACCENT }} />
-                            : <Square size={14} />
-                          }
+                          {selected.size === filtered.length && filtered.length > 0 ? <CheckSquare size={15} style={{ color: ACCENT }} /> : <Square size={15} />}
                         </button>
                       </th>
-                      <th className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
-                        Keyword
-                      </th>
-                      <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wider whitespace-nowrap" style={{ color: TEXT_MUTED }}>
-                        <span className="flex items-center justify-end gap-1">
-                          <BarChart2 size={10} /> Volume
-                        </span>
-                      </th>
-                      <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
-                        <span className="flex items-center justify-end gap-1">
-                          <DollarSign size={10} /> CPC
-                        </span>
-                      </th>
-                      <th className="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
-                        <span className="flex items-center justify-center gap-1">
-                          <Zap size={10} /> Difficulty
-                        </span>
-                      </th>
-                      <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
-                        Action
-                      </th>
+                      {[
+                        { label: "Keyword", title: "Keyword and search intent" },
+                        { label: "Search Volume", title: "Average monthly search volume" },
+                        { label: "CPC", title: "Cost-per-click (Google Ads)" },
+                        { label: "KD Score", title: "Keyword difficulty 0–100. Lower = easier to rank." },
+                        { label: "Trend", title: "Opportunity signal based on volume and competition" },
+                        { label: "Action", title: "Track or save this keyword" },
+                      ].map(({ label, title }) => (
+                        <th key={label} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest" style={{ color: TEXT_MUTED }} title={title}>
+                          {label}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((s, i) => {
-                      const comp = competitionLabel(s.competition);
+                    {filtered.map((suggestion, index) => {
+                      const difficulty = competitionLabel(suggestion.competition);
+                      const intent = classifyIntent(suggestion.keyword);
+                      const trend = trendMeta(suggestion);
+                      const isSelected = selected.has(suggestion.keyword);
+                      const isSaved = saved.has(suggestion.keyword);
+                      const inProject = projectAdded.has(suggestion.keyword);
+                      const quickWin = isQuickWin(suggestion);
+                      const volPct = maxVolume > 0 ? Math.round(((suggestion.volume ?? 0) / maxVolume) * 100) : 0;
+
                       return (
                         <motion.tr
-                          key={s.keyword}
+                          key={suggestion.keyword}
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          transition={{ delay: Math.min(i * 0.03, 0.5) }}
-                          className="border-b hover:bg-white/[0.02] transition cursor-pointer"
+                          transition={{ delay: index * 0.03 }}
                           style={{
-                            borderColor: BORDER,
-                            background: selected.has(s.keyword)
-                              ? "rgba(255,100,45,0.05)"
-                              : i % 2 === 0 ? CARD_BG : "#0D1424",
+                            background: isSelected ? "rgba(255,100,45,0.06)" : index % 2 === 0 ? CARD_BG : CARD_BG_ALT,
+                            borderBottom: `1px solid ${BORDER}`,
                           }}
-                          onClick={() => toggleSelect(s.keyword)}
+                          className="transition hover:bg-white/[0.03]"
                         >
-                          <td className="px-4 py-3 w-8" onClick={(e) => e.stopPropagation()}>
-                            <button onClick={() => toggleSelect(s.keyword)} className="transition">
-                              {selected.has(s.keyword)
-                                ? <CheckSquare size={14} style={{ color: ACCENT }} />
-                                : <Square size={14} className="text-gray-600" />
-                              }
+                          <td className="px-4 py-4">
+                            <button
+                              type="button"
+                              onClick={() => toggleSelect(suggestion.keyword)}
+                              className="transition hover:text-white"
+                              style={{ color: isSelected ? ACCENT : TEXT_DIM }}
+                              aria-label={`${isSelected ? "Deselect" : "Select"} ${suggestion.keyword}`}
+                            >
+                              {isSelected ? <CheckSquare size={15} style={{ color: ACCENT }} /> : <Square size={15} />}
                             </button>
                           </td>
-                          <td className="px-4 py-3 font-medium text-white">
-                            {s.keyword}
+                          <td className="px-4 py-4 align-top">
+                            <div className="max-w-[320px]">
+                              <p className="font-semibold text-white">{suggestion.keyword}</p>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ background: "rgba(99,102,241,0.14)", color: "#A5B4FC" }}>
+                                  {intentLabel(intent)}
+                                </span>
+                                {quickWin && (
+                                  <span className="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]" style={{ background: "rgba(34,197,94,0.14)", color: "#22C55E" }}>
+                                    <Zap size={8} /> Quick Win
+                                  </span>
+                                )}
+                                {isSaved && (
+                                  <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ background: "rgba(167,139,250,0.14)", color: "#A78BFA" }}>
+                                    Saved
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </td>
-                          <td className="px-4 py-3 text-right font-mono font-semibold text-white">
-                            {formatVolume(s.volume)}
+                          <td className="px-4 py-4 align-top">
+                            <div className="flex flex-col gap-1">
+                              <span className="font-mono font-bold text-white">{formatVolume(suggestion.volume)}</span>
+                              <div className="rounded-full overflow-hidden" style={{ width: 64, height: 4, background: "rgba(255,255,255,0.07)" }}>
+                                <div className="h-full rounded-full" style={{ width: `${volPct}%`, background: "#FF642D", opacity: 0.75 }} />
+                              </div>
+                            </div>
                           </td>
-                          <td className="px-4 py-3 text-right font-mono text-xs" style={{ color: TEXT_DIM }}>
-                            {s.cpc != null ? `$${s.cpc.toFixed(2)}` : "—"}
+                          <td className="px-4 py-4 font-mono text-white/90">{formatCurrency(suggestion.cpc)}</td>
+                          <td className="px-4 py-4 align-top">
+                            <KDCell competition={suggestion.competition} />
                           </td>
-                          <td className="px-4 py-3 text-center">
-                            <span
-                              className="text-[11px] font-bold px-2 py-0.5 rounded"
-                              style={{
-                                background: `${comp.color}18`,
-                                color: comp.color,
-                              }}
-                            >
-                              {comp.label}
+                          <td className="px-4 py-4">
+                            <span className="inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: trend.tone, color: trend.color }}>
+                              {trend.label}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                            <TrackButton keyword={s.keyword} domain={domain} country={country} />
+                          <td className="px-4 py-4">
+                            <div className="flex flex-wrap gap-2">
+                              <TrackButton keyword={suggestion.keyword} domain={domain} country={country} />
+                              <button
+                                type="button"
+                                onClick={() => toggleProjectAdded(suggestion.keyword)}
+                                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition hover:bg-white/[0.03]"
+                                style={{ borderColor: BORDER, color: inProject ? "#22C55E" : TEXT_DIM }}
+                              >
+                                <FolderPlus size={12} />
+                                {inProject ? "Added" : "Add to project"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => toggleSaved(suggestion.keyword)}
+                                className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition hover:bg-white/[0.03]"
+                                style={{ borderColor: BORDER, color: isSaved ? "#A78BFA" : TEXT_DIM }}
+                              >
+                                <BookmarkPlus size={12} />
+                                {isSaved ? "Saved" : "Save"}
+                              </button>
+                            </div>
                           </td>
                         </motion.tr>
                       );
@@ -554,77 +1043,29 @@ export function KeywordsClient() {
                   </tbody>
                 </table>
               </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
-      )}
+            </div>
+          )}
 
-      {/* Initial empty state */}
-      {!hasSearched && !loading && (
-        <div
-          className="rounded-2xl border p-12 flex flex-col items-center gap-6"
-          style={{ background: CARD_BG, borderColor: BORDER }}
-        >
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center"
-            style={{ background: "rgba(255,100,45,0.1)" }}
-          >
-            <Search size={24} style={{ color: ACCENT }} />
-          </div>
-          <div className="text-center max-w-sm">
-            <h3 className="text-base font-bold text-white mb-1">Discover keyword opportunities</h3>
-            <p className="text-sm" style={{ color: TEXT_MUTED }}>
-              Enter any topic to find related keywords your audience searches for — with volume, CPC, and competition data.
-            </p>
-          </div>
-          {/* 3-step guide */}
-          <div className="flex gap-3 flex-wrap justify-center text-left max-w-lg w-full">
-            {[
-              { step: "①", title: "Enter seed keyword", desc: "Any topic related to your business" },
-              { step: "②", title: "Browse results", desc: "Filter by volume, sort by CPC or difficulty" },
-              { step: "③", title: "Track Ranking", desc: "Add high-potential keywords to daily rank tracking" },
-            ].map(({ step, title, desc }) => (
-              <div key={step} className="flex items-start gap-2 flex-1 min-w-[140px]">
-                <span className="text-lg font-black shrink-0" style={{ color: ACCENT }}>{step}</span>
-                <div>
-                  <p className="text-xs font-bold text-white">{title}</p>
-                  <p className="text-[11px] mt-0.5" style={{ color: TEXT_MUTED }}>{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex items-center gap-4 flex-wrap justify-center">
-            {[
-              { icon: <BarChart2 size={14} />, text: "Search volume data" },
-              { icon: <DollarSign size={14} />, text: "CPC estimates" },
-              { icon: <Zap size={14} />, text: "Competition score" },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-1.5 text-xs font-medium" style={{ color: TEXT_DIM }}>
-                <span style={{ color: ACCENT }}>{item.icon}</span>
-                {item.text}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Loading skeleton */}
-      {loading && (
-        <div className="rounded-xl border overflow-hidden" style={{ borderColor: BORDER }}>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between px-4 py-3 border-b animate-pulse"
-              style={{ borderColor: BORDER, background: i % 2 === 0 ? CARD_BG : "#0D1424" }}
-            >
-              <div className="h-3.5 rounded" style={{ width: `${120 + (i % 4) * 40}px`, background: "#1E2940" }} />
-              <div className="flex gap-6">
-                {[60, 50, 70, 60].map((w, j) => (
-                  <div key={j} className="h-3 rounded" style={{ width: w, background: "#1E2940" }} />
+          {peopleAlsoSearchFor.length > 0 && (
+            <div className="rounded-xl border p-5" style={{ background: CARD_BG, borderColor: BORDER }}>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: TEXT_MUTED }}>
+                People also search for
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {peopleAlsoSearchFor.map((item) => (
+                  <button
+                    key={item.keyword}
+                    type="button"
+                    onClick={() => handleSeedChange(item.keyword)}
+                    className="rounded-full border px-3 py-1.5 text-xs font-semibold transition hover:border-orange-500/30 hover:text-white"
+                    style={{ borderColor: BORDER, color: TEXT_DIM, background: CARD_BG_ALT }}
+                  >
+                    {item.keyword}
+                  </button>
                 ))}
               </div>
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
