@@ -8,10 +8,10 @@ export async function generateMetadata(): Promise<Metadata> {
     "Reset your RankyPulse password to regain access to saved audits, dashboards, and billing.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "/auth/forgot-password" },
-    robots: { index: true, follow: true },
+    robots: { index: false, follow: false },
     openGraph: {
       title,
       description,

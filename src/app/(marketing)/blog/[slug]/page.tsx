@@ -16,7 +16,7 @@ export async function generateMetadata({
   const post = BLOG_POSTS.find(p => p.slug === slug);
   if (!post) return {};
   return {
-    title: `${post.title} — RankyPulse`,
+    title: { absolute: `${post.title} | RankyPulse` },
     description: post.excerpt,
     openGraph: {
       title: post.title,

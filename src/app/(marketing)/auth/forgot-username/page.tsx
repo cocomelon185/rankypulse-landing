@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import ForgotUsernameClientPage from "./ForgotUsernameClientPage";
 
 export const metadata: Metadata = {
-  title: "Forgot Username | RankyPulse",
+  title: { absolute: "Forgot Username | RankyPulse" },
   description: "Get a reminder of your RankyPulse username.",
   robots: { index: false },
 };

@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import AuditResultsClientPage from "@/app/(app)/audit/results/AuditResultsClientPage";
 
 export const metadata: Metadata = {
-  title: "Audit Results | RankyPulse",
+  title: { absolute: "Audit Results | RankyPulse" },
   description: "View your SEO audit score, prioritized issues, and copy-ready fixes.",
   alternates: { canonical: "/audit/results" },
   robots: { index: true, follow: true },

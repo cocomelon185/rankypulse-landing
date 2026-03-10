@@ -8,10 +8,10 @@ export async function generateMetadata(): Promise<Metadata> {
     "Access saved audits, dashboards, and billing in your RankyPulse account.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "/auth/signin" },
-    robots: { index: true, follow: true },
+    robots: { index: false, follow: false },
     openGraph: {
       title,
       description,

@@ -4,9 +4,24 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-    title: "Free SEO Tools — RankyPulse",
+    title: { absolute: "Free SEO Tools | RankyPulse" },
     description:
-        "Use our free SEO tools: site audit, meta tag checker, keyword research, backlink analyzer, and more.",
+        "Use our free SEO tools: site audit, meta tag checker, keyword research, backlink analyzer, and more. Start with a free site crawl — no signup required.",
+    alternates: { canonical: "/tools" },
+    robots: { index: true, follow: true },
+    openGraph: {
+        title: "Free SEO Tools | RankyPulse",
+        description: "Free SEO tools: site audit, meta tag checker, rank tracker, and more.",
+        url: "/tools",
+        siteName: "RankyPulse",
+        type: "website",
+        images: [{ url: "https://rankypulse.com/og.png", width: 1200, height: 630, alt: "RankyPulse Free SEO Tools" }],
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "Free SEO Tools | RankyPulse",
+        description: "Free SEO tools: site audit, meta tag checker, rank tracker, and more.",
+    },
 };
 
 const TOOLS = [

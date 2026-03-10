@@ -8,10 +8,10 @@ export async function generateMetadata(): Promise<Metadata> {
     "Create your RankyPulse account to save audits, track scores, and access your dashboard.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "/auth/signup" },
-    robots: { index: true, follow: true },
+    robots: { index: false, follow: false },
     openGraph: {
       title,
       description,

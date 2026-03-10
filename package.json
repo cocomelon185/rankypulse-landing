@@ -11,6 +11,7 @@
     "test:unit": "vitest run",
     "test:headed": "playwright test --headed",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "seo-check": "node scripts/seo-check.mjs",
     "db:seed": "node scripts/seed-users.mjs",
     "qa:smoke": "playwright test --config=playwright.qa.config.ts qa/playwright/smoke.spec.ts",
     "qa:auth": "playwright test --config=playwright.qa.config.ts qa/playwright/auth.spec.ts",

@@ -3,20 +3,22 @@ import { Zap } from "lucide-react";
 
 const LINKS = {
   Product: [
-    { label: "Audit Tool", href: "/" },
+    { label: "Free SEO Audit", href: "/audit" },
+    { label: "All SEO Tools", href: "/tools" },
     { label: "Pricing", href: "/pricing" },
-    { label: "Dashboard", href: "/dashboard" },
-    { label: "Reports", href: "/reports" },
+    { label: "Sign In", href: "/auth/signin" },
+  ],
+  Learn: [
+    { label: "Blog", href: "/blog" },
+    { label: "SEO Checklist", href: "/guides/technical-seo-checklist" },
+    { label: "How to Audit", href: "/guides/how-to-do-seo-audit" },
+    { label: "Fix Core Web Vitals", href: "/guides/fix-core-web-vitals" },
   ],
   Company: [
     { label: "About", href: "/about" },
-    { label: "Blog", href: "/blog" },
     { label: "Contact", href: "/contact" },
-  ],
-  Legal: [
     { label: "Privacy Policy", href: "/privacy" },
     { label: "Terms of Service", href: "/terms" },
-    { label: "Cookie Policy", href: "/cookies" },
   ],
 };
 
@@ -28,7 +30,7 @@ export function LandingFooter() {
     >
       <div className="mx-auto max-w-6xl px-6">
         {/* Top row: logo + columns */}
-        <div className="mb-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-4" aria-label="Footer navigation">
           {/* Brand */}
           <div>
             <Link href="/" className="mb-4 flex items-center gap-2">

@@ -42,7 +42,7 @@ export interface SeoScoreInput {
  * Computes SEO score from issue counts using a deterministic, issue-weighted formula.
  * More reliable than calculateSeoScore() when per-page PSI scores are null (free tier).
  *
- * Formula:  score = 100 − (critical×8) − (warning×3) − (notice×1),  floor 0
+ * Formula:  score = 100 − (critical×10) − (warning×5) − (notice×2),  floor 0
  * Guardrails:
  *   • pages === 0  → 0  (nothing crawled, no score possible)
  *   • pages > 0 && totalIssues === 0  → 95  (clean crawl, nearly perfect)
@@ -55,11 +55,11 @@ export function computeSeoScore(input: SeoScoreInput): number {
   // Guardrail: no pages crawled → no score
   if (pages === 0) return 0;
 
-  // Issue-weighted base score
+  // Issue-weighted base score: critical=10pts, warning=5pts, notice=2pts
   let score = 100;
-  score -= criticalIssues * 8;
-  score -= warningIssues * 3;
-  score -= noticeIssues * 1;
+  score -= criticalIssues * 10;
+  score -= warningIssues * 5;
+  score -= noticeIssues * 2;
   score = Math.max(score, 0);
 
   // Guardrail: clean crawl → 95 (not 100, leaves room for content improvements)

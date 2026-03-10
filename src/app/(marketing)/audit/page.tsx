@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import AuditHubClientPage from "./AuditHubClientPage";
 
 export const metadata: Metadata = {
-  title: "SEO Audit Guides | Run a Free Audit | RankyPulse",
+  title: { absolute: "Free SEO Audit Tool | Website SEO Checker | RankyPulse" },
   description:
     "Browse SEO audit guides by niche and platform. WordPress, Shopify, e‑commerce, local SEO, and more. Run a free audit in 30 seconds.",
   alternates: { canonical: "/audit" },

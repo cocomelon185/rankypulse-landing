@@ -60,7 +60,7 @@ const impactToEffort: Record<string, "easy" | "medium" | "hard"> = {
   high: "medium",
 };
 
-const basePoints: Record<string, number> = { error: 8, warning: 5, notice: 2 };
+const basePoints: Record<string, number> = { error: 10, warning: 5, notice: 2 };
 
 // Map ISSUE_META issue IDs to categories based on actionHref and issue type
 const CATEGORY_MAP: Record<string, string> = {
