@@ -18,7 +18,9 @@
 export function calculateSeoScore(pages: { score: number | null }[]): number {
   if (!pages.length) return 0;
   const total = pages.reduce((sum, p) => sum + (p.score ?? 0), 0);
-  return Math.round(total / pages.length);
+  const avg = Math.round(total / pages.length);
+  // Cap at 95 — matches computeSeoScore guardrail (no site is truly perfect)
+  return avg >= 100 ? 95 : avg;
 }
 
 // ── Guardrail-based deterministic scorer ─────────────────────────────────────
