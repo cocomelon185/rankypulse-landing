@@ -8,19 +8,27 @@ import {
   Check,
   CheckSquare,
   ChevronDown,
+  Compass,
+  FolderOpen,
   FolderPlus,
   Globe,
+  HelpCircle,
+  Info,
   Loader2,
   RefreshCcw,
   Search,
+  ShoppingCart,
   Sparkles,
   Square,
   Target,
   TrendingUp,
   Zap,
+  CheckCircle,
 } from "lucide-react";
 import { isDataProviderUnavailableCode } from "@/lib/data-provider";
 import { computeFullOpportunityScore } from "@/lib/dataforseo/opportunity-score";
+import { KeywordOpportunityMap } from "@/components/keywords/KeywordOpportunityMap";
+import { DifficultyDistributionBar } from "@/components/keywords/DifficultyDistributionBar";
 
 type SearchRow = {
   keyword: string;
@@ -92,6 +100,7 @@ type KeywordSearchResponse = {
     averageDifficulty: number | null;
     topKeyword: string;
     topOpportunityScore: number | null;
+    keywords?: string[];
   }>;
   rows: SearchRow[];
   page: {
@@ -171,6 +180,16 @@ const SUGGESTED_KEYWORDS = [
 
 const RECENT_KEYWORD_STORAGE_KEY = "rankypulse_recent_keyword_searches";
 
+// CTR model for traffic estimate
+const CTR_MAP: Record<number, number> = {
+  90: 0.32, 80: 0.27, 70: 0.22, 60: 0.18, 50: 0.14,
+  40: 0.10, 30: 0.07, 20: 0.04, 10: 0.02, 0: 0.01,
+};
+function getEstCTR(opportunityScore: number): number {
+  const key = Math.round(opportunityScore / 10) * 10;
+  return CTR_MAP[Math.max(0, Math.min(90, key))] ?? 0.01;
+}
+
 function normalizeDomainInput(raw: string): string {
   return raw
     .replace(/^https?:\/\//, "")
@@ -192,17 +211,12 @@ function formatCurrency(value: number | null): string {
   return `$${value.toFixed(2)}`;
 }
 
-function formatIntent(intent: SearchRow["intent"]): string {
-  if (intent === "unknown") return "Unknown";
-  return intent.charAt(0).toUpperCase() + intent.slice(1);
-}
-
 function difficultyTone(label: string): { color: string; bg: string } {
   switch (label) {
     case "Easy":
       return { color: "#22C55E", bg: "rgba(34,197,94,0.14)" };
     case "Medium":
-      return { color: "#FACC15", bg: "rgba(250,204,21,0.14)" };
+      return { color: "#F59E0B", bg: "rgba(245,158,11,0.14)" };
     case "Hard":
       return { color: "#F97316", bg: "rgba(249,115,22,0.14)" };
     case "Very Hard":
@@ -223,11 +237,21 @@ function opportunityTone(score: number | null): { color: string; bg: string } {
   return { color: "#EF4444", bg: "rgba(239,68,68,0.14)" };
 }
 
-function serpPressureTone(value: SearchRow["serpPressure"]): { color: string; bg: string } {
-  if (value === "Low") return { color: "#22C55E", bg: "rgba(34,197,94,0.14)" };
-  if (value === "Medium") return { color: "#F59E0B", bg: "rgba(245,158,11,0.14)" };
-  if (value === "High") return { color: "#EF4444", bg: "rgba(239,68,68,0.14)" };
-  return { color: TEXT_MUTED, bg: "rgba(100,116,139,0.14)" };
+function IntentIcon({ intent }: { intent: SearchRow["intent"] }) {
+  const map: Record<SearchRow["intent"], { icon: typeof Info; color: string; label: string }> = {
+    informational: { icon: Info, color: "#60A5FA", label: "Informational" },
+    commercial: { icon: ShoppingCart, color: "#F59E0B", label: "Commercial" },
+    transactional: { icon: Zap, color: "#FF642D", label: "Transactional" },
+    navigational: { icon: Compass, color: "#A78BFA", label: "Navigational" },
+    unknown: { icon: HelpCircle, color: "#4A5568", label: "Unknown" },
+  };
+  const { icon: Icon, color, label } = map[intent] ?? map.unknown;
+  return (
+    <div className="flex items-center gap-1.5">
+      <Icon size={11} style={{ color }} />
+      <span className="text-[10px] font-semibold" style={{ color }}>{label}</span>
+    </div>
+  );
 }
 
 function SummaryCard({
@@ -242,12 +266,12 @@ function SummaryCard({
   icon: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border p-4" style={{ background: CARD_BG, borderColor: BORDER }}>
+    <div className="rounded-2xl border p-4" style={{ background: CARD_BG, borderColor: BORDER }}>
       <div className="flex items-center justify-between gap-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: TEXT_MUTED }}>
           {label}
         </p>
-        <span style={{ color: ACCENT }}>{icon}</span>
+        <span className="rounded-lg p-1.5" style={{ background: "rgba(255,100,45,0.12)", color: ACCENT }}>{icon}</span>
       </div>
       <p className="mt-3 text-2xl font-black tracking-tight text-white">{value}</p>
       <p className="mt-1 text-xs" style={{ color: TEXT_DIM }}>{note}</p>
@@ -259,17 +283,44 @@ function LoadingState() {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        {["Keywords", "Avg Volume", "Avg CPC", "Low Competition", "Analyzed"].map((label) => (
-          <SummaryCard key={label} label={label} value="…" note="Loading keyword research" icon={<Loader2 size={16} className="animate-spin" />} />
+        {["Keywords", "Easy Wins", "Traffic Potential", "Avg Difficulty", "Analyzed"].map((label) => (
+          <SummaryCard key={label} label={label} value="…" note="Loading keyword research" icon={<Loader2 size={14} className="animate-spin" />} />
         ))}
       </div>
-      <div className="rounded-xl border p-5" style={{ background: CARD_BG, borderColor: BORDER }}>
-        <div className="h-6 w-64 animate-pulse rounded bg-white/10" />
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="h-32 animate-pulse rounded-xl bg-white/5" />
-          ))}
+      <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+        <div className="rounded-2xl border p-5" style={{ background: CARD_BG, borderColor: BORDER }}>
+          <div className="h-5 w-48 rounded animate-pulse bg-white/10 mb-4" />
+          <div className="h-64 rounded-xl animate-pulse bg-white/5" />
         </div>
+        <div className="rounded-2xl border p-5" style={{ background: CARD_BG, borderColor: BORDER }}>
+          <div className="h-5 w-40 rounded animate-pulse bg-white/10 mb-4" />
+          <div className="space-y-3">
+            {[80, 60, 45, 30, 20, 10].map((w, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="h-2 w-10 rounded animate-pulse bg-white/10" />
+                <div className="h-2 rounded animate-pulse bg-white/5" style={{ width: `${w}%` }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="rounded-2xl border p-5" style={{ background: CARD_BG, borderColor: BORDER }}>
+        <div className="h-5 w-36 rounded animate-pulse bg-white/10 mb-4" />
+        <div className="grid gap-3 xl:grid-cols-3">
+          {[1, 2, 3].map((i) => <div key={i} className="h-28 rounded-xl animate-pulse bg-white/5" />)}
+        </div>
+      </div>
+      <div className="rounded-2xl border overflow-hidden" style={{ borderColor: BORDER }}>
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="flex gap-4 px-4 py-4 border-b" style={{ borderColor: BORDER, background: i % 2 === 0 ? CARD_BG_ALT : CARD_BG }}>
+            <div className="h-4 w-4 rounded animate-pulse bg-white/10" />
+            <div className="h-4 flex-1 rounded animate-pulse bg-white/10" />
+            <div className="h-4 w-16 rounded animate-pulse bg-white/5" />
+            <div className="h-4 w-16 rounded animate-pulse bg-white/5" />
+            <div className="h-4 w-20 rounded animate-pulse bg-white/5" />
+            <div className="h-4 w-16 rounded animate-pulse bg-white/5" />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -297,7 +348,7 @@ function TrackButton({ keyword, domain, country }: { keyword: string; domain: st
       type="button"
       onClick={track}
       disabled={state === "loading" || state === "done"}
-      className="inline-flex min-w-[108px] items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+      className="inline-flex min-w-[100px] items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
       style={{
         background: state === "done" ? "rgba(34,197,94,0.14)" : `linear-gradient(135deg, ${ACCENT}, #E8541F)`,
         color: state === "done" ? "#22C55E" : "#fff",
@@ -333,6 +384,7 @@ export function KeywordsClient() {
   const [projectAdded, setProjectAdded] = useState<Set<string>>(new Set());
   const [analyzingKeywords, setAnalyzingKeywords] = useState<Set<string>>(new Set());
   const [limit, setLimit] = useState(DEFAULT_LIMIT);
+  const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const raw = typeof window !== "undefined" ? localStorage.getItem("rankypulse_last_url") ?? "" : "";
@@ -562,6 +614,14 @@ export function KeywordsClient() {
     return (data?.rows ?? []).filter((row) => (row.searchVolume ?? 0) > 50 && (row.difficultyScore ?? 999) < 40 && (row.opportunityScore ?? -1) > 70);
   }, [data]);
 
+  const estimatedTraffic = useMemo(() => {
+    return (data?.rows ?? []).reduce((sum, row) => {
+      if (!row.searchVolume) return sum;
+      const opp = row.opportunityScore ?? row.preOpportunityScore;
+      return sum + Math.round(row.searchVolume * getEstCTR(opp));
+    }, 0);
+  }, [data]);
+
   const filteredRows = useMemo(() => {
     const rows = data?.rows ?? [];
     return rows.filter((row) => {
@@ -586,16 +646,32 @@ export function KeywordsClient() {
   const visibleSeedSuggestions = suggestions?.suggestedSeeds ?? [];
   const visibleExpandedKeywords = suggestions?.expandedKeywords.slice(0, 12) ?? [];
 
+  // Quick Seeds: combine recent searches + suggested seeds
+  const quickSeeds = useMemo(() => {
+    const seeds = new Set<string>();
+    recentSearches.slice(0, 3).forEach((s) => seeds.add(s.seed));
+    SUGGESTED_KEYWORDS.slice(0, 6).forEach((s) => seeds.add(s));
+    return [...seeds].slice(0, 8);
+  }, [recentSearches]);
+
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
+      {/* Header */}
+      <div className="space-y-1">
         <h1 className="text-[2rem] font-black tracking-tight text-white">Keyword Research</h1>
-        <p className="max-w-3xl text-sm leading-7" style={{ color: TEXT_DIM }}>
-          Discover keyword opportunities, search demand, and ranking potential for your website.
+        <p className="text-sm" style={{ color: TEXT_DIM }}>
+          Discover keyword opportunities with the highest traffic potential for your website.
         </p>
       </div>
 
-      <div className="rounded-xl border p-5" style={{ background: CARD_BG, borderColor: BORDER }}>
+      {/* Keyword Opportunity Command Center */}
+      <div
+        className="rounded-2xl border p-5"
+        style={{
+          background: "linear-gradient(135deg, rgba(255,100,45,0.08), rgba(123,92,245,0.05))",
+          borderColor: BORDER,
+        }}
+      >
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -603,8 +679,8 @@ export function KeywordsClient() {
           }}
           className="grid gap-3 xl:grid-cols-[1.15fr_2.5fr_0.8fr_auto]"
         >
-          <label className="space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: TEXT_MUTED }}>Website domain</span>
+          <label className="space-y-1.5">
+            <span className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: TEXT_MUTED }}>Domain</span>
             <div className="relative">
               <Globe size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: TEXT_MUTED }} />
               <input
@@ -616,12 +692,9 @@ export function KeywordsClient() {
                 style={{ borderColor: BORDER, background: CARD_BG_ALT }}
               />
             </div>
-            {lastAuditDomain && lastAuditDomain === domain && (
-              <p className="text-[11px]" style={{ color: TEXT_DIM }}>Using your latest audited domain as context.</p>
-            )}
           </label>
 
-          <label className="space-y-2">
+          <label className="space-y-1.5">
             <span className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: TEXT_MUTED }}>Seed keyword</span>
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: TEXT_MUTED }} />
@@ -631,14 +704,16 @@ export function KeywordsClient() {
                   setSeed(event.target.value);
                   setData(null);
                 }}
-                placeholder="Enter a keyword or topic (example: seo audit, website audit, technical seo)"
+                placeholder="Enter a seed keyword or topic"
                 autoComplete="off"
                 className="w-full rounded-xl border bg-transparent py-3 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-orange-500/60 focus:outline-none focus:ring-4 focus:ring-orange-500/10"
                 style={{ borderColor: BORDER, background: CARD_BG_ALT }}
               />
             </div>
-            <div className="flex flex-wrap gap-2">
-              {SUGGESTED_KEYWORDS.map((item) => (
+            {/* Quick Seeds */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: TEXT_MUTED }}>Quick:</span>
+              {quickSeeds.map((item) => (
                 <button
                   key={item}
                   type="button"
@@ -646,31 +721,26 @@ export function KeywordsClient() {
                     setSeed(item);
                     setData(null);
                   }}
-                  className="rounded-full border px-3 py-1.5 text-xs font-semibold transition hover:border-orange-500/30 hover:text-white"
-                  style={{ borderColor: BORDER, color: TEXT_DIM, background: CARD_BG_ALT }}
+                  className="rounded-full border px-2.5 py-1 text-[11px] font-semibold transition hover:border-orange-500/30 hover:text-white"
+                  style={{ borderColor: BORDER, color: TEXT_DIM, background: "rgba(255,255,255,0.02)" }}
                 >
                   {item}
                 </button>
               ))}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => void runSuggestionDiscovery()}
                 disabled={suggestionLoading || (!domain.trim() && !seed.trim())}
-                className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition hover:bg-white/[0.03] disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition hover:border-orange-500/30 hover:text-white disabled:opacity-40"
                 style={{ borderColor: BORDER, color: TEXT_DIM }}
               >
-                {suggestionLoading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                Suggest Seeds
+                {suggestionLoading ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                AI seeds
               </button>
-              <p className="text-[11px]" style={{ color: TEXT_DIM }}>
-                Discover ideas from your audited site first, then expand with autocomplete-style suggestions.
-              </p>
             </div>
           </label>
 
-          <label className="space-y-2">
+          <label className="space-y-1.5">
             <span className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: TEXT_MUTED }}>Country</span>
             <div className="relative">
               <select
@@ -700,7 +770,7 @@ export function KeywordsClient() {
               style={{ background: `linear-gradient(135deg, ${ACCENT}, #E8541F)` }}
             >
               {loading ? <Loader2 size={15} className="animate-spin" /> : <Search size={15} />}
-              Find Keyword Opportunities
+              Find Opportunities
             </button>
             <button
               type="button"
@@ -709,29 +779,23 @@ export function KeywordsClient() {
                 resetResults(true);
                 setDomain(lastAuditDomain);
               }}
-              className="inline-flex h-[42px] items-center justify-center gap-1.5 rounded-xl border px-4 text-xs font-semibold transition hover:bg-white/[0.03]"
+              className="inline-flex h-[38px] items-center justify-center gap-1.5 rounded-xl border px-4 text-xs font-semibold transition hover:bg-white/[0.03]"
               style={{ borderColor: BORDER, color: TEXT_DIM }}
             >
-              Clear search
+              Clear
             </button>
           </div>
         </form>
       </div>
 
+      {/* Suggested Seeds Panel */}
       {(suggestions || suggestionLoading || suggestionError) && !loading && (
-        <div className="rounded-xl border p-5" style={{ background: CARD_BG, borderColor: BORDER }}>
+        <div className="rounded-2xl border p-5" style={{ background: CARD_BG, borderColor: BORDER }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: TEXT_MUTED }}>
-                Suggested Seed Keywords
-              </p>
-              <p className="mt-2 text-sm" style={{ color: TEXT_DIM }}>
-                Start with domain-derived seeds, then expand into long-tail opportunities before spending on keyword metrics.
-              </p>
-            </div>
+            <p className="text-sm font-bold text-white">Suggested Seed Keywords</p>
             {suggestions && (
               <div className="rounded-full px-3 py-1 text-[11px] font-semibold" style={{ color: suggestions.cached ? "#A5B4FC" : "#86EFAC", background: suggestions.cached ? "rgba(99,102,241,0.14)" : "rgba(34,197,94,0.14)" }}>
-                {suggestions.cached ? "Cached suggestions" : "Fresh suggestions"}
+                {suggestions.cached ? "Cached" : "Fresh"}
               </div>
             )}
           </div>
@@ -739,7 +803,7 @@ export function KeywordsClient() {
           {suggestionLoading && (
             <div className="mt-4 flex items-center gap-2 text-sm" style={{ color: TEXT_DIM }}>
               <Loader2 size={14} className="animate-spin" />
-              Generating low-cost seed ideas…
+              Generating seed ideas…
             </div>
           )}
 
@@ -750,83 +814,44 @@ export function KeywordsClient() {
           )}
 
           {suggestions && (
-            <div className="mt-4 space-y-5">
-              <div className="grid gap-3 lg:grid-cols-[1.25fr_1fr]">
-                <div className="rounded-xl border p-4" style={{ background: CARD_BG_ALT, borderColor: BORDER }}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-bold text-white">Recommended seed</p>
-                      <p className="mt-1 text-xs" style={{ color: TEXT_DIM }}>
-                        Best starting point based on your domain/topic context.
-                      </p>
-                    </div>
-                    {suggestions.recommendedSeed && (
-                      <button
-                        type="button"
-                        onClick={() => void runSearchForSeed(suggestions.recommendedSeed!)}
-                        className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90"
-                        style={{ background: `linear-gradient(135deg, ${ACCENT}, #E8541F)` }}
-                      >
-                        <Search size={12} />
-                        Find opportunities
-                      </button>
-                    )}
+            <div className="mt-4 space-y-4">
+              {suggestions.recommendedSeed && (
+                <div className="flex items-center justify-between gap-4 rounded-xl border p-4" style={{ background: CARD_BG_ALT, borderColor: BORDER }}>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-widest mb-1" style={{ color: TEXT_MUTED }}>Recommended seed</p>
+                    <p className="text-lg font-black text-white">{suggestions.recommendedSeed}</p>
                   </div>
-                  <p className="mt-4 text-lg font-black text-white">{suggestions.recommendedSeed ?? "No strong recommendation yet"}</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {visibleSeedSuggestions.slice(0, 8).map((item) => (
-                      <button
-                        key={item.keyword}
-                        type="button"
-                        onClick={() => void runSearchForSeed(item.keyword)}
-                        className="rounded-full border px-3 py-1.5 text-xs font-semibold transition hover:border-orange-500/30 hover:text-white"
-                        style={{ borderColor: BORDER, color: TEXT_DIM, background: "rgba(255,255,255,0.02)" }}
-                        title={item.reason}
-                      >
-                        {item.keyword}
-                      </button>
-                    ))}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void runSearchForSeed(suggestions.recommendedSeed!)}
+                    className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90 shrink-0"
+                    style={{ background: `linear-gradient(135deg, ${ACCENT}, #E8541F)` }}
+                  >
+                    <Search size={12} />
+                    Search this
+                  </button>
                 </div>
+              )}
 
-                <div className="rounded-xl border p-4" style={{ background: CARD_BG_ALT, borderColor: BORDER }}>
-                  <p className="text-sm font-bold text-white">How RankyPulse is helping</p>
-                  <ul className="mt-3 space-y-2 text-sm" style={{ color: TEXT_DIM }}>
-                    <li>Uses existing audit data before external APIs.</li>
-                    <li>Expands seeds with autocomplete-style modifiers.</li>
-                    <li>Shortlists ideas before DataForSEO enrichment.</li>
-                  </ul>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {suggestions.sourceSummary.usedAuditData && (
-                      <span className="rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: "#86EFAC", background: "rgba(34,197,94,0.14)" }}>
-                        Audit-derived
-                      </span>
-                    )}
-                    {suggestions.sourceSummary.usedAiExpansion && (
-                      <span className="rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: "#A78BFA", background: "rgba(167,139,250,0.14)" }}>
-                        AI-expanded
-                      </span>
-                    )}
-                    {suggestions.sourceSummary.usedAutocomplete && (
-                      <span className="rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: "#60A5FA", background: "rgba(96,165,250,0.14)" }}>
-                        Autocomplete
-                      </span>
-                    )}
-                  </div>
-                </div>
+              <div className="flex flex-wrap gap-2">
+                {visibleSeedSuggestions.slice(0, 8).map((item) => (
+                  <button
+                    key={item.keyword}
+                    type="button"
+                    onClick={() => void runSearchForSeed(item.keyword)}
+                    className="rounded-full border px-3 py-1.5 text-xs font-semibold transition hover:border-orange-500/30 hover:text-white"
+                    style={{ borderColor: BORDER, color: TEXT_DIM, background: "rgba(255,255,255,0.02)" }}
+                    title={item.reason}
+                  >
+                    {item.keyword}
+                  </button>
+                ))}
               </div>
 
               {visibleExpandedKeywords.length > 0 && (
-                <div className="rounded-xl border p-4" style={{ background: CARD_BG_ALT, borderColor: BORDER }}>
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-bold text-white">Expanded keyword ideas</p>
-                      <p className="mt-1 text-xs" style={{ color: TEXT_DIM }}>
-                        Cheap long-tail candidates generated before any metrics call.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest mb-2" style={{ color: TEXT_MUTED }}>Long-tail ideas</p>
+                  <div className="flex flex-wrap gap-2">
                     {visibleExpandedKeywords.map((item) => (
                       <button
                         key={item.keyword}
@@ -850,112 +875,23 @@ export function KeywordsClient() {
         </div>
       )}
 
-      {!hasSearched && !loading && (
-        <div className="rounded-xl border p-6" style={{ background: CARD_BG, borderColor: BORDER }}>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: TEXT_MUTED }}>How Keyword Research Works</p>
-          <div className="mt-4 grid gap-4 md:grid-cols-3">
-            {[
-              ["1", "Enter a keyword", "Start with a seed topic to discover related opportunities for your website."],
-              ["2", "See top 25 first", "RankyPulse shows the most actionable opportunities first to reduce cost and keep research focused."],
-              ["3", "Analyze only what matters", "Advanced difficulty is calculated only for top opportunities or keywords you select."],
-            ].map(([step, title, body]) => (
-              <div key={title} className="rounded-xl border p-4" style={{ background: CARD_BG_ALT, borderColor: BORDER }}>
-                <div className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-black text-white" style={{ background: "rgba(255,100,45,0.15)" }}>{step}</div>
-                <h3 className="mt-4 text-sm font-bold text-white">{title}</h3>
-                <p className="mt-2 text-sm leading-6" style={{ color: TEXT_DIM }}>{body}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-            {["Search Volume", "CPC", "Difficulty", "Competition", "Related Keywords", "Ranking Opportunities"].map((item) => (
-              <div key={item} className="rounded-xl border px-4 py-3 text-sm font-semibold text-white" style={{ background: CARD_BG_ALT, borderColor: BORDER }}>
-                {item}
-              </div>
-            ))}
-          </div>
-          <div className="mt-5 grid gap-4 lg:grid-cols-3">
-            <div className="rounded-xl border p-4" style={{ background: CARD_BG_ALT, borderColor: BORDER }}>
-              <p className="text-sm font-bold text-white">Popular starters</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {SUGGESTED_KEYWORDS.map((item) => (
-                  <button
-                    key={`starter-${item}`}
-                    type="button"
-                    onClick={() => {
-                      setSeed(item);
-                      void runSuggestionDiscovery({ nextTopic: item });
-                    }}
-                    className="rounded-full border px-3 py-1.5 text-xs font-semibold transition hover:border-orange-500/30 hover:text-white"
-                    style={{ borderColor: BORDER, color: TEXT_DIM }}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="rounded-xl border p-4" style={{ background: CARD_BG_ALT, borderColor: BORDER }}>
-              <p className="text-sm font-bold text-white">Recent searches</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {recentSearches.length > 0 ? recentSearches.map((item) => (
-                  <button
-                    key={`${item.domain}-${item.seed}-${item.country}`}
-                    type="button"
-                    onClick={() => {
-                      setDomain(item.domain);
-                      setSeed(item.seed);
-                      setCountry(item.country);
-                    }}
-                    className="rounded-full border px-3 py-1.5 text-xs font-semibold transition hover:border-orange-500/30 hover:text-white"
-                    style={{ borderColor: BORDER, color: TEXT_DIM }}
-                  >
-                    {item.seed}
-                  </button>
-                )) : (
-                  <p className="text-sm" style={{ color: TEXT_DIM }}>Your recent keyword research searches will appear here.</p>
-                )}
-              </div>
-            </div>
-            <div className="rounded-xl border p-4" style={{ background: CARD_BG_ALT, borderColor: BORDER }}>
-              <p className="text-sm font-bold text-white">Domain ideas</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {visibleSeedSuggestions.length > 0 ? visibleSeedSuggestions.slice(0, 6).map((item) => (
-                  <button
-                    key={`domain-${item.keyword}`}
-                    type="button"
-                    onClick={() => void runSearchForSeed(item.keyword)}
-                    className="rounded-full border px-3 py-1.5 text-xs font-semibold transition hover:border-orange-500/30 hover:text-white"
-                    style={{ borderColor: BORDER, color: TEXT_DIM }}
-                  >
-                    {item.keyword}
-                  </button>
-                )) : (
-                  <p className="text-sm" style={{ color: TEXT_DIM }}>
-                    {domain ? "Click Suggest Seeds to pull ideas from your domain and topic context." : "Enter a domain to unlock crawl-based keyword seeds."}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {loading && <LoadingState />}
 
       {error && !loading && (
-        <div className="rounded-xl border p-5" style={{ background: "rgba(239,68,68,0.08)", borderColor: "rgba(239,68,68,0.22)" }}>
+        <div className="rounded-2xl border p-5" style={{ background: "rgba(239,68,68,0.08)", borderColor: "rgba(239,68,68,0.22)" }}>
           <p className="text-sm font-semibold text-red-300">Couldn&apos;t load keyword research</p>
           <p className="mt-1 text-sm text-red-200/80">{error}</p>
         </div>
       )}
 
       {!loading && providerUnavailable && (
-        <div className="rounded-xl border p-6 space-y-3" style={{ background: "rgba(123,92,245,0.05)", borderColor: "rgba(123,92,245,0.16)" }}>
+        <div className="rounded-2xl border p-6 space-y-3" style={{ background: "rgba(123,92,245,0.05)", borderColor: "rgba(123,92,245,0.16)" }}>
           <div className="flex items-center gap-2">
             <Zap size={16} style={{ color: "#A78BFA" }} />
-            <p className="text-sm font-semibold text-white">Keyword intelligence is temporarily unavailable</p>
+            <p className="text-sm font-semibold text-white">Keyword intelligence temporarily unavailable</p>
           </div>
           <p className="text-sm leading-7" style={{ color: TEXT_DIM }}>
-            RankyPulse could not reach the external keyword intelligence provider. Cached results and rank tracking stay available.
+            RankyPulse could not reach the external keyword data provider. Rank tracking stays available.
           </p>
           <a href="/app/rank-tracking" className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white" style={{ background: `linear-gradient(135deg, ${ACCENT}, #E8541F)` }}>
             <ArrowRight size={14} />
@@ -966,18 +902,17 @@ export function KeywordsClient() {
 
       {!loading && data && (
         <div className="space-y-5">
+          {/* Data freshness bar */}
           <div className="flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3" style={{ background: CARD_BG, borderColor: BORDER }}>
             <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ color: data.cached ? "#A5B4FC" : "#86EFAC", background: data.cached ? "rgba(99,102,241,0.14)" : "rgba(34,197,94,0.14)" }}>
               {data.freshnessLabel}
             </span>
+            <span className="text-xs" style={{ color: TEXT_DIM }}>{data.controls.showingMessage}</span>
             <span className="text-xs" style={{ color: TEXT_DIM }}>
-              {data.controls.showingMessage}
-            </span>
-            <span className="text-xs" style={{ color: TEXT_DIM }}>
-              {data.quota.searchesRemainingToday}/{data.quota.searchesPerDay} live searches left today
+              {data.quota.searchesRemainingToday}/{data.quota.searchesPerDay} searches left today
             </span>
             <span className="text-xs" style={{ color: data.budget.mode === "normal" ? TEXT_DIM : "#FCD34D" }}>
-              Spend today ${data.budget.spendToday.toFixed(2)} / ${data.budget.budgetUsd.toFixed(2)} ({data.budget.mode.replace("_", " ")})
+              Spend ${data.budget.spendToday.toFixed(2)} / ${data.budget.budgetUsd.toFixed(2)}
             </span>
             <button
               type="button"
@@ -987,61 +922,120 @@ export function KeywordsClient() {
               style={{ borderColor: BORDER, color: TEXT_DIM }}
             >
               <RefreshCcw size={12} />
-              Refresh data
+              Refresh
             </button>
           </div>
 
+          {/* KPI Summary Cards */}
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-            <SummaryCard label="Total Keywords" value={String(data.summary.totalKeywords)} note="Top opportunities loaded for this search." icon={<Search size={16} />} />
-            <SummaryCard label="Avg Search Volume" value={formatVolume(data.summary.avgSearchVolume)} note="Average monthly demand across visible opportunities." icon={<TrendingUp size={16} />} />
-            <SummaryCard label="Avg CPC" value={formatCurrency(data.summary.avgCpc)} note="Estimated commercial value across the result set." icon={<Sparkles size={16} />} />
-            <SummaryCard label="Low Competition" value={String(data.summary.lowCompetitionOpportunities)} note="Keywords with confirmed difficulty under 40." icon={<Target size={16} />} />
-            <SummaryCard label="Analyzed Difficulty" value={String(data.summary.analyzedKeywords)} note={`Auto-analyzed for top ${data.controls.autoAnalyzedCount} opportunities.`} icon={<Zap size={16} />} />
+            <SummaryCard
+              label="Total Keywords"
+              value={String(data.summary.totalKeywords)}
+              note="Opportunities found for this search"
+              icon={<Search size={14} />}
+            />
+            <SummaryCard
+              label="Easy Wins"
+              value={String(quickWins.length)}
+              note="Vol 50+, difficulty < 40, score > 70"
+              icon={<Zap size={14} />}
+            />
+            <SummaryCard
+              label="Traffic Potential"
+              value={estimatedTraffic >= 1000 ? `${(estimatedTraffic / 1000).toFixed(1)}K` : String(estimatedTraffic)}
+              note="Estimated monthly clicks if ranked"
+              icon={<TrendingUp size={14} />}
+            />
+            <SummaryCard
+              label="Low Competition"
+              value={String(data.summary.lowCompetitionOpportunities)}
+              note="Confirmed difficulty under 40"
+              icon={<Target size={14} />}
+            />
+            <SummaryCard
+              label="Analyzed"
+              value={String(data.summary.analyzedKeywords)}
+              note={`Auto-analyzed top ${data.controls.autoAnalyzedCount}`}
+              icon={<CheckCircle size={14} />}
+            />
           </div>
 
-          <div className="rounded-xl border p-5" style={{ background: "rgba(34,197,94,0.08)", borderColor: "rgba(34,197,94,0.2)" }}>
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "#86EFAC" }}>Recommended first target</p>
-                <p className="mt-2 text-xl font-black text-white">{data.topOpportunity.keyword ?? "No fully analyzed keyword yet"}</p>
-                <p className="mt-1 text-sm" style={{ color: TEXT_DIM }}>
-                  Opportunity score {data.topOpportunity.score ?? "—"} · {data.topOpportunity.label}
-                </p>
-              </div>
-              <div className="max-w-xl rounded-xl border px-4 py-3 text-sm leading-6" style={{ background: CARD_BG_ALT, borderColor: BORDER, color: TEXT_DIM }}>
-                To keep research fast and cost-efficient, advanced difficulty is calculated only for top opportunities or selected keywords.
-              </div>
-            </div>
-          </div>
-
-          {quickWins.length > 0 && (
-            <div className="rounded-xl border p-5" style={{ background: CARD_BG, borderColor: BORDER }}>
-              <div className="flex items-center justify-between gap-4">
+          {/* Top Opportunity Banner */}
+          {data.topOpportunity.keyword && (
+            <div className="flex flex-wrap items-center gap-4 rounded-2xl border px-5 py-4" style={{ background: "rgba(34,197,94,0.06)", borderColor: "rgba(34,197,94,0.2)" }}>
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full shrink-0" style={{ background: "rgba(34,197,94,0.15)" }}>
+                  <TrendingUp size={14} style={{ color: "#22C55E" }} />
+                </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: TEXT_MUTED }}>Quick SEO Wins</p>
-                  <p className="mt-2 text-sm" style={{ color: TEXT_DIM }}>
-                    Volume over 50, difficulty under 40, and opportunity score over 70.
-                  </p>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#86EFAC" }}>Top Opportunity</p>
+                  <p className="text-sm font-bold text-white mt-0.5">{data.topOpportunity.keyword}</p>
                 </div>
               </div>
-              <div className="mt-4 grid gap-3 xl:grid-cols-3">
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-2xl font-black" style={{ color: "#22C55E" }}>{data.topOpportunity.score ?? "—"}</span>
+                <span className="text-xs font-semibold rounded-full px-2 py-1" style={{ color: "#86EFAC", background: "rgba(34,197,94,0.15)" }}>
+                  {data.topOpportunity.label}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Keyword Opportunity Map + Difficulty Distribution */}
+          <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+            <KeywordOpportunityMap rows={data.rows} />
+            <DifficultyDistributionBar rows={data.rows} />
+          </div>
+
+          {/* Quick Wins */}
+          {quickWins.length > 0 && (
+            <div className="rounded-2xl border p-5" style={{ background: CARD_BG, borderColor: BORDER }}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "rgba(34,197,94,0.15)" }}>
+                  <Zap size={13} style={{ color: "#22C55E" }} />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">Easy Win Keywords</p>
+                  <p className="text-[11px]" style={{ color: TEXT_DIM }}>High opportunity, low difficulty — start here</p>
+                </div>
+              </div>
+              <div className="grid gap-3 xl:grid-cols-3">
                 {quickWins.slice(0, 6).map((row) => {
-                  const difficultyStyle = difficultyTone(row.difficultyLabel);
-                  const opportunityStyle = opportunityTone(row.opportunityScore);
+                  const diffStyle = difficultyTone(row.difficultyLabel);
+                  const oppStyle = opportunityTone(row.opportunityScore);
+                  const score = row.opportunityScore ?? row.preOpportunityScore;
                   return (
                     <div key={row.keyword} className="rounded-xl border p-4" style={{ background: CARD_BG_ALT, borderColor: BORDER }}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-white">{row.keyword}</p>
-                          <p className="mt-1 text-xs" style={{ color: TEXT_DIM }}>{row.recommendedContentType}</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-white text-sm truncate">{row.keyword}</p>
+                          <div className="mt-1.5 flex items-center gap-1.5">
+                            <IntentIcon intent={row.intent} />
+                          </div>
                         </div>
-                        <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ color: opportunityStyle.color, background: opportunityStyle.bg }}>
-                          {row.opportunityScore ?? row.preOpportunityScore}
-                        </span>
+                        <div className="text-right shrink-0">
+                          <p className="text-xl font-black" style={{ color: oppStyle.color }}>{score}</p>
+                          <p className="text-[10px] font-semibold" style={{ color: oppStyle.color }}>{row.opportunityLabel}</p>
+                        </div>
                       </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ color: difficultyStyle.color, background: difficultyStyle.bg }}>{row.difficultyLabel}</span>
-                        <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ color: "#A5B4FC", background: "rgba(99,102,241,0.14)" }}>{formatIntent(row.intent)}</span>
+                      <div className="mt-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "#1E2940" }}>
+                            <div
+                              className="h-full rounded-full"
+                              style={{ width: `${Math.max(0, Math.min(100, row.difficultyScore ?? 0))}%`, background: diffStyle.color }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-bold shrink-0" style={{ color: diffStyle.color }}>
+                            {row.difficultyScore != null ? Math.round(row.difficultyScore) : "—"} {row.difficultyLabel}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px]" style={{ color: TEXT_DIM }}>
+                            {formatVolume(row.searchVolume)} / mo
+                          </span>
+                          <TrackButton keyword={row.keyword} domain={domain} country={country} />
+                        </div>
                       </div>
                     </div>
                   );
@@ -1050,49 +1044,104 @@ export function KeywordsClient() {
             </div>
           )}
 
+          {/* Keyword Clusters */}
           {data.clusters.length > 0 && (
-            <div className="rounded-xl border p-5" style={{ background: CARD_BG, borderColor: BORDER }}>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: TEXT_MUTED }}>Keyword Clusters</p>
-              <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {data.clusters.slice(0, 6).map((cluster) => (
-                  <div key={cluster.clusterId} className="rounded-xl border p-4" style={{ background: CARD_BG_ALT, borderColor: BORDER }}>
-                    <p className="font-semibold text-white">{cluster.clusterName}</p>
-                    <p className="mt-2 text-xs" style={{ color: TEXT_DIM }}>Top keyword: {cluster.topKeyword}</p>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: TEXT_MUTED }}>Volume</p>
-                        <p className="mt-1 text-sm font-bold text-white">{formatVolume(cluster.totalSearchVolume)}</p>
+            <div className="rounded-2xl border p-5" style={{ background: CARD_BG, borderColor: BORDER }}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "rgba(99,102,241,0.15)" }}>
+                  <FolderOpen size={13} style={{ color: "#A5B4FC" }} />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">Keyword Clusters</p>
+                  <p className="text-[11px]" style={{ color: TEXT_DIM }}>Click a cluster to filter the table</p>
+                </div>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {data.clusters.slice(0, 6).map((cluster) => {
+                  const isExpanded = expandedClusters.has(cluster.clusterId);
+                  return (
+                    <div key={cluster.clusterId} className="rounded-xl border p-4" style={{ background: CARD_BG_ALT, borderColor: BORDER }}>
+                      <button
+                        type="button"
+                        className="w-full text-left"
+                        onClick={() => {
+                          setKeywordSearch(cluster.clusterName);
+                          setOpportunityFilter("all");
+                        }}
+                      >
+                        <p className="font-semibold text-white hover:text-orange-400 transition-colors">{cluster.clusterName}</p>
+                        <p className="text-[11px] mt-0.5 truncate" style={{ color: TEXT_DIM }}>Top: {cluster.topKeyword}</p>
+                      </button>
+                      <div className="mt-3 grid grid-cols-3 gap-2">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: TEXT_MUTED }}>Volume</p>
+                          <p className="mt-0.5 text-sm font-bold text-white">{formatVolume(cluster.totalSearchVolume)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: TEXT_MUTED }}>Difficulty</p>
+                          <p className="mt-0.5 text-sm font-bold text-white">{cluster.averageDifficulty ?? "—"}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: TEXT_MUTED }}>Score</p>
+                          <p className="mt-0.5 text-sm font-bold text-white">{cluster.topOpportunityScore ?? "—"}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: TEXT_MUTED }}>Avg difficulty</p>
-                        <p className="mt-1 text-sm font-bold text-white">{cluster.averageDifficulty ?? "—"}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: TEXT_MUTED }}>Top score</p>
-                        <p className="mt-1 text-sm font-bold text-white">{cluster.topOpportunityScore ?? "—"}</p>
-                      </div>
+                      {cluster.keywords && cluster.keywords.length > 0 && (
+                        <div className="mt-3">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedClusters((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(cluster.clusterId)) next.delete(cluster.clusterId);
+                              else next.add(cluster.clusterId);
+                              return next;
+                            })}
+                            className="flex items-center gap-1 text-[11px] font-semibold transition hover:text-white"
+                            style={{ color: TEXT_DIM }}
+                          >
+                            <ChevronDown size={12} className={`transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                            {isExpanded ? "Hide" : "Show"} {cluster.keywords.length} keywords
+                          </button>
+                          {isExpanded && (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {cluster.keywords.slice(0, 8).map((kw) => (
+                                <button
+                                  key={kw}
+                                  type="button"
+                                  onClick={() => setSeed(kw)}
+                                  className="rounded-full border px-2 py-0.5 text-[10px] font-semibold transition hover:border-orange-500/30 hover:text-white"
+                                  style={{ borderColor: BORDER, color: TEXT_DIM }}
+                                >
+                                  {kw}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
 
-          <div className="rounded-xl border p-4" style={{ background: CARD_BG, borderColor: BORDER }}>
+          {/* Table controls */}
+          <div className="rounded-2xl border p-4" style={{ background: CARD_BG, borderColor: BORDER }}>
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex items-center gap-3 flex-wrap">
-                <div>
-                  <p className="text-lg font-bold text-white">{filteredRows.length}{filteredRows.length !== data.rows.length ? ` / ${data.rows.length}` : ""} keyword opportunities</p>
-                  <p className="mt-1 text-sm" style={{ color: TEXT_DIM }}>
-                    {data.cached ? "Showing cached keyword research." : "Showing fresh keyword research."}
-                  </p>
-                </div>
+              <div>
+                <p className="text-sm font-bold text-white">
+                  {filteredRows.length}{filteredRows.length !== data.rows.length ? ` / ${data.rows.length}` : ""} keyword opportunities
+                </p>
+                <p className="mt-0.5 text-xs" style={{ color: TEXT_DIM }}>
+                  {data.cached ? "Cached results" : "Fresh results"} · sorted by opportunity score
+                </p>
               </div>
-              <div className="grid gap-2 md:grid-cols-4 xl:grid-cols-4">
+              <div className="grid gap-2 md:grid-cols-4">
                 <input
                   value={keywordSearch}
                   onChange={(event) => setKeywordSearch(event.target.value)}
-                  placeholder="Search keywords…"
+                  placeholder="Filter keywords…"
                   className="rounded-xl border px-3 py-2.5 text-xs text-white placeholder:text-slate-500 focus:border-orange-500/60 focus:outline-none"
                   style={{ borderColor: BORDER, background: CARD_BG_ALT }}
                 />
@@ -1104,25 +1153,25 @@ export function KeywordsClient() {
                 </select>
                 <select value={difficultyFilter} onChange={(event) => setDifficultyFilter(event.target.value as DifficultyFilter)} className="rounded-xl border px-3 py-2.5 text-xs font-semibold" style={{ borderColor: BORDER, background: CARD_BG_ALT, color: TEXT_DIM }}>
                   <option value="all">Difficulty: All</option>
-                  <option value="pending">Difficulty: Pending</option>
-                  <option value="easy">Difficulty: Easy</option>
-                  <option value="medium">Difficulty: Medium</option>
-                  <option value="hard">Difficulty: Hard</option>
-                  <option value="very-hard">Difficulty: Very Hard</option>
-                  <option value="unavailable">Difficulty: Unavailable</option>
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                  <option value="very-hard">Very Hard</option>
+                  <option value="pending">Pending</option>
                 </select>
                 <select value={opportunityFilter} onChange={(event) => setOpportunityFilter(event.target.value as OpportunityFilter)} className="rounded-xl border px-3 py-2.5 text-xs font-semibold" style={{ borderColor: BORDER, background: CARD_BG_ALT, color: TEXT_DIM }}>
-                  <option value="all">Opportunity: All</option>
-                  <option value="top">Top opportunities</option>
-                  <option value="quick-wins">Quick wins</option>
+                  <option value="all">All opportunities</option>
+                  <option value="top">Top scores (75+)</option>
+                  <option value="quick-wins">Easy wins</option>
                   <option value="low-competition">Low competition</option>
                 </select>
               </div>
             </div>
           </div>
 
+          {/* Bulk action bar */}
           {selected.size > 0 && (
-            <div className="flex flex-col gap-3 rounded-xl border px-4 py-4 sm:flex-row sm:items-center sm:justify-between" style={{ background: "rgba(255,100,45,0.1)", borderColor: "rgba(255,100,45,0.24)" }}>
+            <div className="flex flex-col gap-3 rounded-2xl border px-4 py-4 sm:flex-row sm:items-center sm:justify-between" style={{ background: "rgba(255,100,45,0.1)", borderColor: "rgba(255,100,45,0.24)" }}>
               <div className="flex items-center gap-2">
                 <CheckSquare size={16} style={{ color: ACCENT }} />
                 <span className="text-sm font-semibold text-white">{selected.size} selected</span>
@@ -1139,15 +1188,16 @@ export function KeywordsClient() {
                   style={{ background: `linear-gradient(135deg, ${ACCENT}, #E8541F)` }}
                 >
                   {analyzingKeywords.size > 0 ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
-                  Analyze selected
+                  Analyze difficulty
                 </button>
               </div>
             </div>
           )}
 
-          <div className="rounded-xl border overflow-hidden" style={{ borderColor: BORDER }}>
+          {/* Keyword Table */}
+          <div className="rounded-2xl border overflow-hidden" style={{ borderColor: BORDER }}>
             <div className="overflow-x-auto">
-              <table className="min-w-[1280px] w-full text-sm">
+              <table className="min-w-[1100px] w-full text-sm">
                 <thead>
                   <tr style={{ background: CARD_BG_ALT, borderBottom: `1px solid ${BORDER}` }}>
                     <th className="px-4 py-3 w-10">
@@ -1162,8 +1212,16 @@ export function KeywordsClient() {
                         {selected.size === filteredRows.length && filteredRows.length > 0 ? <CheckSquare size={15} style={{ color: ACCENT }} /> : <Square size={15} />}
                       </button>
                     </th>
-                    {["Keyword", "Intent", "Search Volume", "CPC", "Difficulty", "Trend", "Opportunity", "Recommended Content", "Action"].map((label) => (
-                      <th key={label} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest" style={{ color: TEXT_MUTED }}>
+                    {[
+                      { label: "Keyword", width: "min-w-[200px]" },
+                      { label: "Intent", width: "w-28" },
+                      { label: "Volume", width: "w-24" },
+                      { label: "CPC", width: "w-20" },
+                      { label: "Difficulty", width: "min-w-[140px]" },
+                      { label: "Opportunity", width: "min-w-[130px]" },
+                      { label: "Action", width: "min-w-[260px]" },
+                    ].map(({ label, width }) => (
+                      <th key={label} className={`px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest ${width}`} style={{ color: TEXT_MUTED }}>
                         {label}
                       </th>
                     ))}
@@ -1171,25 +1229,25 @@ export function KeywordsClient() {
                 </thead>
                 <tbody>
                   {filteredRows.map((row, index) => {
-                    const difficultyStyle = difficultyTone(row.difficultyLabel);
-                    const pressureStyle = serpPressureTone(row.serpPressure);
-                    const opportunityStyle = opportunityTone(row.opportunityScore ?? row.preOpportunityScore);
+                    const diffStyle = difficultyTone(row.difficultyLabel);
+                    const oppStyle = opportunityTone(row.opportunityScore ?? row.preOpportunityScore);
                     const isSelected = selected.has(row.keyword);
                     const isSaved = saved.has(row.keyword);
                     const inProject = projectAdded.has(row.keyword);
                     const isAnalyzing = analyzingKeywords.has(row.keyword);
+                    const score = row.opportunityScore ?? row.preOpportunityScore;
 
                     return (
                       <motion.tr
                         key={row.keyword}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: index * 0.02 }}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.015 }}
                         style={{
                           background: isSelected ? "rgba(255,100,45,0.06)" : index % 2 === 0 ? CARD_BG : CARD_BG_ALT,
                           borderBottom: `1px solid ${BORDER}`,
                         }}
-                        className="transition hover:bg-white/[0.03]"
+                        className="transition hover:bg-white/[0.02]"
                       >
                         <td className="px-4 py-4">
                           <button
@@ -1207,69 +1265,71 @@ export function KeywordsClient() {
                             {isSelected ? <CheckSquare size={15} style={{ color: ACCENT }} /> : <Square size={15} />}
                           </button>
                         </td>
+
+                        {/* Keyword */}
                         <td className="px-4 py-4">
-                          <div className="max-w-[260px]">
+                          <div className="max-w-[280px]">
                             <p className="font-semibold text-white">{row.keyword}</p>
-                            <div className="mt-2 flex flex-wrap gap-2">
+                            <div className="mt-1.5 flex flex-wrap gap-1.5">
                               {row.clusterName && (
-                                <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: "#A5B4FC", background: "rgba(99,102,241,0.14)" }}>
+                                <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ color: "#A5B4FC", background: "rgba(99,102,241,0.14)" }}>
                                   {row.clusterName}
                                 </span>
                               )}
                               {row.opportunityKind === "preliminary" && (
-                                <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: "#FCD34D", background: "rgba(245,158,11,0.14)" }}>
-                                  Provisional
+                                <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ color: "#FCD34D", background: "rgba(245,158,11,0.14)" }}>
+                                  Pre-score
+                                </span>
+                              )}
+                              {row.serpFeaturesCount > 0 && (
+                                <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ color: TEXT_DIM, background: "rgba(100,116,139,0.14)" }} title={`${row.serpFeaturesCount} SERP features · ${row.serpPressure} competition`}>
+                                  {row.serpFeaturesCount} SERP features
                                 </span>
                               )}
                             </div>
                           </div>
                         </td>
+
+                        {/* Intent */}
                         <td className="px-4 py-4">
-                          <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: "#A5B4FC", background: "rgba(99,102,241,0.14)" }}>
-                            {formatIntent(row.intent)}
-                          </span>
+                          <IntentIcon intent={row.intent} />
                         </td>
+
+                        {/* Volume */}
                         <td className="px-4 py-4 font-mono font-bold text-white">{formatVolume(row.searchVolume)}</td>
+
+                        {/* CPC */}
                         <td className="px-4 py-4 font-mono text-white/90">{formatCurrency(row.cpc)}</td>
+
+                        {/* Difficulty */}
                         <td className="px-4 py-4">
-                          <div className="space-y-2">
+                          <div className="space-y-1.5">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-black text-white">{row.difficultyScore != null ? Math.round(row.difficultyScore) : "—"}</span>
-                              <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ color: difficultyStyle.color, background: difficultyStyle.bg }}>
+                              <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ color: diffStyle.color, background: diffStyle.bg }}>
                                 {row.difficultyLabel}
                               </span>
                             </div>
-                            <div className="h-1.5 w-20 overflow-hidden rounded-full bg-white/10">
-                              <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, row.difficultyScore ?? 0))}%`, background: difficultyStyle.color }} />
+                            <div className="h-1.5 w-20 overflow-hidden rounded-full" style={{ background: "#1E2940" }}>
+                              <div
+                                className="h-full rounded-full"
+                                style={{ width: `${Math.max(0, Math.min(100, row.difficultyScore ?? 0))}%`, background: diffStyle.color }}
+                              />
                             </div>
                           </div>
                         </td>
+
+                        {/* Opportunity */}
                         <td className="px-4 py-4">
-                          <div className="space-y-2">
-                            <span className="inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ color: pressureStyle.color, background: pressureStyle.bg }}>
-                              {row.difficultyStatus === "pending" ? "Pending" : row.serpPressure}
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg font-black" style={{ color: oppStyle.color }}>{score}</span>
+                            <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ color: oppStyle.color, background: oppStyle.bg }}>
+                              {row.opportunityLabel}
                             </span>
-                            <p className="text-[11px]" style={{ color: TEXT_DIM }}>
-                              {row.difficultyStatus === "pending" ? "Difficulty pending" : `${row.serpFeaturesCount} SERP features`}
-                            </p>
                           </div>
                         </td>
-                        <td className="px-4 py-4">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg font-black text-white">{row.opportunityScore ?? row.preOpportunityScore}</span>
-                              <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ color: opportunityStyle.color, background: opportunityStyle.bg }}>
-                                {row.opportunityLabel}
-                              </span>
-                            </div>
-                            <p className="text-[11px]" style={{ color: TEXT_DIM }}>
-                              {row.opportunityKind === "preliminary" ? "Pre-score until difficulty is analyzed" : "Full score"}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          <p className="font-semibold text-white">{row.recommendedContentType}</p>
-                        </td>
+
+                        {/* Action */}
                         <td className="px-4 py-4">
                           <div className="flex flex-wrap gap-2">
                             <TrackButton keyword={row.keyword} domain={domain} country={country} />
@@ -1279,9 +1339,10 @@ export function KeywordsClient() {
                               disabled={isAnalyzing || row.difficultyStatus === "available"}
                               className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition hover:bg-white/[0.03] disabled:opacity-40"
                               style={{ borderColor: BORDER, color: row.difficultyStatus === "available" ? "#22C55E" : TEXT_DIM }}
+                              title={row.recommendedContentType}
                             >
                               {isAnalyzing ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
-                              {row.difficultyStatus === "available" ? "Analyzed" : "Analyze difficulty"}
+                              {row.difficultyStatus === "available" ? "Analyzed" : "Analyze"}
                             </button>
                             <button
                               type="button"
@@ -1295,7 +1356,7 @@ export function KeywordsClient() {
                               style={{ borderColor: BORDER, color: inProject ? "#22C55E" : TEXT_DIM }}
                             >
                               <FolderPlus size={12} />
-                              {inProject ? "Added" : "Add to project"}
+                              {inProject ? "Added" : "Project"}
                             </button>
                             <button
                               type="button"
