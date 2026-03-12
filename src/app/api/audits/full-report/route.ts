@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { ISSUE_META } from "@/lib/dashboard-data";
 import { calculateSeoScore } from "@/lib/seo-score";
+import { resolveSharedAuditContext } from "@/lib/shared-audits";
 
 type IssueSeverity = "error" | "warning" | "notice";
 type BotStatus = "ok" | "blocked";
@@ -73,19 +74,10 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url);
         const domainParam = searchParams.get("domain")?.trim().toLowerCase();
 
-        // ── Latest completed job ─────────────────────────────────────────────
-        const jobQuery = supabaseAdmin
-            .from("crawl_jobs")
-            .select("id, domain, status, pages_limit, pages_crawled, created_at, updated_at")
-            .eq("user_id", session.user.id)
-            .eq("status", "completed")
-            .order("created_at", { ascending: false })
-            .limit(1);
-
-        const { data: job } = await (
-            domainParam
-                ? jobQuery.eq("domain", domainParam).maybeSingle()
-                : jobQuery.maybeSingle()
+        const { latestJob: job } = await resolveSharedAuditContext(
+            session.user.id,
+            domainParam,
+            ["completed"]
         );
 
         if (!job) {

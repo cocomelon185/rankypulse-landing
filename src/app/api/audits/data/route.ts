@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { ISSUE_META } from "@/lib/dashboard-data";
 import { calculateSeoScore, computeSeoScore } from "@/lib/seo-score";
 import { validateAuditData } from "@/lib/audit-validator";
+import { resolveSharedAuditContext } from "@/lib/shared-audits";
 
 interface RawIssue {
   id: string;
@@ -43,25 +44,8 @@ export async function GET(req: NextRequest) {
   const domainParam = req.nextUrl.searchParams.get("domain");
 
   try {
-    // ── Get the latest completed crawl job (skip saved_domains entirely) ──────
-    // crawl engine writes to crawl_jobs + audit_pages, never to saved_domains
-    const jobQueryBase = supabaseAdmin
-      .from("crawl_jobs")
-      .select("id, domain, created_at, updated_at, pages_crawled")
-      .eq("user_id", userId)
-      .eq("status", "completed")
-      .order("created_at", { ascending: false })
-      .limit(1);
+    const { latestJob, targetDomain } = await resolveSharedAuditContext(userId, domainParam);
 
-    const { data: latestJob } = await (
-      domainParam
-        ? jobQueryBase.eq("domain", domainParam).maybeSingle()
-        : jobQueryBase.maybeSingle()
-    );
-
-    const targetDomain = latestJob?.domain ?? null;
-
-    // No completed crawl job found at all
     if (!latestJob || !targetDomain) {
       return NextResponse.json({
         healthScore: 0,
@@ -78,15 +62,18 @@ export async function GET(req: NextRequest) {
     // ── Previous completed job for score delta ────────────────────────────────
     let previousScore: number | null = null;
     try {
-      const { data: prevJob } = await supabaseAdmin
+      const completedJobQuery = supabaseAdmin
         .from("crawl_jobs")
         .select("id")
-        .eq("user_id", userId)
         .eq("domain", targetDomain)
         .eq("status", "completed")
-        .order("created_at", { ascending: false })
-        .range(1, 1)
-        .maybeSingle();
+        .order("created_at", { ascending: false });
+
+      const { data: prevJob } = await (
+        latestJob.status === "completed"
+          ? completedJobQuery.range(1, 1).maybeSingle()
+          : completedJobQuery.limit(1).maybeSingle()
+      );
 
       if (prevJob?.id) {
         const { data: prevPages } = await supabaseAdmin
@@ -284,6 +271,7 @@ export async function GET(req: NextRequest) {
       domain: targetDomain,
       crawledAt: latestJob.updated_at ?? latestJob.created_at,
       totalPages: pages.length || latestJob.pages_crawled || 0,
+      status: latestJob.status,
       issues,
       brokenLinks: brokenLinksReport,
       crawlDuration: crawlDurationSecs,

@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { ISSUE_META } from "@/lib/dashboard-data";
 import { ISSUE_CONTENT } from "@/lib/issue-content";
 import { computeSeoScore } from "@/lib/seo-score";
+import { resolveSharedAuditContext } from "@/lib/shared-audits";
 
 const BUILD_VERSION = "2026-03-08-v5";
 
@@ -137,23 +138,11 @@ export async function GET(req: NextRequest) {
   const domainParam = req.nextUrl.searchParams.get("domain");
 
   try {
-    // ── 1. Get all completed crawl jobs for domain selector ──────────────
-    const { data: allJobs } = await supabaseAdmin
-      .from("crawl_jobs")
-      .select("id, domain, created_at, pages_crawled")
-      .eq("user_id", userId)
-      .eq("status", "completed")
-      .order("created_at", { ascending: false })
-      .limit(20);
-
-    // Deduplicate domains (latest job per domain)
-    const domainJobMap = new Map<string, typeof allJobs extends (infer T)[] | null ? T : never>();
-    for (const job of allJobs ?? []) {
-      if (!domainJobMap.has(job.domain)) {
-        domainJobMap.set(job.domain, job);
-      }
-    }
-    const allDomains = [...domainJobMap.keys()];
+    const { allDomains, latestJob, targetDomain } = await resolveSharedAuditContext(
+      userId,
+      domainParam,
+      ["completed"]
+    );
 
     if (allDomains.length === 0) {
       return NextResponse.json({
@@ -163,47 +152,24 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ── 2. Select the target domain ─────────────────────────────────────
-    // If domain param provided, use it; otherwise try each domain's latest job until one has pages
-    let targetDomain = domainParam && allDomains.includes(domainParam) ? domainParam : null;
-    let latestJob: { id: string; domain: string; created_at: string } | null = null;
+    // ── 2. Load pages for the selected shared job ────────────────────────
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let rawPages: any[] | null = null;
     const skippedJobs: string[] = [];
 
-    if (targetDomain) {
-      // Use the specific domain's latest job
-      const job = domainJobMap.get(targetDomain);
-      if (job) {
-        const { data, error } = await supabaseAdmin
-          .from("audit_pages")
-          .select("url, score, issues, metadata")
-          .eq("job_id", job.id);
-        if (!error && data && data.length > 0) {
-          latestJob = job;
-          rawPages = data;
-        }
+    if (latestJob) {
+      const { data, error } = await supabaseAdmin
+        .from("audit_pages")
+        .select("url, score, issues, metadata")
+        .eq("job_id", latestJob.id);
+      if (!error && data && data.length > 0) {
+        rawPages = data;
+      } else if (targetDomain) {
+        skippedJobs.push(`${targetDomain}(${latestJob.id.slice(0, 8)})`);
       }
     }
 
-    if (!latestJob) {
-      // Try each domain's latest job until we find one with pages
-      for (const [dom, job] of domainJobMap) {
-        const { data, error } = await supabaseAdmin
-          .from("audit_pages")
-          .select("url, score, issues, metadata")
-          .eq("job_id", job.id);
-        if (!error && data && data.length > 0) {
-          latestJob = job;
-          rawPages = data;
-          targetDomain = dom;
-          break;
-        }
-        skippedJobs.push(`${dom}(${job.id.slice(0, 8)})`);
-      }
-    }
-
-    if (!latestJob || !rawPages || rawPages.length === 0) {
+    if (!latestJob || !targetDomain || !rawPages || rawPages.length === 0) {
       return NextResponse.json({
         tasks: [], domain: allDomains[0] ?? null, allDomains,
         seoScore: 0, projectedScore: 0, totalPoints: 0, earnedPoints: 0,
@@ -301,11 +267,6 @@ export async function GET(req: NextRequest) {
       warningIssues: warningCount,
       noticeIssues: noticeCount,
     });
-
-    // Projected score: remove all remaining (non-done) issues
-    const remainingCritical = issueEntries.filter(([id, v]) => v.sev === "HIGH" && completionMap.get(id)?.status !== "done").length;
-    const remainingWarning = issueEntries.filter(([id, v]) => v.sev === "MED" && completionMap.get(id)?.status !== "done").length;
-    const remainingNotice = issueEntries.filter(([id, v]) => v.sev === "LOW" && completionMap.get(id)?.status !== "done").length;
 
     const projectedScore = computeSeoScore({
       pages: pages.length,

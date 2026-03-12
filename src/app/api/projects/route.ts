@@ -3,6 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { calculateSeoScore } from "@/lib/seo-score";
+import {
+  getAccessibleAuditDomainsForUser,
+  getLatestSharedAuditJobsForDomains,
+} from "@/lib/shared-audits";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -12,31 +16,11 @@ export async function GET() {
 
   const userId = session.user.id;
 
-  // Fetch all crawl jobs for this user (completed + in-progress)
-  const { data: jobs, error } = await supabaseAdmin
-    .from("crawl_jobs")
-    .select("id, domain, status, created_at, updated_at, pages_crawled, current_url, last_error")
-    .eq("user_id", userId)
-    .in("status", ["completed", "crawling", "pending", "failed"])
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  // Group by domain — prefer the latest completed job, fall back to in-progress
-  const domainMap = new Map<string, typeof jobs[number]>();
-  for (const job of jobs ?? []) {
-    const existing = domainMap.get(job.domain);
-    if (!existing) {
-      domainMap.set(job.domain, job);
-    } else if (existing.status !== "completed" && job.status === "completed") {
-      // Replace in-progress with a completed job
-      domainMap.set(job.domain, job);
-    }
-  }
-
-  const latestJobs = Array.from(domainMap.values()).filter(j => !!j.domain && j.domain !== "undefined");
+  const accessibleDomains = await getAccessibleAuditDomainsForUser(userId);
+  const sharedJobs = await getLatestSharedAuditJobsForDomains(accessibleDomains);
+  const latestJobs = accessibleDomains
+    .map((domain) => sharedJobs.get(domain))
+    .filter((job): job is NonNullable<typeof job> => Boolean(job));
 
   // For each domain, fetch score + issue counts from audit_pages
   const domains = await Promise.all(
@@ -73,8 +57,8 @@ export async function GET() {
         pagesCrawled: job.pages_crawled ?? (pages?.length ?? 0),
         lastAuditAt: job.updated_at ?? job.created_at,
         status: job.status,
-        currentUrl: (job as Record<string, unknown>).current_url ?? null,
-        lastError: (job as Record<string, unknown>).last_error ?? null,
+        currentUrl: job.current_url ?? null,
+        lastError: job.last_error ?? null,
       };
     })
   );

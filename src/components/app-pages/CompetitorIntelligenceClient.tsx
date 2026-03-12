@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { isDataProviderUnavailableCode } from "@/lib/data-provider";
 import {
   Target,
   Globe,
@@ -13,7 +14,6 @@ import {
   ExternalLink,
   BarChart2,
   Plus,
-  Lock,
   Search,
 } from "lucide-react";
 
@@ -150,11 +150,11 @@ function ManualCompetitorEntry({ myDomain, country }: { myDomain: string; countr
     >
       <div className="flex items-center gap-2">
         <Search size={15} style={{ color: "#7B5CF5" }} />
-        <h3 className="text-sm font-bold text-white">Manually track competitor domains</h3>
+        <h3 className="text-sm font-bold text-white">Track competitor domains</h3>
       </div>
       <p className="text-xs" style={{ color: TEXT_DIM }}>
-        Enter a competitor domain to monitor their search presence via rank tracking.
-        We&apos;ll track <code className="text-orange-400">site:competitor.com</code> as a keyword signal.
+        Add competitor domains to your watchlist and we&apos;ll monitor them through Rank Tracking.
+        We use <code className="text-orange-400">site:competitor.com</code> as the tracking signal.
       </p>
       <div className="flex gap-2">
         <input
@@ -185,7 +185,7 @@ function ManualCompetitorEntry({ myDomain, country }: { myDomain: string; countr
             </div>
           ))}
           <Link
-            href="/app/position-tracking"
+            href="/app/rank-tracking"
             className="text-xs font-semibold underline"
             style={{ color: ACCENT }}
           >
@@ -207,6 +207,7 @@ export function CompetitorIntelligenceClient() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [labsUnavailable, setLabsUnavailable] = useState(false);
+  const [providerUnavailable, setProviderUnavailable] = useState(false);
   const [cacheDate, setCacheDate] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
 
@@ -228,6 +229,7 @@ export function CompetitorIntelligenceClient() {
       if (forceRefresh) { setRefreshing(true); } else { setLoading(true); }
       setError(null);
       setLabsUnavailable(false);
+      setProviderUnavailable(false);
 
       try {
         if (forceRefresh) {
@@ -238,8 +240,12 @@ export function CompetitorIntelligenceClient() {
           });
           const data = await res.json();
           if (!res.ok) {
-            if (data.code === "DFS_LABS_REQUIRED") {
-              setLabsUnavailable(true);
+            if (isDataProviderUnavailableCode(data.code)) {
+              if (data.availability === "missing_capability") {
+                setLabsUnavailable(true);
+              } else {
+                setProviderUnavailable(true);
+              }
               return;
             }
             throw new Error(data.error ?? "Failed to fetch competitors");
@@ -347,28 +353,28 @@ export function CompetitorIntelligenceClient() {
         </div>
       )}
 
-      {/* Labs unavailable — show manual entry fallback */}
+      {/* Labs unavailable — keep the page useful without warning-style friction */}
       {!loading && labsUnavailable && domain && (
-        <div className="space-y-5">
-          <div
-            className="rounded-xl border p-5 flex items-start gap-4"
-            style={{ background: "rgba(245,158,11,0.06)", borderColor: "rgba(245,158,11,0.2)" }}
-          >
-            <Lock size={18} className="text-amber-400 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm text-amber-400 font-semibold">Automatic competitor detection not available</p>
-              <p className="text-xs mt-1" style={{ color: "#D4A850" }}>
-                Competitor analysis uses DataForSEO Labs, which requires a Labs subscription.
-                You can still manually track competitor domains using the form below — they&apos;ll appear in your Rank Tracking dashboard.
-              </p>
-            </div>
+        <ManualCompetitorEntry myDomain={domain} country={country} />
+      )}
+
+      {!loading && providerUnavailable && !labsUnavailable && (
+        <div
+          className="rounded-2xl border p-8 space-y-3"
+          style={{ background: "rgba(123,92,245,0.05)", borderColor: "rgba(123,92,245,0.16)" }}
+        >
+          <div className="flex items-center gap-2">
+            <BarChart2 size={16} style={{ color: "#A78BFA" }} />
+            <p className="text-sm font-semibold text-white">Competitor discovery is temporarily unavailable</p>
           </div>
-          <ManualCompetitorEntry myDomain={domain} country={country} />
+          <p className="text-sm" style={{ color: TEXT_DIM }}>
+            Automatic competitor discovery is unavailable right now. Existing competitor data will continue to appear when cached results are available.
+          </p>
         </div>
       )}
 
       {/* Generic error */}
-      {!loading && error && !labsUnavailable && (
+      {!loading && error && !labsUnavailable && !providerUnavailable && (
         <div
           className="rounded-xl border p-5 flex items-center gap-3"
           style={{ background: "rgba(239,68,68,0.06)", borderColor: "rgba(239,68,68,0.2)" }}
@@ -382,7 +388,7 @@ export function CompetitorIntelligenceClient() {
       )}
 
       {/* No domain */}
-      {!loading && !error && !labsUnavailable && !domain && (
+      {!loading && !error && !labsUnavailable && !providerUnavailable && !domain && (
         <div
           className="rounded-2xl border p-16 flex flex-col items-center gap-4"
           style={{ background: CARD_BG, borderColor: BORDER }}
@@ -405,7 +411,7 @@ export function CompetitorIntelligenceClient() {
       )}
 
       {/* No competitors yet */}
-      {hasLoaded && !loading && !error && !labsUnavailable && domain && competitors.length === 0 && (
+      {hasLoaded && !loading && !error && !labsUnavailable && !providerUnavailable && domain && competitors.length === 0 && (
         <div
           className="rounded-2xl border p-16 flex flex-col items-center gap-4"
           style={{ background: CARD_BG, borderColor: BORDER }}
@@ -430,7 +436,7 @@ export function CompetitorIntelligenceClient() {
       )}
 
       {/* Main content */}
-      {!loading && !error && !labsUnavailable && competitors.length > 0 && (
+      {!loading && !error && !labsUnavailable && !providerUnavailable && competitors.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}

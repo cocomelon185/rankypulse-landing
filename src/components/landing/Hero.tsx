@@ -5,10 +5,7 @@ import { motion, useInView } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Zap, Search, TrendingUp, Clock, Eye } from "lucide-react";
 import { extractAuditDomain, isValidExtractedDomain } from "@/lib/url-validation";
-import { useAuth } from "@/hooks/useAuth";
 import CountUp from "react-countup";
-import { InstantPreview } from "@/components/landing/InstantPreview";
-import type { PreviewResult, PreviewError } from "@/components/landing/InstantPreview";
 
 const STATS = [
   { num: 12400, suffix: "+", label: "Sites audited", color: "#6366f1", decimals: 0 },
@@ -109,15 +106,10 @@ function FloatingScorePreview() {
 export function Hero() {
   const [domain, setDomain] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState("");
-  const [auditLimitError, setAuditLimitError] = useState("");
-  const [previewData, setPreviewData] = useState<PreviewResult | null>(null);
-  const [scanError, setScanError] = useState<string | null>(null);
   const statsRef = useRef<HTMLDivElement>(null);
   const statsInView = useInView(statsRef, { once: true, margin: "-50px" });
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
 
   const runAudit = async (rawDomain: string) => {
     const cleaned = extractAuditDomain(rawDomain);
@@ -128,65 +120,8 @@ export function Hero() {
     }
 
     setError("");
-    setScanError(null);
-    setAuditLimitError("");
-    setPreviewData(null);
-
-    // ── Authenticated path: navigate to full report ──
-    if (isAuthenticated) {
-      setIsLoading(true);
-      try {
-        const res = await fetch("/api/usage/audit", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ domain: cleaned }),
-        });
-        const data = await res.json() as { allowed?: boolean; reason?: string };
-        if (!data.allowed) {
-          setAuditLimitError("You've used all audits this month. Upgrade to continue.");
-          setIsLoading(false);
-          return;
-        }
-      } catch {
-        // Fail open — proceed with audit on network error
-      }
-      router.push(`/report/${cleaned}`);
-      return;
-    }
-
-    // ── Unauthenticated path: inline preview ──
-    setIsScanning(true);
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30_000);
-
-    try {
-      const res = await fetch(`/api/crawl?domain=${encodeURIComponent(cleaned)}`, {
-        signal: controller.signal,
-      });
-      const data = await res.json() as PreviewResult | PreviewError;
-
-      if ("error" in data && data.error) {
-        const errData = data as PreviewError;
-        if (errData.error === "rate_limited") {
-          setScanError("Too many requests — please wait a minute and try again.");
-        } else if (errData.error === "unreachable") {
-          setScanError(`Could not reach ${cleaned}. The site may be blocking crawlers.`);
-        } else {
-          setScanError("Something went wrong. Please try again.");
-        }
-      } else {
-        setPreviewData(data as PreviewResult);
-      }
-    } catch (err) {
-      setScanError(
-        err instanceof Error && err.name === "AbortError"
-          ? "The scan took too long. Please try again."
-          : "Network error. Please try again."
-      );
-    } finally {
-      clearTimeout(timeout);
-      setIsScanning(false);
-    }
+    setIsLoading(true);
+    router.push(`/report/${cleaned}`);
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -232,7 +167,7 @@ export function Hero() {
         >
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
           <span className="small uppercase tracking-[2px] text-[var(--landing-text-muted)]">
-            Free · No signup · 30-second audit
+            Free SEO audit · No signup required
           </span>
         </motion.div>
 
@@ -243,8 +178,7 @@ export function Hero() {
           transition={{ delay: 0.15, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="h1 mb-6 leading-[1.06] text-foreground"
         >
-          Find & fix the 3 SEO issues{" "}
-          <span className="italic text-[var(--landing-accent-secondary)]">that add 500+ visits/mo</span>
+          Find and fix SEO problems on your website in minutes.
         </motion.h1>
 
         {/* Subheadline */}
@@ -254,9 +188,8 @@ export function Hero() {
           transition={{ delay: 0.25, duration: 0.5 }}
           className="mx-auto mb-10 max-w-2xl text-xl leading-relaxed text-gray-600 dark:text-gray-400"
         >
-          Get a complete SEO audit in 30 seconds. Then fix your highest-impact issues{" "}
-          <span className="text-foreground">with copy-ready guides.</span>
-          {" "}Most users fix their top 3 issues before lunch.
+          Enter your website, run a free audit, and see your SEO score plus the top fixes to make first.
+          <span className="text-foreground"> Get the aha moment before signup friction.</span>
         </motion.p>
 
         {/* Input */}
@@ -273,7 +206,6 @@ export function Hero() {
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 transition-colors duration-200 group-focus-within:text-indigo-400"
               />
               <input
-                // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
                 name="domain"
                 type="text"
@@ -282,8 +214,6 @@ export function Hero() {
                 onChange={(e) => {
                   setDomain(e.target.value);
                   setError("");
-                  if (previewData) setPreviewData(null);
-                  if (scanError) setScanError(null);
                 }}
                 placeholder="yoursite.com"
                 className="w-full rounded-xl border border-[var(--landing-border)] bg-white/5 py-4 pl-10 pr-4 text-sm text-foreground placeholder-[var(--landing-text-muted)] transition-all duration-200 focus:border-indigo-500/60 focus:bg-indigo-500/4 focus:outline-none"
@@ -291,13 +221,13 @@ export function Hero() {
             </div>
             <button
               type="submit"
-              disabled={isLoading || isScanning}
+              disabled={isLoading}
               className="btn btn-primary whitespace-nowrap"
             >
-              {isLoading || isScanning ? (
-                <><Zap size={15} className="animate-pulse" />Scanning...</>
+              {isLoading ? (
+                <><Zap size={15} className="animate-pulse" />Running audit...</>
               ) : (
-                <><Zap size={15} />Scan Free</>
+                <><Zap size={15} />Run Free SEO Audit</>
               )}
             </button>
           </form>
@@ -310,95 +240,43 @@ export function Hero() {
               {error}
             </motion.p>
           )}
-          {auditLimitError && (
-            <motion.div
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-3 flex flex-col items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/8 p-4"
-            >
-              <p className="text-sm text-amber-400">{auditLimitError}</p>
-              <a
-                href="/pricing"
-                className="btn btn-primary text-xs"
-                style={{ background: "var(--landing-accent-secondary)" }}
-              >
-                View upgrade options →
-              </a>
-            </motion.div>
-          )}
         </motion.div>
 
-        {/* Scanning animation */}
-        {isScanning && (
+        {/* Trust pills + quick links */}
+        <>
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-auto mb-4 flex max-w-xl flex-col items-center gap-3 py-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="mb-6 flex flex-wrap items-center justify-center gap-5"
           >
-            <div className="flex items-center gap-2">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <motion.div
-                  key={i}
-                  className="h-1.5 w-1.5 rounded-full bg-indigo-500"
-                  animate={{ opacity: [0.3, 1, 0.3], scaleY: [1, 2, 1] }}
-                  transition={{ duration: 1, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
-                />
-              ))}
-            </div>
-            <span className="small text-[var(--landing-text-muted)]">
-              Analyzing {domain}…
-            </span>
+            {TRUST_PILLS.map(({ icon: Icon, text }) => (
+              <div key={text} className="flex items-center gap-1.5">
+                <Icon size={13} className="text-indigo-400" />
+                <span className="small text-[var(--landing-text-muted)]">{text}</span>
+              </div>
+            ))}
           </motion.div>
-        )}
 
-        {/* Scan error */}
-        {scanError && !isScanning && (
-          <motion.p
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-auto mb-4 max-w-xl pl-1 text-left text-sm text-red-400"
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.55 }}
+            className="mb-14 flex flex-wrap items-center justify-center gap-2"
           >
-            {scanError}
-          </motion.p>
-        )}
-
-        {/* Trust pills + quick links — hidden once scanning starts or preview is shown */}
-        {!isScanning && !previewData && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="mb-6 flex flex-wrap items-center justify-center gap-5"
-            >
-              {TRUST_PILLS.map(({ icon: Icon, text }) => (
-                <div key={text} className="flex items-center gap-1.5">
-                  <Icon size={13} className="text-indigo-400" />
-                  <span className="small text-[var(--landing-text-muted)]">{text}</span>
-                </div>
-              ))}
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.55 }}
-              className="mb-14 flex flex-wrap items-center justify-center gap-2"
-            >
-              <span className="small text-[var(--landing-text-muted)]">Try it on:</span>
-              {["stripe.com", "shopify.com", "notion.so"].map((demo) => (
-                <button
-                  key={demo}
-                  type="button"
-                  onClick={() => handleQuickLink(demo)}
-                  className="rounded-lg border border-[var(--landing-border)] bg-white/4 px-3 py-1.5 small text-[var(--landing-text-secondary)] transition-all duration-150 hover:border-white/15 hover:bg-white/8 hover:text-[var(--landing-text-primary)]"
-                >
-                  {demo}
-                </button>
-              ))}
-            </motion.div>
-          </>
-        )}
+            <span className="small text-[var(--landing-text-muted)]">Try it on:</span>
+            {["stripe.com", "shopify.com", "notion.so"].map((demo) => (
+              <button
+                key={demo}
+                type="button"
+                onClick={() => handleQuickLink(demo)}
+                className="rounded-lg border border-[var(--landing-border)] bg-white/4 px-3 py-1.5 small text-[var(--landing-text-secondary)] transition-all duration-150 hover:border-white/15 hover:bg-white/8 hover:text-[var(--landing-text-primary)]"
+              >
+                {demo}
+              </button>
+            ))}
+          </motion.div>
+        </>
 
         {/* Stat cards */}
         <motion.div
@@ -434,43 +312,26 @@ export function Hero() {
         </motion.div>
       </div>
 
-      {/* Preview area — min-h prevents layout jump while scanning */}
+      {/* Preview area */}
       <div className="relative mx-auto w-full max-w-4xl px-6 min-h-[260px]">
-        {previewData ? (
-          <InstantPreview
-            domain={previewData.domain}
-            score={previewData.score}
-            issues={previewData.issues}
-            estimatedTrafficLoss={previewData.estimatedTrafficLoss}
-            onRunAnother={() => {
-              setPreviewData(null);
-              setScanError(null);
-              setDomain("");
-            }}
-          />
-        ) : !isScanning ? (
-          <FloatingScorePreview />
-        ) : null}
+        <FloatingScorePreview />
       </div>
 
-      {/* Scroll indicator — hidden when preview is active */}
-      {!previewData && (
+      <motion.div
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 2.2 }}
+      >
+        <span className="font-['DM_Mono'] text-[10px] uppercase tracking-widest text-gray-700">
+          Scroll
+        </span>
         <motion.div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 2.2 }}
-        >
-          <span className="font-['DM_Mono'] text-[10px] uppercase tracking-widest text-gray-700">
-            Scroll
-          </span>
-          <motion.div
-            className="h-8 w-px rounded-full bg-gradient-to-b from-gray-700 to-transparent"
-            animate={{ scaleY: [1, 0.4, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </motion.div>
-      )}
+          className="h-8 w-px rounded-full bg-gradient-to-b from-gray-700 to-transparent"
+          animate={{ scaleY: [1, 0.4, 1] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </motion.div>
     </section>
   );
 }

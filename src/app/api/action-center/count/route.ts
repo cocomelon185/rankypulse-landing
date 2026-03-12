@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import {
+  getAccessibleAuditDomainsForUser,
+  getLatestSharedAuditJobsForDomains,
+} from "@/lib/shared-audits";
 
 /**
  * GET /api/action-center/count
@@ -15,14 +19,12 @@ export async function GET() {
   }
 
   try {
-    // Get latest completed jobs
-    const { data: jobs } = await supabaseAdmin
-      .from("crawl_jobs")
-      .select("id, domain")
-      .eq("user_id", session.user.id)
-      .eq("status", "completed")
-      .order("created_at", { ascending: false })
-      .limit(5);
+    const domains = await getAccessibleAuditDomainsForUser(session.user.id);
+    const sharedJobs = await getLatestSharedAuditJobsForDomains(domains, ["completed"]);
+    const jobs = domains
+      .map((domain) => sharedJobs.get(domain))
+      .filter((job): job is NonNullable<typeof job> => Boolean(job))
+      .slice(0, 5);
 
     if (!jobs?.length) return NextResponse.json({ count: 0 });
 

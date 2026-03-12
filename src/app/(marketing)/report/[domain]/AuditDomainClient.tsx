@@ -32,6 +32,80 @@ import { PdfCoverPage } from "@/components/audit/PdfCoverPage";
 
 type ErrorKind = "unreachable" | "rate_limited" | "timeout" | "failed";
 
+function TopFixesSnapshot() {
+  const router = useRouter();
+  const data = useAuditStore((s) => s.data);
+  const topIssues = data.issues
+    .filter((issue) => issue.status === "open" || issue.status === "in-progress")
+    .slice(0, 3);
+
+  if (topIssues.length === 0) {
+    return (
+      <section className="audit-card p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Action Center</p>
+            <h2 className="mt-1 font-display text-2xl font-semibold text-[var(--text-primary)]">Your score is strong.</h2>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
+              No urgent fixes surfaced in this audit. Re-run after your next major content or site update.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push("/app/action-center")}
+            className="rounded-lg border border-white/10 px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-white/[0.04]"
+          >
+            Open Action Center
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="audit-card p-6">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="max-w-2xl">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Action Center</p>
+          <h2 className="mt-1 font-display text-2xl font-semibold text-[var(--text-primary)]">
+            Your score is {data.score}. Start with these top fixes.
+          </h2>
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">
+            These are the highest-impact issues surfaced by the audit. Fixing them first gives users the clearest path from score to action.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => router.push("/app/action-center")}
+          className="rounded-lg bg-[var(--accent-primary)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--accent-primary)]/90"
+        >
+          Open Action Center
+        </button>
+      </div>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        {topIssues.map((issue, index) => (
+          <div
+            key={issue.id}
+            className="rounded-xl border border-white/8 bg-white/[0.03] p-4"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                Top Fix {index + 1}
+              </span>
+              <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                {issue.priority}
+              </span>
+            </div>
+            <p className="mt-3 text-base font-semibold text-[var(--text-primary)]">{issue.title}</p>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">{issue.description}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function AuditDomainClient({ domain: rawDomain }: { domain: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -226,6 +300,7 @@ export function AuditDomainClient({ domain: rawDomain }: { domain: string }) {
               <ExportPdfButton domain={domain} />
             </div>
             <div id="pdf-hero"><AuditHero /></div>
+            <TopFixesSnapshot />
 
             {/* Continue Fix CTA — authenticated users only */}
             {isAuthenticated && (
@@ -333,7 +408,7 @@ function SaveDomainTracker({ domain }: { domain: string }) {
             📊 Track weekly SEO progress
           </p>
           <p className="font-['DM_Sans'] text-sm text-[var(--text-secondary)] mt-1">
-            Save this domain to your account. We'll crawl it automatically every Monday and email you a delta report.
+            Save this domain to your account. We&apos;ll crawl it automatically every Monday and email you a delta report.
           </p>
         </div>
         <button
