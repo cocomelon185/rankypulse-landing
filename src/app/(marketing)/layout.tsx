@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     template: "%s | RankyPulse",
   },
   description:
-    "Get a complete SEO audit in 30 seconds. See exactly which issues are costing you traffic, how many visits you could gain, and how to fix each one in minutes. Free. No signup required.",
+    "Get a free site SEO audit in 30 seconds. RankyPulse is a website audit tool that finds every issue costing you traffic and shows you how to fix each one. No signup required.",
   keywords: [
     "free SEO audit",
     "SEO audit tool",
@@ -19,6 +19,16 @@ export const metadata: Metadata = {
     "canonical URL checker",
     "core web vitals checker",
     "free SEO checker",
+    "site seo audit",
+    "check website seo",
+    "seo analysis tool",
+    "seo analysis website",
+    "website audit tool",
+    "site audit tool",
+    "seo audit for website",
+    "website seo audit tool",
+    "seo site audit free",
+    "free seo audit tool",
   ],
   authors: [{ name: "RankyPulse" }],
   creator: "RankyPulse",
@@ -33,9 +43,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: "https://rankypulse.com",
-    title: "RankyPulse — Free SEO Audit Tool",
+    title: "RankyPulse — Free Site SEO Audit & Website Audit Tool",
     description:
-      "Enter any domain. Get a complete SEO audit with step-by-step fix guides and real traffic estimates. Free. Takes 30 seconds.",
+      "Enter any domain. Get a free site SEO audit with step-by-step fix guides and real traffic estimates. RankyPulse is the website audit tool that shows you exactly what to fix. Takes 30 seconds.",
     siteName: "RankyPulse",
     images: [
       {
