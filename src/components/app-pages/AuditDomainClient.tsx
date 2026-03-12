@@ -848,7 +848,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <div className="rounded-xl border p-5 flex flex-col items-center" style={{ background: "#151B27", borderColor: "#1E2940" }}>
                             <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: "#6B7A99" }}>SEO Health</p>
-                            {isCrawling && score === 0 ? (
+                            {isCrawling ? (
                                 <div className="flex flex-col items-center justify-center h-32">
                                     <Loader2 size={28} className="animate-spin mb-2" style={{ color: "#FF9800" }} />
                                     <span className="text-[11px]" style={{ color: "#6B7A99" }}>Calculating…</span>
@@ -889,7 +889,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                             { label: "Warnings", count: warnings, activeColor: "#FF9800", activeBg: "rgba(255,152,0,0.1)",   icon: AlertTriangle },
                             { label: "Notices",  count: notices,  activeColor: "#00B0FF", activeBg: "rgba(0,176,255,0.1)",   icon: AlertCircle },
                         ].map(({ label, count, activeColor, activeBg, icon: Icon }) => {
-                            const isClean = count === 0;
+                            const isClean = !isCrawling && count === 0;
                             const color = isClean ? "#22c55e" : activeColor;
                             const bg    = isClean ? "rgba(34,197,94,0.05)" : activeBg;
                             const border = isClean ? "rgba(34,197,94,0.15)" : `${activeColor}30`;
@@ -898,7 +898,11 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                     style={{ background: bg, borderColor: border }}>
                                     <Icon size={20} style={{ color }} />
                                     <div>
-                                        <p className="text-3xl font-black mt-3" style={{ color }}>{count}</p>
+                                        {isCrawling ? (
+                                            <Loader2 size={20} className="animate-spin mt-3 mb-1" style={{ color: activeColor }} />
+                                        ) : (
+                                            <p className="text-3xl font-black mt-3" style={{ color }}>{count}</p>
+                                        )}
                                         <p className="text-xs font-semibold mt-0.5" style={{ color: isClean ? "#8B9BB4" : "white" }}>{label}</p>
                                     </div>
                                 </div>
