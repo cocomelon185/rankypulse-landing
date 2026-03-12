@@ -87,10 +87,17 @@ export async function GET(req: NextRequest) {
     } catch { /* non-critical */ }
 
     // ── All audit pages for that job ──────────────────────────────────────────
-    const { data: rawPages } = await supabaseAdmin
+    const { data: rawPages, error: pagesError } = await supabaseAdmin
       .from("audit_pages")
       .select("url, score, issues, metadata")
       .eq("job_id", latestJob.id);
+
+    // Debug: log raw DB state to help diagnose scoring issues
+    const firstPage = rawPages?.[0];
+    console.log(`[AuditData] job=${latestJob.id} domain=${targetDomain} pages=${rawPages?.length ?? 0} pagesErr=${pagesError?.message ?? "none"}`);
+    if (firstPage) {
+      console.log(`[AuditData] firstPage url=${firstPage.url} score=${firstPage.score} issuesType=${typeof firstPage.issues} issuesIsArray=${Array.isArray(firstPage.issues)} issuesLen=${Array.isArray(firstPage.issues) ? firstPage.issues.length : JSON.stringify(firstPage.issues)?.slice(0, 100)}`);
+    }
 
     const pages: AuditPage[] = (rawPages ?? []).map((p) => ({
       url: p.url,
@@ -215,6 +222,7 @@ export async function GET(req: NextRequest) {
     const warnings = issues.filter((i) => i.severity === "warning").length;
     const notices  = issues.filter((i) => i.severity === "notice").length;
     const totalIssueTypes = errors + warnings + notices;
+    console.log(`[AuditData] issueTypes=${totalIssueTypes} (errors=${errors} warnings=${warnings} notices=${notices}) issueIds=${Object.keys(issueMap).join(",") || "none"}`);
 
     // Deterministic issue-weighted score (replaces PSI-average + single-case patch)
     const rawScore = computeSeoScore({

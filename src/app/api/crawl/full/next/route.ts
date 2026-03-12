@@ -439,7 +439,8 @@ export async function GET(req: NextRequest) {
             "";
 
         // 6. Save to audit_pages (upsert in case URL is revisited)
-        await supabaseAdmin.from("audit_pages").upsert({
+        console.log(`[CrawlAudit] ${targetUrl} score=${score} issues=${issues.length} ids=${issues.map(i=>i.id).join(",") || "none"}`);
+        const { error: upsertErr } = await supabaseAdmin.from("audit_pages").upsert({
             job_id: jobId,
             url: targetUrl,
             score,
@@ -455,6 +456,7 @@ export async function GET(req: NextRequest) {
                 psi_available: !!psi,
             },
         }, { onConflict: "job_id,url", ignoreDuplicates: false });
+        if (upsertErr) console.error(`[CrawlAudit] upsert FAILED for ${targetUrl}:`, upsertErr.message);
 
         // 7. Add new links to queue (upsert to skip duplicates)
         if (internalLinks.length > 0) {
