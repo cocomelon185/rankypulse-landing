@@ -675,7 +675,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
             </nav>
 
             {/* ── Free plan scarcity banner */}
-            {plan === "free" && auditsUsed >= 2 && (
+            {plan === "free" && (auditsUsed ?? 0) >= 2 && (
                 <div className="flex items-center justify-between rounded-lg border px-4 py-2.5 text-xs"
                     style={{ background: "rgba(255,152,0,0.08)", borderColor: "rgba(255,152,0,0.2)", color: "#FF9800" }}>
                     <span>You&apos;ve used <strong>{auditsUsed}</strong> of <strong>{getAuditCap()}</strong> free audits this month.</span>
