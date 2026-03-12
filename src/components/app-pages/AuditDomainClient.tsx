@@ -735,7 +735,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <div className="rounded-xl border p-5 flex flex-col items-center" style={{ background: "#151B27", borderColor: "#1E2940" }}>
                             <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: "#6B7A99" }}>SEO Health</p>
-                            {isCrawling && score === 0 ? (
+                            {isCrawling ? (
                                 <div className="flex flex-col items-center justify-center h-32">
                                     <Loader2 size={28} className="animate-spin mb-2" style={{ color: "#FF9800" }} />
                                     <span className="text-[11px]" style={{ color: "#6B7A99" }}>Calculating…</span>
@@ -779,7 +779,11 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                 style={{ background: bg, borderColor: `${color}30` }}>
                                 <Icon size={20} style={{ color }} />
                                 <div>
-                                    <p className="text-3xl font-black mt-3" style={{ color }}>{count}</p>
+                                    {isCrawling ? (
+                                        <Loader2 size={20} className="animate-spin mt-3 mb-1" style={{ color }} />
+                                    ) : (
+                                        <p className="text-3xl font-black mt-3" style={{ color }}>{count}</p>
+                                    )}
                                     <p className="text-xs font-semibold text-white mt-0.5">{label}</p>
                                 </div>
                             </div>
