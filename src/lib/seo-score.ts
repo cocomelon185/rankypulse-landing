@@ -62,13 +62,9 @@ export function computeSeoScore(input: SeoScoreInput): number {
   score -= noticeIssues * 2;
   score = Math.max(score, 0);
 
-  // Guardrail: clean crawl → 95 (not 100, leaves room for content improvements)
+  // Guardrail: clean crawl → 100 (zero issues means perfect score)
   if (pages > 0 && totalIssues === 0) {
-    score = 95;
-  }
-
-  if (process.env.NODE_ENV === "development" && totalIssues === 0 && pages > 0) {
-    console.warn("[RankyPulse] Score guardrail applied: clean crawl → 95/100");
+    score = 100;
   }
 
   return score;

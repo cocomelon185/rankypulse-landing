@@ -10,6 +10,11 @@ import {
 } from "lucide-react";
 import { AuditSummaryPanel } from "./AuditSummaryPanel";
 import { ISSUE_CONTENT } from "@/lib/issue-content";
+import { toast } from "sonner";
+import { PricingModal } from "@/components/PricingModal";
+import { usePlan } from "@/hooks/usePlan";
+import { useBilling } from "@/hooks/useBilling";
+import { fireFixConfetti } from "@/lib/confetti";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface ProjectData {
@@ -420,6 +425,11 @@ export function AuditDomainClient({ domain }: { domain: string }) {
     const [error, setError] = useState<string | null>(null);
     const [expandedIssue, setExpandedIssue] = useState<string | null>(null);
     const [rerunning, setRerunning] = useState(false);
+    const [showPricingModal, setShowPricingModal] = useState(false);
+    const hasShownConfetti = useRef(false);
+
+    const { isPro } = usePlan();
+    const { plan, auditsUsed, getAuditCap } = useBilling();
 
     // Tracks how many concurrent crawl driver workers are running.
     const activeDriversRef = useRef<number>(0);
@@ -530,6 +540,29 @@ export function AuditDomainClient({ domain }: { domain: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [jobData?.jobId, jobData?.status]);
 
+    // ── Confetti on perfect score ──────────────────────────────────────────────
+    useEffect(() => {
+        if (!auditData) return;
+        const totalIssues = (auditData.errors ?? 0) + (auditData.warnings ?? 0) + (auditData.notices ?? 0);
+        const rawSc = auditData.healthScore ?? 0;
+        const displayScore = (auditData.totalPages > 0 && totalIssues === 0 && rawSc < 100) ? 100 : rawSc;
+        if (displayScore === 100 && !hasShownConfetti.current) {
+            hasShownConfetti.current = true;
+            fireFixConfetti();
+            toast.success("Perfect score! 🎉", {
+                description: "Your site has zero SEO issues.",
+                action: {
+                    label: "Share →",
+                    onClick: () => {
+                        navigator.clipboard.writeText(window.location.href);
+                        toast.success("Link copied!");
+                    },
+                },
+                duration: 6000,
+            });
+        }
+    }, [auditData]);
+
     const handleRerun = async () => {
         if (rerunning) return;
         setRerunning(true);
@@ -605,7 +638,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
     // Frontend safeScore: defensive rendering in case backend returns a stale/inconsistent score
     const totalIssueCount = errors + warnings + notices;
     const pageCount = auditData?.totalPages ?? jobData.pagesCrawled ?? 0;
-    const score = (auditData && pageCount > 0 && totalIssueCount === 0 && rawScore < 90)
+    const score = (auditData && pageCount > 0 && totalIssueCount === 0 && rawScore < 100)
       ? 100
       : rawScore;
     const crawlStats = auditData?.crawlStats;
@@ -632,12 +665,27 @@ export function AuditDomainClient({ domain }: { domain: string }) {
 
     return (
         <div className="space-y-8">
+            {showPricingModal && <PricingModal onClose={() => setShowPricingModal(false)} />}
+
             {/* ── Breadcrumb */}
             <nav className="flex items-center gap-2 text-[12px]" style={{ color: "#6B7A99" }}>
                 <button onClick={() => router.push("/app/audit")} className="hover:text-white transition">Site Audit</button>
                 <ChevronRight size={12} />
                 <span className="text-white font-semibold">{domain}</span>
             </nav>
+
+            {/* ── Free plan scarcity banner */}
+            {plan === "free" && auditsUsed >= 2 && (
+                <div className="flex items-center justify-between rounded-lg border px-4 py-2.5 text-xs"
+                    style={{ background: "rgba(255,152,0,0.08)", borderColor: "rgba(255,152,0,0.2)", color: "#FF9800" }}>
+                    <span>You&apos;ve used <strong>{auditsUsed}</strong> of <strong>{getAuditCap()}</strong> free audits this month.</span>
+                    <button onClick={() => setShowPricingModal(true)}
+                        className="font-semibold hover:opacity-80 transition ml-4 shrink-0"
+                        style={{ color: "#FF9800" }}>
+                        Upgrade for unlimited →
+                    </button>
+                </div>
+            )}
 
             {/* ── Audit Summary Panel */}
             {auditData && !isCrawling && (
@@ -682,12 +730,22 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                     </div>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                    <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition hover:bg-white/[0.04] relative"
+                    <button
+                        onClick={() => isPro
+                            ? toast.info("PDF export is coming soon — we're building it!")
+                            : setShowPricingModal(true)
+                        }
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition hover:bg-white/[0.04] relative"
                         style={{ borderColor: "#1E2940", color: "#8B9BB4" }} title="Pro feature">
                         <Download size={12} /> Export PDF
                         <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold px-1 rounded" style={{ background: "#FF9800", color: "white" }}>PRO</span>
                     </button>
-                    <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition hover:bg-white/[0.04]"
+                    <button
+                        onClick={() => {
+                            navigator.clipboard.writeText(window.location.href);
+                            toast.success("Link copied to clipboard!");
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition hover:bg-white/[0.04]"
                         style={{ borderColor: "#1E2940", color: "#8B9BB4" }}>
                         <Share2 size={12} /> Share
                     </button>
@@ -822,6 +880,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                             )}
                                         </div>
                                     )}
+                                    <p className="mt-3 text-[10px] text-center" style={{ color: "#4A5568" }}>12,400+ sites audited</p>
                                 </>
                             )}
                         </div>
@@ -851,10 +910,12 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                     <div className="rounded-xl border overflow-hidden" style={{ background: "#151B27", borderColor: "#1E2940" }}>
                         <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "#1E2940" }}>
                             <h2 className="text-sm font-bold text-white">Top Issues</h2>
-                            <button className="text-xs font-semibold flex items-center gap-1" style={{ color: "#FF642D" }}
-                                onClick={() => router.push("/app/action-center")}>
-                                Fix All <ArrowRight size={11} />
-                            </button>
+                            {issues.length > 0 && (
+                                <button className="text-xs font-semibold flex items-center gap-1" style={{ color: "#FF642D" }}
+                                    onClick={() => router.push("/app/action-center")}>
+                                    Fix All <ArrowRight size={11} />
+                                </button>
+                            )}
                         </div>
                         {issues.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-10" style={{ color: "#4A5568" }}>
@@ -870,6 +931,12 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                         <p className="text-xs mt-1 text-center max-w-xs" style={{ color: "#4A5568" }}>
                                             Continue monitoring your site regularly to maintain strong search visibility.
                                         </p>
+                                        <button
+                                            onClick={() => router.push("/app/projects")}
+                                            className="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white transition hover:opacity-90"
+                                            style={{ background: "linear-gradient(135deg,#6366f1,#4f46e5)" }}>
+                                            Set up monitoring alerts <ArrowRight size={11} />
+                                        </button>
                                     </>
                                 )}
                             </div>
@@ -1121,10 +1188,12 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                         )}
                         <div className="text-center">
                             <p className="text-[11px]" style={{ color: "#4A5568" }}>{issues.length} total issues found</p>
-                            <button className="text-[12px] font-semibold mt-1 hover:opacity-80 transition"
-                                style={{ color: "#FF642D" }} onClick={() => router.push("/app/action-center")}>
-                                View All Tasks →
-                            </button>
+                            {issues.length > 0 && (
+                                <button className="text-[12px] font-semibold mt-1 hover:opacity-80 transition"
+                                    style={{ color: "#FF642D" }} onClick={() => router.push("/app/action-center")}>
+                                    View All Tasks →
+                                </button>
+                            )}
                         </div>
                     </div>
 

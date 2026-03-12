@@ -32,13 +32,8 @@ export function validateAuditData<T extends AuditResult>(audit: T): T {
   const result = { ...audit };
 
   // Contradiction 1: low score but no issues detected (impossible state)
-  if (result.pages > 0 && result.totalIssues === 0 && result.score < 90) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn(
-        `[RankyPulse] Score guardrail applied: score=${result.score} with 0 issues and ${result.pages} pages → corrected to 95`
-      );
-    }
-    result.score = 95;
+  if (result.pages > 0 && result.totalIssues === 0 && result.score < 100) {
+    result.score = 100;
   }
 
   // Contradiction 2: positive score but no pages were crawled
@@ -52,13 +47,8 @@ export function validateAuditData<T extends AuditResult>(audit: T): T {
   }
 
   // Contradiction 3: extremely low score with no issues (belt-and-suspenders)
-  if (result.totalIssues === 0 && result.score < 50 && result.pages > 0) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn(
-        `[RankyPulse] Score guardrail applied: score=${result.score} < 50 with 0 issues → corrected to 95`
-      );
-    }
-    result.score = 95;
+  if (result.totalIssues === 0 && result.score < 100 && result.pages > 0) {
+    result.score = 100;
   }
 
   return result;

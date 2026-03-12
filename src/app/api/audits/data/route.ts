@@ -95,7 +95,13 @@ export async function GET(req: NextRequest) {
     const pages: AuditPage[] = (rawPages ?? []).map((p) => ({
       url: p.url,
       score: p.score ?? null,
-      issues: Array.isArray(p.issues) ? (p.issues as RawIssue[]) : [],
+      issues: (() => {
+        if (Array.isArray(p.issues)) return p.issues as RawIssue[];
+        if (typeof p.issues === "string") {
+          try { const parsed = JSON.parse(p.issues); return Array.isArray(parsed) ? (parsed as RawIssue[]) : []; } catch { return []; }
+        }
+        return [];
+      })(),
       metadata: (p.metadata as PageMetadata) ?? null,
     }));
 
