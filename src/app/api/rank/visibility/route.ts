@@ -18,7 +18,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "domain required" }, { status: 400 });
   }
 
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  const days = Math.min(90, Math.max(7, parseInt(searchParams.get("days") ?? "30", 10)));
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
     .toISOString()
     .split("T")[0];
 
@@ -27,7 +28,7 @@ export async function GET(req: Request) {
     .select("score, snapshot_date")
     .eq("user_id", userId)
     .eq("domain", domain)
-    .gte("snapshot_date", thirtyDaysAgo)
+    .gte("snapshot_date", cutoff)
     .order("snapshot_date", { ascending: true });
 
   if (error) {
