@@ -61,8 +61,8 @@ export function normalizeAuditResult(raw: unknown, url: string) {
           ? it!.code
           : "issue";
       const code = typeof it!.code === "string" ? it!.code : id;
-      const title = typeof it!.title === "string" ? it!.title : "SEO issue";
-      const severity = typeof it!.severity === "string" ? it!.severity : "MED";
+      const title = typeof it!.title === "string" ? it!.title : typeof it!.msg === "string" ? it!.msg : "SEO issue";
+      const severity = typeof it!.severity === "string" ? it!.severity : typeof it!.sev === "string" ? it!.sev : "MED";
       const effortMinutes = typeof it!.effortMinutes === "number" ? it!.effortMinutes : 5;
       const category = typeof it!.category === "string" ? it!.category : "General";
       const suggestedFix = typeof it!.suggestedFix === "string" ? it!.suggestedFix : "";

@@ -175,6 +175,62 @@ export async function runAudit(url: string): Promise<AuditResult> {
     });
   }
 
+  // ── Additional checks ───────────────────────────────────────────────
+
+  // Title length
+  if (title && title.length < 30) {
+    issues.push({ id: "title_short", sev: "LOW", msg: `Title tag too short (${title.length} chars, aim for 30–60)` });
+  } else if (title && title.length > 60) {
+    issues.push({ id: "title_long", sev: "LOW", msg: `Title tag too long (${title.length} chars, aim for 30–60)` });
+  }
+
+  // Meta description length
+  if (metaDesc && metaDesc.length < 70) {
+    issues.push({ id: "meta_desc_short", sev: "LOW", msg: `Meta description too short (${metaDesc.length} chars, aim for 70–160)` });
+  } else if (metaDesc && metaDesc.length > 160) {
+    issues.push({ id: "meta_desc_long", sev: "LOW", msg: `Meta description too long (${metaDesc.length} chars, aim for 70–160)` });
+  }
+
+  // Multiple H1 tags
+  const h1Count = countMatches(html, /<h1[\s>]/gi);
+  if (h1Count > 1) {
+    issues.push({ id: "multiple_h1", sev: "MED", msg: `Multiple H1 tags found (${h1Count}). Use a single H1 per page` });
+  }
+
+  // Open Graph tags
+  const ogTitle = getFirstMatch(html, /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["'][^>]*>/i);
+  const ogDesc = getFirstMatch(html, /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["'][^>]*>/i);
+  const ogImage = getFirstMatch(html, /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["'][^>]*>/i);
+  if (!ogTitle || !ogDesc || !ogImage) {
+    const missing = [!ogTitle && "og:title", !ogDesc && "og:description", !ogImage && "og:image"].filter(Boolean).join(", ");
+    issues.push({ id: "og_tags", sev: "LOW", msg: `Missing Open Graph tags: ${missing}` });
+  }
+
+  // Structured data (JSON-LD / schema.org)
+  const hasJsonLd = /<script[^>]+type=["']application\/ld\+json["'][^>]*>/i.test(html);
+  const hasSchemaOrg = /schema\.org/i.test(html);
+  if (!hasJsonLd && !hasSchemaOrg) {
+    issues.push({ id: "structured_data", sev: "LOW", msg: "No structured data (JSON-LD / Schema.org) detected" });
+  }
+
+  // Viewport meta tag
+  const hasViewport = /<meta[^>]+name=["']viewport["'][^>]*>/i.test(html);
+  if (!hasViewport) {
+    issues.push({ id: "viewport", sev: "MED", msg: "Missing viewport meta tag (hurts mobile usability)" });
+  }
+
+  // Lang attribute on <html>
+  const hasLang = /<html[^>]+lang=["'][^"']+["']/i.test(html);
+  if (!hasLang) {
+    issues.push({ id: "html_lang", sev: "LOW", msg: "Missing lang attribute on <html> element" });
+  }
+
+  // Large page size
+  const pageSizeKB = Math.round(html.length / 1024);
+  if (pageSizeKB > 100) {
+    issues.push({ id: "large_html", sev: "LOW", msg: `Large HTML page size (${pageSizeKB} KB). Consider reducing` });
+  }
+
   const checks: AuditChecks = {
     fetch_ok: true,
     https,
@@ -193,6 +249,11 @@ export async function runAudit(url: string): Promise<AuditResult> {
     if (it.sev === "LOW") score -= 5;
   }
   if (score < 0) score = 0;
+
+  // Guardrail: cap at 95 when no issues found (matches full-crawl behaviour)
+  if (issues.length === 0 && score === 100) {
+    score = 95;
+  }
 
   return {
     url,
