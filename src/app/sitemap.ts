@@ -1,8 +1,16 @@
 import type { MetadataRoute } from "next";
+import { BLOG_POSTS } from "@/lib/blog-posts";
 
 const BASE = "https://rankypulse.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const blogEntries: MetadataRoute.Sitemap = BLOG_POSTS.map((post) => ({
+    url: `${BASE}/blog/${post.slug}`,
+    lastModified: new Date(post.publishedAt),
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
+
   return [
     // Core pages
     { url: `${BASE}/`, lastModified: new Date(), changeFrequency: "weekly", priority: 1.0 },
@@ -40,5 +48,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/seo-audit-for-local-business`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     // NOTE: /audit/results, /report/*, /dashboard, /auth/*, and all app routes
     // are intentionally excluded — they require auth or are dynamic.
+    ...blogEntries,
   ];
 }
