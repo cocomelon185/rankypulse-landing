@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import Anthropic from "@anthropic-ai/sdk";
 
+export const maxDuration = 30; // Allow 30s for Claude XML generation on Vercel
+
 // ── XML parser ────────────────────────────────────────────────────────────────
 
 function parseFixXml(text: string) {
@@ -23,16 +25,15 @@ function parseFixXml(text: string) {
 
 // ── System prompt (instructs Claude to always return XML) ─────────────────────
 
-const SYSTEM_PROMPT = `You are a Lead SEO Engineer and Core Web Vitals Specialist.
+const SYSTEM_PROMPT = `You are a Lead SEO Engineer. Output ONLY the XML tags below — no greetings, no explanations, no markdown outside the tags. Start your response immediately with <analysis>.
 
-Always respond in EXACTLY this XML format with no text outside the tags:
-
+Format:
 <analysis>2 sentences explaining WHY this is a critical SEO failure, citing Google's specific guidelines (e.g., Mobile-First Indexing, HTTPS as a ranking signal, PageSpeed Insights thresholds).</analysis>
-<code_block_primary>Ready-to-paste code fix. Include inline comments. The code MUST be compatible with the site's architecture (provided in the user message). Do NOT provide React/Next.js code for Legacy HTML sites. Do NOT provide raw HTML for Next.js sites.</code_block_primary>
+<code_block_primary>Ready-to-paste code fix. Include inline comments. The code MUST match the site's architecture from the user message. Do NOT provide React/Next.js code for Legacy HTML sites. Do NOT provide raw HTML for Next.js sites.</code_block_primary>
 <steps>1. [File to open or location]
 2. [Where to paste the code]
 3. [How to deploy and verify]</steps>
-<verification>One single curl command OR a browser console snippet the developer can run to confirm the fix is live. Keep it to one line.</verification>
+<verification>One single curl command OR a browser console snippet to confirm the fix is live. One line only.</verification>
 <score_impact>+X to +Y points — one short reason why.</score_impact>`;
 
 // ── Issue-specific user prompts ───────────────────────────────────────────────
