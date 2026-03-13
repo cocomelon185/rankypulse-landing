@@ -98,6 +98,10 @@ export async function GET(req: NextRequest) {
       metadata: (p.metadata as PageMetadata) ?? null,
     }));
 
+    // Exclude synthetic __site_level__ row from real-page counts
+    const realPages = pages.filter(p => p.url !== "__site_level__");
+    const totalPages = realPages.length;
+
     // ── Aggregate issues across all pages grouped by issue ID ─────────────────
     const issueMap: Record<string, { sev: string; count: number }> = {};
     const issueUrlMap: Record<string, string[]> = {};
