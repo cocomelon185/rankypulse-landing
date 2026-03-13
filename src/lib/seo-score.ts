@@ -64,9 +64,9 @@ export function computeSeoScore(input: SeoScoreInput): number {
   score -= noticeIssues * 2;
   score = Math.max(score, 0);
 
-  // Guardrail: clean crawl → 100 (zero issues means perfect score)
+  // Guardrail: clean crawl → 95 (no site is truly perfect)
   if (pages > 0 && totalIssues === 0) {
-    score = 100;
+    score = 95;
   }
 
   return score;

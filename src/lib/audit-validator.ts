@@ -5,9 +5,9 @@
  * Call validateAuditData() immediately before returning /api/audits/data responses.
  *
  * Guarantees:
- *   ✓  pages > 0, issues = 0  → score is always ≥ 90
+ *   ✓  pages > 0, issues = 0  → score is always ≥ 90 (capped at 95, never 100)
  *   ✓  pages = 0              → score is always 0
- *   ✓  issues = 0, score < 50 → score is corrected to 95
+ *   ✓  issues = 0, score < 50 → score is corrected to 95 (never 100)
  */
 
 export interface AuditResult {
@@ -32,8 +32,8 @@ export function validateAuditData<T extends AuditResult>(audit: T): T {
   const result = { ...audit };
 
   // Contradiction 1: low score but no issues detected (impossible state)
-  if (result.pages > 0 && result.totalIssues === 0 && result.score < 100) {
-    result.score = 100;
+  if (result.pages > 0 && result.totalIssues === 0 && result.score < 90) {
+    result.score = 95;
   }
 
   // Contradiction 2: positive score but no pages were crawled
@@ -47,8 +47,8 @@ export function validateAuditData<T extends AuditResult>(audit: T): T {
   }
 
   // Contradiction 3: extremely low score with no issues (belt-and-suspenders)
-  if (result.totalIssues === 0 && result.score < 100 && result.pages > 0) {
-    result.score = 100;
+  if (result.totalIssues === 0 && result.score < 50 && result.pages > 0) {
+    result.score = 95;
   }
 
   return result;

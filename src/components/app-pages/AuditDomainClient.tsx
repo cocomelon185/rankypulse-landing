@@ -545,12 +545,12 @@ export function AuditDomainClient({ domain }: { domain: string }) {
         if (!auditData) return;
         const totalIssues = (auditData.errors ?? 0) + (auditData.warnings ?? 0) + (auditData.notices ?? 0);
         const rawSc = auditData.healthScore ?? 0;
-        const displayScore = (auditData.totalPages > 0 && totalIssues === 0 && rawSc < 100) ? 100 : rawSc;
-        if (displayScore === 100 && !hasShownConfetti.current) {
+        const displayScore = (auditData.totalPages > 0 && totalIssues === 0 && rawSc < 90) ? 95 : rawSc;
+        if (displayScore >= 95 && totalIssues === 0 && !hasShownConfetti.current) {
             hasShownConfetti.current = true;
             fireFixConfetti();
-            toast.success("Perfect score! 🎉", {
-                description: "Your site has zero SEO issues.",
+            toast.success("Excellent score! 🎉", {
+                description: "Your site has zero critical SEO issues.",
                 action: {
                     label: "Share →",
                     onClick: () => {
@@ -638,8 +638,8 @@ export function AuditDomainClient({ domain }: { domain: string }) {
     // Frontend safeScore: defensive rendering in case backend returns a stale/inconsistent score
     const totalIssueCount = errors + warnings + notices;
     const pageCount = auditData?.totalPages ?? jobData.pagesCrawled ?? 0;
-    const score = (auditData && pageCount > 0 && totalIssueCount === 0 && rawScore < 100)
-      ? 100
+    const score = (auditData && pageCount > 0 && totalIssueCount === 0 && rawScore < 90)
+      ? 95
       : rawScore;
     const crawlStats = auditData?.crawlStats;
     const thematicScores = computeThematicScores(issues);
