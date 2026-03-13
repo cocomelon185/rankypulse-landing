@@ -186,7 +186,7 @@ export async function POST(req: NextRequest) {
             } catch { /* skip */ }
 
             if (siteLevelIssues.length > 0) {
-                await supabaseAdmin.from("audit_pages").upsert({
+                const { error: siteErr } = await supabaseAdmin.from("audit_pages").upsert({
                     job_id: job.id,
                     url: "__site_level__",
                     score: Math.max(0, 100 - siteLevelIssues.filter(i => i.sev === "HIGH").length * 10 - siteLevelIssues.filter(i => i.sev === "MED").length * 5),
@@ -194,7 +194,11 @@ export async function POST(req: NextRequest) {
                     psi_data: null,
                     metadata: { title: "__site_level__", is_root: false, psi_available: false },
                 }, { onConflict: "job_id,url", ignoreDuplicates: false });
-                console.log(`[Crawl Start] Site-level checks: ${siteLevelIssues.length} issues for ${cleanDomain}`);
+                if (siteErr) {
+                    console.error(`[Crawl Start] __site_level__ upsert FAILED for ${cleanDomain}:`, siteErr.message, siteErr.code);
+                } else {
+                    console.log(`[Crawl Start] Site-level checks: ${siteLevelIssues.length} issues for ${cleanDomain}`);
+                }
             }
         } catch { /* site-level checks are best-effort */ }
 
