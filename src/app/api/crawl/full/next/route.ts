@@ -37,18 +37,39 @@ function auditPageCompact(
     let score = 100;
 
     if (!html) {
-        // Can't audit — return minimal score with no issues if PSI failed too
         return { score: psi ? 50 : 30, issues };
     }
 
-    // Meta description
+    // ── HTTPS check ─────────────────────────────────────────────────────────────
+    if (pageUrl.startsWith("http://")) {
+        score -= 10;
+        issues.push({ id: "not_https", sev: "HIGH", msg: "Page served over HTTP (not HTTPS)" });
+    }
+
+    // ── Title tag ───────────────────────────────────────────────────────────────
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const hasTitle = !!(titleMatch?.[1]?.trim());
+    if (!hasTitle) {
+        score -= 10;
+        issues.push({ id: "no_title", sev: "HIGH", msg: "Missing title tag" });
+    } else {
+        const titleText = titleMatch![1].trim();
+        if (titleText.length > 60) {
+            score -= 5;
+            issues.push({ id: "title_too_long", sev: "MED", msg: `Title is ${titleText.length} chars (max 60)` });
+        } else if (titleText.length < 30) {
+            score -= 2;
+            issues.push({ id: "title_too_short", sev: "LOW", msg: `Title is ${titleText.length} chars (min 30)` });
+        }
+    }
+
+    // ── Meta description ────────────────────────────────────────────────────────
     const hasMeta = /<meta\s+name=["']description["']/i.test(html) ||
         /<meta\s+content=["'][^"']+["']\s+name=["']description["']/i.test(html);
     if (!hasMeta) {
         score -= 10;
         issues.push({ id: "no_meta_description", sev: "HIGH", msg: "Missing meta description" });
     } else {
-        // Meta description length checks
         const metaDescContent =
             html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i)?.[1]?.trim() ??
             html.match(/<meta\s+content=["']([^"']+)["']\s+name=["']description["']/i)?.[1]?.trim();
@@ -57,47 +78,41 @@ function auditPageCompact(
                 score -= 5;
                 issues.push({ id: "meta_desc_too_long", sev: "MED", msg: `Meta description is ${metaDescContent.length} chars (max 160)` });
             } else if (metaDescContent.length < 70) {
-                score -= 3;
+                score -= 2;
                 issues.push({ id: "meta_desc_too_short", sev: "LOW", msg: `Meta description is ${metaDescContent.length} chars (min 70)` });
             }
         }
     }
 
-    // Title tag
-    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-    const hasTitle = !!(titleMatch?.[1]?.trim());
-    if (!hasTitle) {
-        score -= 10;
-        issues.push({ id: "no_title", sev: "HIGH", msg: "Missing title tag" });
-    } else {
-        // Title length checks
-        const titleText = titleMatch![1].trim();
-        if (titleText.length > 60) {
-            score -= 5;
-            issues.push({ id: "title_too_long", sev: "MED", msg: `Title is ${titleText.length} chars (max 60)` });
-        } else if (titleText.length < 30) {
-            score -= 3;
-            issues.push({ id: "title_too_short", sev: "LOW", msg: `Title is ${titleText.length} chars (min 30)` });
-        }
-    }
-
-    // H1
-    const h1Count = (html.match(/<h1[\s>]/gi) ?? []).length;
-    if (h1Count === 0) {
+    // ── Viewport meta ───────────────────────────────────────────────────────────
+    const hasViewport = /<meta\s[^>]*name=["']viewport["']/i.test(html);
+    if (!hasViewport) {
         score -= 5;
-        issues.push({ id: "no_h1", sev: "MED", msg: "Missing H1 heading" });
-    } else if (h1Count > 1) {
-        score -= 3;
-        issues.push({ id: "multiple_h1", sev: "LOW", msg: `${h1Count} H1 tags found (should be 1)` });
+        issues.push({ id: "no_viewport", sev: "MED", msg: "Missing viewport meta tag (not mobile-friendly)" });
     }
 
-    // Canonical
+    // ── HTML lang attribute ─────────────────────────────────────────────────────
+    const hasLang = /<html[^>]+lang=["'][^"']+["']/i.test(html);
+    if (!hasLang) {
+        score -= 2;
+        issues.push({ id: "no_html_lang", sev: "LOW", msg: "Missing lang attribute on <html>" });
+    }
+
+    // ── Favicon ─────────────────────────────────────────────────────────────────
+    const hasFavicon =
+        /<link\s[^>]*rel=["'][^"']*icon[^"']*["']/i.test(html) ||
+        /<link\s[^>]*rel=["']shortcut icon["']/i.test(html);
+    if (!hasFavicon) {
+        score -= 5;
+        issues.push({ id: "no_favicon", sev: "MED", msg: "No favicon link tag found" });
+    }
+
+    // ── Canonical ───────────────────────────────────────────────────────────────
     const hasCanonical = /<link\s[^>]*rel=["']canonical["']/i.test(html);
     if (!hasCanonical) {
-        score -= 3;
-        issues.push({ id: "no_canonical", sev: "LOW", msg: "Missing canonical tag" });
+        score -= 5;
+        issues.push({ id: "no_canonical", sev: "MED", msg: "Missing canonical tag (duplicate content risk)" });
     } else {
-        // Canonical mismatch — canonical exists but points to a different URL
         const canonHref = (
             html.match(/<link\s[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["']/i) ??
             html.match(/<link\s[^>]*href=["']([^"']+)["'][^>]*rel=["']canonical["']/i)
@@ -109,16 +124,14 @@ function auditPageCompact(
                 issues.push({ id: "canonical_mismatch", sev: "HIGH", msg: `Canonical → ${canonHref}` });
             }
         }
-
-        // Multiple canonical tags (only when at least one canonical exists)
         const canonicalTagCount = (html.match(/<link\s[^>]*rel=["']canonical["']/gi) ?? []).length;
         if (canonicalTagCount > 1) {
             score -= 10;
-            issues.push({ id: "multiple_canonicals", sev: "HIGH", msg: `${canonicalTagCount} canonical tags found (should be exactly 1)` });
+            issues.push({ id: "multiple_canonicals", sev: "HIGH", msg: `${canonicalTagCount} canonical tags found (should be 1)` });
         }
     }
 
-    // Robots noindex
+    // ── Robots noindex ──────────────────────────────────────────────────────────
     const isNoindex = /content=["'][^"']*noindex/i.test(html) ||
         /<meta\s[^>]*name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(html);
     if (isNoindex) {
@@ -126,7 +139,25 @@ function auditPageCompact(
         issues.push({ id: "robots_noindex", sev: "HIGH", msg: "Page set to noindex" });
     }
 
-    // Open Graph tags
+    // ── H1 checks ───────────────────────────────────────────────────────────────
+    const h1Count = (html.match(/<h1[\s>]/gi) ?? []).length;
+    if (h1Count === 0) {
+        score -= 5;
+        issues.push({ id: "no_h1", sev: "MED", msg: "Missing H1 heading" });
+    } else if (h1Count > 1) {
+        score -= 5;
+        issues.push({ id: "multiple_h1", sev: "MED", msg: `${h1Count} H1 tags found (should be 1)` });
+    }
+
+    // ── Non-sequential headings (H1→H3 without H2) ──────────────────────────────
+    const hasH2 = /<h2[\s>]/i.test(html);
+    const hasH3 = /<h3[\s>]/i.test(html);
+    if (h1Count > 0 && hasH3 && !hasH2) {
+        score -= 3;
+        issues.push({ id: "non_sequential_headings", sev: "MED", msg: "Heading hierarchy skips H2 (H1 → H3)" });
+    }
+
+    // ── Open Graph tags ─────────────────────────────────────────────────────────
     const hasOgTitle = /<meta\s[^>]*property=["']og:title["']/i.test(html);
     const hasOgDesc  = /<meta\s[^>]*property=["']og:description["']/i.test(html);
     if (!hasOgTitle || !hasOgDesc) {
@@ -134,16 +165,32 @@ function auditPageCompact(
         issues.push({ id: "no_og_tags", sev: "MED", msg: "Missing og:title or og:description" });
     }
 
-    // Structured data / Schema.org
+    // ── Twitter Cards ───────────────────────────────────────────────────────────
+    const hasTwitterCard = /<meta\s[^>]*name=["']twitter:card["']/i.test(html);
+    if (!hasTwitterCard) {
+        score -= 2;
+        issues.push({ id: "no_twitter_cards", sev: "LOW", msg: "Missing twitter:card meta tag" });
+    }
+
+    // ── Structured data / Schema.org ────────────────────────────────────────────
     const hasSchema =
         /<script\s[^>]*type=["']application\/ld\+json["']/i.test(html) ||
         /\bitemscope\b/i.test(html);
     if (!hasSchema) {
-        score -= 3;
+        score -= 2;
         issues.push({ id: "no_schema", sev: "LOW", msg: "No structured data (JSON-LD / Schema.org)" });
     }
 
-    // Images missing alt
+    // ── Mixed content ───────────────────────────────────────────────────────────
+    if (pageUrl.startsWith("https://")) {
+        const hasMixedContent = /src=["']http:\/\//i.test(html);
+        if (hasMixedContent) {
+            score -= 5;
+            issues.push({ id: "mixed_content", sev: "MED", msg: "Page loads HTTP resources on an HTTPS page" });
+        }
+    }
+
+    // ── Images: missing alt ─────────────────────────────────────────────────────
     const imgsTotal = (html.match(/<img[\s>]/gi) ?? []).length;
     const imgsWithAlt = (html.match(/<img[^>]+alt=["'][^"']+["']/gi) ?? []).length;
     const missingAlt = imgsTotal - imgsWithAlt;
@@ -152,14 +199,21 @@ function auditPageCompact(
         issues.push({ id: "images_missing_alt", sev: "LOW", msg: `${missingAlt} image(s) missing alt text` });
     }
 
-    // Large page size (>100KB HTML)
-    const htmlBytes = new TextEncoder().encode(html).length;
-    if (htmlBytes > 100_000) {
-        score -= 5;
-        issues.push({ id: "large_page_size", sev: "MED", msg: `HTML size ${Math.round(htmlBytes / 1024)}KB (>100KB)` });
+    // ── Images: not lazy loaded ─────────────────────────────────────────────────
+    const imgsNotLazy = (html.match(/<img(?![^>]*loading=["']lazy["'])[^>]*>/gi) ?? []).length;
+    if (imgsTotal > 2 && imgsNotLazy > 0) {
+        score -= 2;
+        issues.push({ id: "images_not_lazy", sev: "LOW", msg: `${imgsNotLazy} image(s) missing loading="lazy"` });
     }
 
-    // Low word count (<300 words of visible text)
+    // ── Large page size (>2MB HTML) ─────────────────────────────────────────────
+    const htmlBytes = new TextEncoder().encode(html).length;
+    if (htmlBytes > 2_097_152) {
+        score -= 5;
+        issues.push({ id: "large_page_size", sev: "MED", msg: `HTML size ${Math.round(htmlBytes / 1024)}KB (>2MB)` });
+    }
+
+    // ── Word count (<200) ───────────────────────────────────────────────────────
     const textOnly = html
         .replace(/<script[\s\S]*?<\/script>/gi, "")
         .replace(/<style[\s\S]*?<\/style>/gi, "")
@@ -167,31 +221,108 @@ function auditPageCompact(
         .replace(/\s+/g, " ")
         .trim();
     const wordCount = textOnly.split(" ").filter(w => w.length > 2).length;
-    if (wordCount < 300) {
+    if (wordCount < 200) {
         score -= 5;
-        issues.push({ id: "low_word_count", sev: "MED", msg: `Only ${wordCount} words (300+ recommended)` });
+        issues.push({ id: "low_word_count", sev: "MED", msg: `Only ${wordCount} words (<200)` });
     }
 
-    // Broken links
+    // ── Low text-to-HTML ratio (<10%) ───────────────────────────────────────────
+    const textBytes = new TextEncoder().encode(textOnly).length;
+    const textHtmlRatio = htmlBytes > 0 ? textBytes / htmlBytes : 0;
+    if (textHtmlRatio < 0.10 && htmlBytes > 5000) {
+        score -= 5;
+        issues.push({ id: "low_text_html_ratio", sev: "MED", msg: `Text-to-HTML ratio ${Math.round(textHtmlRatio * 100)}% (<10%)` });
+    }
+
+    // ── Excessive inline CSS ────────────────────────────────────────────────────
+    const inlineStyleCount = (html.match(/\bstyle=["'][^"']+["']/gi) ?? []).length;
+    if (inlineStyleCount > 20) {
+        score -= 2;
+        issues.push({ id: "excessive_inline_css", sev: "LOW", msg: `${inlineStyleCount} inline style attributes (>20)` });
+    }
+
+    // ── iframes ─────────────────────────────────────────────────────────────────
+    const hasIframe = /<iframe[\s>]/i.test(html);
+    if (hasIframe) {
+        score -= 2;
+        issues.push({ id: "uses_iframes", sev: "LOW", msg: "Page contains iframe tags (SEO visibility risk)" });
+    }
+
+    // ── URL length (>200 chars) ─────────────────────────────────────────────────
+    if (pageUrl.length > 200) {
+        score -= 2;
+        issues.push({ id: "url_too_long", sev: "LOW", msg: `URL is ${pageUrl.length} chars (>200)` });
+    }
+
+    // ── ARIA labels on interactive elements ─────────────────────────────────────
+    const buttonsTotal = (html.match(/<button[\s>]/gi) ?? []).length;
+    const buttonsWithAria = (html.match(/<button[^>]+aria-label=/gi) ?? []).length;
+    if (buttonsTotal > 3 && buttonsWithAria < buttonsTotal * 0.5) {
+        score -= 2;
+        issues.push({ id: "missing_aria_labels", sev: "LOW", msg: `${buttonsTotal - buttonsWithAria} button(s) missing aria-label` });
+    }
+
+    // ── Generic anchor text ─────────────────────────────────────────────────────
+    const genericAnchors = (html.match(/<a[^>]*>\s*(click here|read more|here|more|learn more|this|continue)\s*<\/a>/gi) ?? []).length;
+    if (genericAnchors > 0) {
+        score -= 2;
+        issues.push({ id: "generic_anchor_text", sev: "LOW", msg: `${genericAnchors} link(s) with generic anchor text` });
+    }
+
+    // ── Broken links ────────────────────────────────────────────────────────────
     if (brokenLinks.length > 0) {
         score -= Math.min(15, brokenLinks.length * 5);
         issues.push({ id: "broken_links", sev: "HIGH", msg: `${brokenLinks.length} broken link(s) found` });
     }
 
-    // Page speed (from PSI)
+    // ── PSI / Core Web Vitals ────────────────────────────────────────────────────
     if (psi) {
         const lhr = psi?.lighthouseResult as Record<string, unknown> | undefined;
+        const audits = (lhr?.audits as Record<string, Record<string, unknown>> | undefined) ?? {};
         const cats = (lhr?.categories as Record<string, unknown> | undefined) ?? {};
+
+        // Overall perf score
         const perfScore = Math.round(
             ((cats.performance as Record<string, unknown> | undefined)?.score as number ?? 0.5) * 100
         );
-        if (perfScore < 50) {
+
+        // LCP (largest-contentful-paint)
+        const lcpSec = ((audits["largest-contentful-paint"]?.numericValue as number) ?? 0) / 1000;
+        if (lcpSec > 4.0) {
+            score -= 10;
+            issues.push({ id: "cwv_lcp_poor", sev: "HIGH", msg: `LCP ${lcpSec.toFixed(1)}s (>4s — Poor)` });
+        } else if (lcpSec > 2.5) {
+            score -= 5;
+            issues.push({ id: "cwv_lcp_needs_improvement", sev: "MED", msg: `LCP ${lcpSec.toFixed(1)}s (2.5–4s — Needs Improvement)` });
+        }
+
+        // CLS (cumulative-layout-shift)
+        const cls = (audits["cumulative-layout-shift"]?.numericValue as number) ?? 0;
+        if (cls > 0.25) {
+            score -= 10;
+            issues.push({ id: "cwv_cls_poor", sev: "HIGH", msg: `CLS ${cls.toFixed(3)} (>0.25 — Poor)` });
+        } else if (cls > 0.1) {
+            score -= 5;
+            issues.push({ id: "cwv_cls_needs_improvement", sev: "MED", msg: `CLS ${cls.toFixed(3)} (0.1–0.25 — Needs Improvement)` });
+        }
+
+        // INP (interaction-to-next-paint or total-blocking-time as proxy)
+        const inpMs = (audits["interaction-to-next-paint"]?.numericValue as number) ??
+                      (audits["total-blocking-time"]?.numericValue as number) ?? 0;
+        if (inpMs > 500) {
+            score -= 5;
+            issues.push({ id: "cwv_inp_poor", sev: "MED", msg: `INP/TBT ${Math.round(inpMs)}ms (>500ms — Poor)` });
+        }
+
+        // Slow page (overall perf < 50)
+        if (perfScore < 50 && lcpSec === 0) {
+            // Only flag slow_page if we didn't already flag LCP
             score -= 8;
             issues.push({ id: "slow_page", sev: "MED", msg: `Performance score ${perfScore}/100` });
         }
     }
 
-    return { score: Math.max(20, score), issues };
+    return { score: Math.max(10, score), issues };
 }
 
 export async function GET(req: NextRequest) {

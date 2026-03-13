@@ -2,53 +2,47 @@ import { describe, it, expect } from "vitest";
 import { computeSeoScore } from "./seo-score";
 import { validateAuditData } from "./audit-validator";
 
-// ── computeSeoScore ───────────────────────────────────────────────────────────
+// ── computeSeoScore (density-based) ──────────────────────────────────────────
 
 describe("computeSeoScore", () => {
-  it("50 pages + 0 issues → score 95 (clean guardrail)", () => {
+  it("zero density → score 95 (clean site guardrail)", () => {
     expect(
-      computeSeoScore({ pages: 50, totalIssues: 0, criticalIssues: 0, warningIssues: 0, noticeIssues: 0 })
+      computeSeoScore({ critical: 0, warning: 0, notice: 0 })
     ).toBe(95);
   });
 
-  it("10 pages + 0 issues → score 95 (clean guardrail)", () => {
+  it("pure warning density 0.5 → score 98 (100 - 0.5×4 = 98)", () => {
     expect(
-      computeSeoScore({ pages: 10, totalIssues: 0, criticalIssues: 0, warningIssues: 0, noticeIssues: 0 })
-    ).toBe(95);
+      computeSeoScore({ critical: 0, warning: 0.5, notice: 0 })
+    ).toBe(98);
   });
 
-  it("10 pages + 2 warnings → score 94 (100 − 2×3)", () => {
+  it("critical density 1.0 → score 90 (100 - 1×10 = 90)", () => {
     expect(
-      computeSeoScore({ pages: 10, totalIssues: 2, criticalIssues: 0, warningIssues: 2, noticeIssues: 0 })
-    ).toBe(94);
+      computeSeoScore({ critical: 1.0, warning: 0, notice: 0 })
+    ).toBe(90);
   });
 
-  it("10 pages + 1 critical + 2 warnings → score 86 (100 − 8 − 6)", () => {
+  it("critical density 3.0 → score 70 (100 - 3×10 = 70)", () => {
     expect(
-      computeSeoScore({ pages: 10, totalIssues: 3, criticalIssues: 1, warningIssues: 2, noticeIssues: 0 })
-    ).toBe(86);
+      computeSeoScore({ critical: 3.0, warning: 0, notice: 0 })
+    ).toBe(70);
   });
 
-  it("10 pages + 1 critical + 1 warning + 1 notice → score 88 (100 − 8 − 3 − 1)", () => {
+  it("mixed density → score = 100 − (2×10) − (1×4) − (2×1) = 74", () => {
     expect(
-      computeSeoScore({ pages: 10, totalIssues: 3, criticalIssues: 1, warningIssues: 1, noticeIssues: 1 })
-    ).toBe(88);
+      computeSeoScore({ critical: 2, warning: 1, notice: 2 })
+    ).toBe(74);
   });
 
-  it("0 pages → score 0 (nothing crawled)", () => {
+  it("very high density → score floors at 0, never negative", () => {
     expect(
-      computeSeoScore({ pages: 0, totalIssues: 0, criticalIssues: 0, warningIssues: 0, noticeIssues: 0 })
+      computeSeoScore({ critical: 15, warning: 5, notice: 0 })
     ).toBe(0);
   });
 
-  it("many critical issues → score floors at 0, never negative", () => {
-    expect(
-      computeSeoScore({ pages: 5, totalIssues: 20, criticalIssues: 15, warningIssues: 5, noticeIssues: 0 })
-    ).toBe(0);
-  });
-
-  it("score never exceeds 95 for clean site", () => {
-    const s = computeSeoScore({ pages: 100, totalIssues: 0, criticalIssues: 0, warningIssues: 0, noticeIssues: 0 });
+  it("score never exceeds 95", () => {
+    const s = computeSeoScore({ critical: 0, warning: 0, notice: 0 });
     expect(s).toBe(95);
     expect(s).not.toBe(100);
   });
