@@ -154,19 +154,45 @@ export function ActionCenterClient() {
     const [aiFixState, setAiFixState] = useState<"idle" | "loading" | "done" | "error">("idle");
     const [aiFixText, setAiFixText] = useState<string>("");
     const [aiFixCopied, setAiFixCopied] = useState(false);
+    const [aiFixTrace, setAiFixTrace] = useState(0);
+    const [aiFixTab, setAiFixTab] = useState<"code" | "why" | "steps">("code");
+    const [aiFixStructured, setAiFixStructured] = useState<{
+        analysis: string; code: string; steps: string;
+        verification: string; scoreImpact: string; suggestion: string;
+    } | null>(null);
 
     // Reset AI fix state when selected task changes
     useEffect(() => {
         setAiFixState("idle");
         setAiFixText("");
         setAiFixCopied(false);
+        setAiFixTrace(0);
+        setAiFixTab("code");
+        setAiFixStructured(null);
     }, [selectedTask]);
 
     // ── Generate AI fix ──────────────────────────────────────────────────────
 
+    const AI_TRACE_STEPS = [
+        "🔍 Scanning page source for issues…",
+        "🏗️ Identifying site architecture…",
+        "🧪 Crafting surgical code fix…",
+        "✅ Verifying fix against SEO best practices…",
+    ];
+
     const generateAiFix = async (task: Task, force = false) => {
         if (!domain) return;
         setAiFixState("loading");
+        setAiFixTrace(0);
+        setAiFixStructured(null);
+
+        // Cycle through trace steps while loading
+        let step = 0;
+        const traceInterval = setInterval(() => {
+            step = Math.min(step + 1, AI_TRACE_STEPS.length - 1);
+            setAiFixTrace(step);
+        }, 1500);
+
         try {
             const res = await fetch("/api/action-center/ai-fix", {
                 method: "POST",
@@ -179,17 +205,34 @@ export function ActionCenterClient() {
                     force,
                 }),
             });
+            clearInterval(traceInterval);
             if (!res.ok) throw new Error("ai_unavailable");
-            const data = await res.json() as { suggestion: string; cached: boolean };
+            const data = await res.json() as {
+                suggestion: string; analysis?: string; code?: string;
+                steps?: string; verification?: string; scoreImpact?: string; cached: boolean;
+            };
             setAiFixText(data.suggestion);
+            if (data.code) {
+                setAiFixStructured({
+                    analysis:     data.analysis ?? "",
+                    code:         data.code ?? "",
+                    steps:        data.steps ?? "",
+                    verification: data.verification ?? "",
+                    scoreImpact:  data.scoreImpact ?? "",
+                    suggestion:   data.suggestion,
+                });
+                setAiFixTab("code");
+            }
             setAiFixState("done");
         } catch {
+            clearInterval(traceInterval);
             setAiFixState("error");
         }
     };
 
     const copyAiFix = async () => {
-        await navigator.clipboard.writeText(aiFixText);
+        const textToCopy = aiFixStructured?.code || aiFixText;
+        await navigator.clipboard.writeText(textToCopy);
         setAiFixCopied(true);
         setTimeout(() => setAiFixCopied(false), 2000);
     };
@@ -837,26 +880,125 @@ export function ActionCenterClient() {
                                                 )}
                                             </div>
 
-                                            {/* Loading */}
+                                            {/* Loading — Surgical Suite trace */}
                                             {aiFixState === "loading" && (
-                                                <div className="flex items-center gap-3 py-3">
-                                                    {[0, 1, 2, 3, 4].map((i) => (
+                                                <div className="py-3 space-y-2">
+                                                    {AI_TRACE_STEPS.map((step, i) => (
                                                         <motion.div
                                                             key={i}
-                                                            className="h-1.5 w-1.5 rounded-full"
-                                                            style={{ background: "#7C3AED" }}
-                                                            animate={{ opacity: [0.3, 1, 0.3], scaleY: [1, 1.8, 1] }}
-                                                            transition={{ duration: 1, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
-                                                        />
+                                                            className="flex items-center gap-2"
+                                                            initial={{ opacity: 0, x: -6 }}
+                                                            animate={{ opacity: i <= aiFixTrace ? 1 : 0.25, x: 0 }}
+                                                            transition={{ duration: 0.4, delay: i * 0.05 }}
+                                                        >
+                                                            {i < aiFixTrace ? (
+                                                                <Check size={10} style={{ color: "#22C55E", flexShrink: 0 }} />
+                                                            ) : i === aiFixTrace ? (
+                                                                <motion.div
+                                                                    className="h-2 w-2 rounded-full flex-shrink-0"
+                                                                    style={{ background: "#7C3AED" }}
+                                                                    animate={{ opacity: [0.4, 1, 0.4] }}
+                                                                    transition={{ duration: 0.8, repeat: Infinity }}
+                                                                />
+                                                            ) : (
+                                                                <div className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: "#1E2940" }} />
+                                                            )}
+                                                            <span className="text-[11px]" style={{ color: i <= aiFixTrace ? "#C8D0E0" : "#4A5568" }}>
+                                                                {step}
+                                                            </span>
+                                                        </motion.div>
                                                     ))}
-                                                    <span className="text-[11px]" style={{ color: "#8B9BB4" }}>
-                                                        Generating suggestion…
-                                                    </span>
                                                 </div>
                                             )}
 
-                                            {/* Result */}
-                                            {aiFixState === "done" && aiFixText && (
+                                            {/* Result — Structured Surgical Suite tabs */}
+                                            {aiFixState === "done" && aiFixStructured?.code ? (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 4 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ duration: 0.3 }}
+                                                >
+                                                    {/* Score Impact Badge */}
+                                                    {aiFixStructured.scoreImpact && (
+                                                        <div className="flex items-center gap-2 mb-3">
+                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(255,100,45,0.15)", color: "#FF642D" }}>
+                                                                {aiFixStructured.scoreImpact}
+                                                            </span>
+                                                            <span className="text-[10px]" style={{ color: "#4A5568" }}>estimated score gain</span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Tabs */}
+                                                    <div className="flex gap-1 mb-3">
+                                                        {(["code", "why", "steps"] as const).map((tab) => (
+                                                            <button
+                                                                key={tab}
+                                                                onClick={() => setAiFixTab(tab)}
+                                                                className="px-2.5 py-1 rounded text-[10px] font-semibold transition-all"
+                                                                style={aiFixTab === tab
+                                                                    ? { background: "rgba(139,92,246,0.2)", color: "#A78BFA" }
+                                                                    : { color: "#4A5568" }
+                                                                }
+                                                            >
+                                                                {tab === "code" ? "Code" : tab === "why" ? "Why It Matters" : "Implementation"}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Tab: Code */}
+                                                    {aiFixTab === "code" && (
+                                                        <div>
+                                                            <pre className="rounded-lg p-3 text-[11px] leading-relaxed overflow-x-auto mb-2 font-mono" style={{ background: "#0D1117", color: "#E6EDF3", border: "1px solid #30363D" }}>
+                                                                <code>{aiFixStructured.code}</code>
+                                                            </pre>
+                                                            <div className="flex justify-end">
+                                                                <button
+                                                                    onClick={copyAiFix}
+                                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all"
+                                                                    style={aiFixCopied
+                                                                        ? { background: "rgba(34,197,94,0.12)", color: "#22C55E" }
+                                                                        : { background: "rgba(139,92,246,0.1)", color: "#A78BFA" }
+                                                                    }
+                                                                >
+                                                                    {aiFixCopied ? <Check size={11} /> : <Copy size={11} />}
+                                                                    {aiFixCopied ? "Copied!" : "Copy Code"}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Tab: Why It Matters */}
+                                                    {aiFixTab === "why" && (
+                                                        <div>
+                                                            <p className="text-[12px] leading-relaxed" style={{ color: "#C8D0E0" }}>
+                                                                {aiFixStructured.analysis}
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Tab: Implementation */}
+                                                    {aiFixTab === "steps" && (
+                                                        <div className="space-y-2">
+                                                            {aiFixStructured.steps.split("\n").filter(s => s.trim()).map((step, i) => (
+                                                                <p key={i} className="text-[12px] leading-relaxed" style={{ color: "#C8D0E0" }}>
+                                                                    {step}
+                                                                </p>
+                                                            ))}
+                                                            {aiFixStructured.verification && (
+                                                                <div className="mt-3 rounded-lg p-2.5" style={{ background: "rgba(0,0,0,0.3)", border: "1px solid #1E2940" }}>
+                                                                    <p className="text-[9px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "#4A5568" }}>Verify the fix</p>
+                                                                    <code className="text-[11px] font-mono break-all" style={{ color: "#22C55E" }}>
+                                                                        {aiFixStructured.verification}
+                                                                    </code>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    <p className="text-[10px] mt-2" style={{ color: "#4A5568" }}>Generated by Claude · Tailored to your stack</p>
+                                                </motion.div>
+                                            ) : aiFixState === "done" && aiFixText ? (
+                                                /* Fallback: plain text for old cached suggestions */
                                                 <motion.div
                                                     initial={{ opacity: 0, y: 4 }}
                                                     animate={{ opacity: 1, y: 0 }}
@@ -872,10 +1014,9 @@ export function ActionCenterClient() {
                                                         <button
                                                             onClick={copyAiFix}
                                                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all"
-                                                            style={
-                                                                aiFixCopied
-                                                                    ? { background: "rgba(34,197,94,0.12)", color: "#22C55E" }
-                                                                    : { background: "rgba(139,92,246,0.1)", color: "#A78BFA" }
+                                                            style={aiFixCopied
+                                                                ? { background: "rgba(34,197,94,0.12)", color: "#22C55E" }
+                                                                : { background: "rgba(139,92,246,0.1)", color: "#A78BFA" }
                                                             }
                                                         >
                                                             {aiFixCopied ? <Check size={11} /> : <Copy size={11} />}
@@ -883,7 +1024,7 @@ export function ActionCenterClient() {
                                                         </button>
                                                     </div>
                                                 </motion.div>
-                                            )}
+                                            ) : null}
 
                                             {/* Error */}
                                             {aiFixState === "error" && (

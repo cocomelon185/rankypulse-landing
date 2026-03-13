@@ -26,19 +26,32 @@ function getUrlDepth(url: string): number {
     } catch { return 0; }
 }
 
+// ── Tech stack detection ──────────────────────────────────────────────────────
+function getTechStackHint(html: string): string {
+    const h = html.toLowerCase();
+    if (h.includes("wp-content") || h.includes("wp-includes")) return "WordPress";
+    if (h.includes("_next/static") || h.includes("__next_data__")) return "Next.js";
+    if (h.includes("react-root") || h.includes("react-dom")) return "React";
+    if (h.includes("shopify")) return "Shopify";
+    if (h.includes("<table") && (h.includes("bgcolor") || h.includes("cellpadding"))) {
+        return "Legacy HTML (Table-based)";
+    }
+    return "Standard HTML/CSS";
+}
+
 function auditPageCompact(
     domain: string,
     pageUrl: string,
     html: string,
     psi: Record<string, unknown> | null,
     brokenLinks: string[]
-): { score: number; issues: CompactIssue[] } {
+): { score: number; issues: CompactIssue[]; techStack: string } {
     const issues: CompactIssue[] = [];
     let score = 100;
 
     if (!html) {
         // Can't audit — return minimal score with no issues if PSI failed too
-        return { score: psi ? 50 : 30, issues };
+        return { score: psi ? 50 : 30, issues, techStack: "Standard HTML/CSS" };
     }
 
     // Meta description
@@ -204,7 +217,8 @@ function auditPageCompact(
         }
     }
 
-    return { score: Math.max(20, score), issues };
+    const techStack = getTechStackHint(html);
+    return { score: Math.max(20, score), issues, techStack };
 }
 
 export async function GET(req: NextRequest) {
@@ -414,7 +428,7 @@ export async function GET(req: NextRequest) {
         }
 
         // 5. Run compact audit
-        const { score, issues } = auditPageCompact(cleanDomain, targetUrl, html, psi, brokenLinks);
+        const { score, issues, techStack } = auditPageCompact(cleanDomain, targetUrl, html, psi, brokenLinks);
 
         // 5b. Detect redirect chain (≥2 hops = chain of 3+ URLs)
         if (redirectChain.length >= 3) {
@@ -466,6 +480,7 @@ export async function GET(req: NextRequest) {
                 depth: getUrlDepth(targetUrl),
                 is_root: isRoot,
                 psi_available: !!psi,
+                tech_stack: techStack,
             },
         }, { onConflict: "job_id,url", ignoreDuplicates: false });
 

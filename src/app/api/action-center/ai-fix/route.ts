@@ -4,63 +4,101 @@ import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import Anthropic from "@anthropic-ai/sdk";
 
-// ── Prompt builders ──────────────────────────────────────────────────────────
+// ── XML parser ────────────────────────────────────────────────────────────────
+
+function parseFixXml(text: string) {
+  const extract = (tag: string) => {
+    const m = text.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`));
+    return m ? m[1].trim() : "";
+  };
+  return {
+    analysis:     extract("analysis"),
+    code:         extract("code_block_primary"),
+    steps:        extract("steps"),
+    verification: extract("verification"),
+    scoreImpact:  extract("score_impact"),
+    suggestion:   text, // backward-compat: full text
+  };
+}
+
+// ── System prompt (instructs Claude to always return XML) ─────────────────────
+
+const SYSTEM_PROMPT = `You are a Lead SEO Engineer and Core Web Vitals Specialist.
+
+Always respond in EXACTLY this XML format with no text outside the tags:
+
+<analysis>2 sentences explaining WHY this is a critical SEO failure, citing Google's specific guidelines (e.g., Mobile-First Indexing, HTTPS as a ranking signal, PageSpeed Insights thresholds).</analysis>
+<code_block_primary>Ready-to-paste code fix. Include inline comments. The code MUST be compatible with the site's architecture (provided in the user message). Do NOT provide React/Next.js code for Legacy HTML sites. Do NOT provide raw HTML for Next.js sites.</code_block_primary>
+<steps>1. [File to open or location]
+2. [Where to paste the code]
+3. [How to deploy and verify]</steps>
+<verification>One single curl command OR a browser console snippet the developer can run to confirm the fix is live. Keep it to one line.</verification>
+<score_impact>+X to +Y points — one short reason why.</score_impact>`;
+
+// ── Issue-specific user prompts ───────────────────────────────────────────────
 
 interface PromptCtx {
   domain: string;
   title: string;
   affectedPageUrls: string[];
+  techStack: string;
 }
 
 type PromptFn = (ctx: PromptCtx) => string;
 
 const PROMPTS: Record<string, PromptFn> = {
-  no_meta_description: ({ domain }) =>
-    `Write a compelling 150-160 character meta description for the website ${domain}. Make it descriptive, action-oriented, and include the brand name. Return only the meta description text with no explanation or quotes.`,
+  no_meta_description: ({ domain, techStack }) =>
+    `Site: ${domain}\nArchitecture: ${techStack}\nIssue: Missing meta description on all or most pages.\n\nWrite a compelling 150-160 character meta description for ${domain}. Then provide the implementation showing where to add it in a ${techStack} project. Include a template they can reuse per page.`,
 
-  no_title: ({ affectedPageUrls }) =>
-    `Write an SEO-optimized page title tag for the page at: ${affectedPageUrls[0] ?? "this page"}. Keep it under 60 characters, include the primary keyword near the front, and add the brand name at the end separated by a dash. Return only the title tag text.`,
+  no_title: ({ affectedPageUrls, techStack }) =>
+    `Site: ${affectedPageUrls[0] ?? "this page"}\nArchitecture: ${techStack}\nIssue: Missing title tag.\n\nWrite an SEO-optimized title tag (under 60 chars, primary keyword first, brand at end). Show exactly how to add it in a ${techStack} project.`,
 
-  no_h1: ({ affectedPageUrls }) =>
-    `Write an SEO-optimized H1 heading for the page at: ${affectedPageUrls[0] ?? "this page"}. Keep it under 70 characters, make it descriptive of the page content. Return only the H1 text.`,
+  no_h1: ({ affectedPageUrls, techStack }) =>
+    `Site: ${affectedPageUrls[0] ?? "this page"}\nArchitecture: ${techStack}\nIssue: Missing H1 heading.\n\nWrite an SEO-optimized H1 (under 70 chars). Show where and how to add it in a ${techStack} project.`,
 
-  duplicate_title: ({ affectedPageUrls }) => {
+  duplicate_title: ({ affectedPageUrls, techStack }) => {
     const pages = affectedPageUrls.slice(0, 3).join(", ");
-    return `These pages have duplicate title tags: ${pages}. Suggest a unique, SEO-optimized title tag for each page (under 60 chars, format: "Keyword Topic | Brand"). Return one title per line, numbered.`;
+    return `Site: affected pages: ${pages}\nArchitecture: ${techStack}\nIssue: Duplicate title tags across pages.\n\nSuggest a unique, SEO-optimized title for each page (under 60 chars, format: "Keyword | Brand"). Show how to implement dynamic titles in ${techStack}.`;
   },
 
-  duplicate_meta_description: ({ affectedPageUrls }) => {
+  duplicate_meta_description: ({ affectedPageUrls, techStack }) => {
     const pages = affectedPageUrls.slice(0, 3).join(", ");
-    return `These pages have duplicate meta descriptions: ${pages}. Write a unique 150-160 character meta description for each. Return one description per line, numbered.`;
+    return `Site: affected pages: ${pages}\nArchitecture: ${techStack}\nIssue: Duplicate meta descriptions.\n\nWrite a unique 150-160 char meta description for each page. Show how to implement dynamic meta descriptions in ${techStack}.`;
   },
 
-  images_missing_alt: ({ domain }) =>
-    `Write 3 examples of SEO-optimized alt text for images on ${domain}. Each should be descriptive (under 125 chars), include relevant keywords naturally, and describe what an SEO dashboard image would show. Return one alt text per line, numbered.`,
+  images_missing_alt: ({ domain, techStack }) =>
+    `Site: ${domain}\nArchitecture: ${techStack}\nIssue: Images missing alt text.\n\nProvide 3 examples of SEO-optimized alt text (under 125 chars each). Show how to audit and fix missing alt attributes in a ${techStack} codebase.`,
 
-  internal_linking: ({ domain, affectedPageUrls }) => {
+  internal_linking: ({ domain, affectedPageUrls, techStack }) => {
     const pages = affectedPageUrls.slice(0, 5).join(", ");
-    return `Suggest 3 internal link opportunities for ${domain}. These pages need better internal linking: ${pages}. For each suggestion, format as: [source page path] → [target page path] | Suggested anchor: [anchor text]. Be specific.`;
+    return `Site: ${domain}\nArchitecture: ${techStack}\nIssue: Poor internal linking — these pages need links: ${pages}.\n\nSuggest 3 specific internal link opportunities with anchor text. Show how to implement internal links correctly in ${techStack}.`;
   },
 
-  broken_links: ({ domain }) =>
-    `Provide a step-by-step action plan to fix broken internal links on ${domain}. Include: how to find them in a CMS, how to update or redirect them, and how to prevent future broken links. Keep it under 200 words.`,
+  broken_links: ({ domain, techStack }) =>
+    `Site: ${domain}\nArchitecture: ${techStack}\nIssue: Broken internal links detected.\n\nProvide a step-by-step plan to find, fix, and redirect broken links in a ${techStack} site.`,
 
-  orphan_page: ({ affectedPageUrls }) => {
+  orphan_page: ({ affectedPageUrls, techStack }) => {
     const pages = affectedPageUrls.slice(0, 3).join(", ");
-    return `These pages are orphaned (no internal links point to them): ${pages}. Suggest 3 specific places on the website where links to these pages could naturally be added. Be specific about anchor text and context.`;
+    return `Site: orphaned pages: ${pages}\nArchitecture: ${techStack}\nIssue: These pages have no internal links pointing to them.\n\nSuggest 3 specific places in the site to add links to these pages, with anchor text. Show how to add them in ${techStack}.`;
   },
 
-  slow_page: ({ domain }) =>
-    `Provide the top 5 most impactful technical fixes to improve page speed for ${domain}. Focus on fixes that can be implemented without a framework change. Be specific and actionable. Format as a numbered list.`,
+  slow_page: ({ domain, techStack }) =>
+    `Site: ${domain}\nArchitecture: ${techStack}\nIssue: Poor page speed score.\n\nProvide the top 5 most impactful technical fixes to improve page speed for a ${techStack} site. Be specific and actionable.`,
 
-  no_canonical: ({ affectedPageUrls }) =>
-    `Write the correct canonical tag for: ${affectedPageUrls[0] ?? "this page"}. Also explain in 2 sentences why canonical tags matter for SEO. Return the HTML tag first, then the explanation.`,
+  no_canonical: ({ affectedPageUrls, techStack }) =>
+    `Site: ${affectedPageUrls[0] ?? "this page"}\nArchitecture: ${techStack}\nIssue: Missing canonical tag.\n\nWrite the correct canonical tag for this page. Show how to add canonical tags in ${techStack}.`,
 
-  no_schema: ({ domain }) =>
-    `Write a JSON-LD schema markup snippet for ${domain}. Include Organization schema with name, url, and logo. Return only the <script> block, ready to paste into the <head>.`,
+  no_schema: ({ domain, techStack }) =>
+    `Site: ${domain}\nArchitecture: ${techStack}\nIssue: No structured data (JSON-LD).\n\nWrite a complete Organization JSON-LD schema for ${domain}. Show where to add it in a ${techStack} project.`,
 
-  _default: ({ title, domain }) =>
-    `Provide a specific, actionable SEO fix for the issue "${title}" on ${domain}. Give a concrete 2-3 sentence recommendation. Be practical and specific. Avoid generic advice.`,
+  no_viewport: ({ domain, techStack }) =>
+    `Site: ${domain}\nArchitecture: ${techStack}\nIssue: Missing viewport meta tag — site is not mobile-friendly.\n\nProvide the exact viewport meta tag fix. Since this is a ${techStack} site, show exactly which file to edit and where to paste the tag. This is critical for Google's Mobile-First Indexing.`,
+
+  http_pages: ({ domain, techStack }) =>
+    `Site: ${domain}\nArchitecture: ${techStack}\nIssue: Site serving pages over HTTP (not HTTPS).\n\nProvide a step-by-step HTTPS migration plan appropriate for a ${techStack} site. Cover SSL certificate setup, redirect rules, and mixed content fixes.`,
+
+  _default: ({ title, domain, techStack }) =>
+    `Site: ${domain}\nArchitecture: ${techStack}\nIssue: ${title}\n\nProvide a specific, surgical SEO fix for this issue. Tailor the code and steps to the ${techStack} environment.`,
 };
 
 function buildPrompt(issueId: string, ctx: PromptCtx): string {
@@ -102,7 +140,7 @@ export async function POST(req: NextRequest) {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data: cached } = await supabaseAdmin
       .from("ai_fix_suggestions")
-      .select("id, suggestion, created_at")
+      .select("id, suggestion, metadata, created_at")
       .eq("user_id", userId)
       .eq("domain", domain)
       .eq("issue_id", issueId)
@@ -112,6 +150,16 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (cached) {
+      // Return structured data if available (new format), otherwise plain suggestion (old format)
+      const structured = (cached.metadata as Record<string, unknown> | null)?.structured as Record<string, string> | undefined;
+      if (structured?.code) {
+        return NextResponse.json({
+          ...structured,
+          suggestion: cached.suggestion,
+          cached: true,
+          createdAt: cached.created_at,
+        });
+      }
       return NextResponse.json({
         suggestion: cached.suggestion,
         cached: true,
@@ -120,31 +168,42 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // ── 2. Build Claude prompt ────────────────────────────────────────────────
-  const ctx: PromptCtx = { domain, title, affectedPageUrls };
-  const prompt = buildPrompt(issueId, ctx);
+  // ── 2. Fetch tech stack from the most recent crawl of this domain ─────────
+  const { data: stackRow } = await supabaseAdmin
+    .from("audit_pages")
+    .select("metadata")
+    .ilike("url", `%${domain}%`)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const techStack: string =
+    (stackRow?.metadata as Record<string, string> | null)?.tech_stack ?? "Standard HTML/CSS";
 
-  // ── 3. Call Anthropic API ─────────────────────────────────────────────────
+  // ── 3. Build Claude prompt ────────────────────────────────────────────────
+  const ctx: PromptCtx = { domain, title, affectedPageUrls, techStack };
+  const userPrompt = buildPrompt(issueId, ctx);
+
+  // ── 4. Call Anthropic API ─────────────────────────────────────────────────
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "ai_unavailable" }, { status: 503 });
   }
 
-  let suggestion: string;
+  let rawSuggestion: string;
   const model = "claude-3-5-haiku-20241022";
 
   try {
     const client = new Anthropic({ apiKey });
 
-    // 30s timeout via AbortController
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
 
     const message = await client.messages.create(
       {
         model,
-        max_tokens: 400,
-        messages: [{ role: "user", content: prompt }],
+        max_tokens: 900,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userPrompt }],
       },
       { signal: controller.signal }
     );
@@ -153,31 +212,36 @@ export async function POST(req: NextRequest) {
 
     const block = message.content[0];
     if (block.type !== "text") throw new Error("Unexpected response type");
-    suggestion = block.text.trim();
+    rawSuggestion = block.text.trim();
   } catch (err) {
     console.error("Anthropic API error:", err);
     return NextResponse.json({ error: "ai_unavailable" }, { status: 503 });
   }
 
-  // ── 4. Persist to DB ─────────────────────────────────────────────────────
+  // ── 5. Parse XML into structured sections ────────────────────────────────
+  const parsed = parseFixXml(rawSuggestion);
+
+  // ── 6. Persist to DB ─────────────────────────────────────────────────────
   const { data: inserted } = await supabaseAdmin
     .from("ai_fix_suggestions")
     .insert({
       user_id: userId,
       domain,
       issue_id: issueId,
-      suggestion,
+      suggestion: rawSuggestion,
       metadata: {
-        charCount: suggestion.length,
+        charCount: rawSuggestion.length,
         issueTitle: title,
         model,
+        techStack,
+        structured: parsed,
       },
     })
     .select("created_at")
     .single();
 
   return NextResponse.json({
-    suggestion,
+    ...parsed,
     cached: false,
     createdAt: inserted?.created_at ?? new Date().toISOString(),
   });
