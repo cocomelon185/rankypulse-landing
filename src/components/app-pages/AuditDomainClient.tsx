@@ -105,6 +105,9 @@ const ISSUE_CATEGORY: Record<string, string> = {
     // Phase 4
     multiple_canonicals:     "Technical",
     keyword_cannibalization: "Content",
+    // Phase 5 showstoppers
+    no_viewport: "Technical",
+    http_pages:  "Technical",
 };
 
 const THEMATIC_COLORS: Record<string, string> = {
@@ -123,6 +126,12 @@ function computeThematicScores(issues: IssueItem[]) {
         const cat = ISSUE_CATEGORY[issue.id] ?? "Technical";
         const penalty = issue.severity === "error" ? 15 : issue.severity === "warning" ? 8 : 3;
         base[cat] = Math.max(0, base[cat] - penalty);
+    }
+    // Showstopper cap: non-mobile-friendly sites cannot score above 30 in Performance or Technical
+    const hasNoViewport = issues.some(i => i.id === "no_viewport");
+    if (hasNoViewport) {
+        base.Performance = Math.min(base.Performance, 30);
+        base.Technical   = Math.min(base.Technical, 30);
     }
     return Object.entries(base).map(([label, score]) => ({
         label, score, color: THEMATIC_COLORS[label] ?? "#FF642D",

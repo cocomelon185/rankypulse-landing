@@ -62,6 +62,9 @@ const ISSUE_CATEGORY: Record<string, string> = {
     // Phase 4
     multiple_canonicals:     "crawlability",
     keyword_cannibalization: "markup",
+    // Phase 5 showstoppers
+    no_viewport: "crawlability",
+    http_pages:  "crawlability",
 };
 
 export async function GET(req: Request) {
@@ -180,6 +183,21 @@ export async function GET(req: Request) {
             if (perf !== undefined) psiPerfScore = Math.round(perf * 100);
         }
 
+        // ── Detect showstoppers ───────────────────────────────────────────────
+        // noHttps: any crawled page URL is http:// OR http_pages issue detected
+        const noHttps = pages.some(p => p.url.startsWith("http:")) ||
+            topIssues.some(i => i.id === "http_pages");
+        // notMobileFriendly: no_viewport issue detected
+        const notMobileFriendly = topIssues.some(i => i.id === "no_viewport");
+
+        // Apply mobile cap to PSI performance score — non-responsive sites cap at 30
+        if (notMobileFriendly) psiPerfScore = Math.min(psiPerfScore, 30);
+
+        // Apply showstopper flat deductions to site health score
+        let finalAvgScore = avgScore;
+        if (noHttps) finalAvgScore = Math.max(0, finalAvgScore - 25);
+        if (notMobileFriendly) finalAvgScore = Math.max(0, finalAvgScore - 30);
+
         // ── Robots.txt: real bot blocking check ──────────────────────────────
         let robotsTxtContent = "";
         try {
@@ -233,7 +251,7 @@ export async function GET(req: Request) {
             crawledAt: job.updated_at ?? job.created_at,
             pagesLimit: job.pages_limit ?? 10,
             pagesCrawled: job.pages_crawled ?? pages.length,
-            siteHealthScore: avgScore,
+            siteHealthScore: finalAvgScore,
             previousScore: null,
             pageBreakdown,
             errors,
@@ -245,7 +263,7 @@ export async function GET(req: Request) {
                     status: "ok" as const,
                 },
                 crawlability: thematicBase.crawlability ?? 100,
-                https: 100, // all crawled URLs are https
+                https: noHttps ? 0 : 100,
                 internationalSeo: "not_implemented" as const,
                 coreWebVitals: psiPerfScore,
                 sitePerformance: psiPerfScore,

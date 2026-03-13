@@ -46,6 +46,63 @@ describe("computeSeoScore", () => {
     expect(s).toBe(95);
     expect(s).not.toBe(100);
   });
+
+  // ── Showstopper tests (applied after density calculation) ────────────────────
+
+  it("noHttps showstopper: -25 flat deduction on top of density score", () => {
+    // Density: critical 1.0 → score = 100 − 10 = 90
+    // After noHttps (−25) → 90 − 25 = 65
+    expect(
+      computeSeoScore({ critical: 1.0, warning: 0, notice: 0, showstoppers: { noHttps: true } })
+    ).toBe(65);
+  });
+
+  it("notMobileFriendly showstopper: -30 flat deduction on top of density score", () => {
+    // Density: warning 2.0 → score = 100 − 8 = 92
+    // After notMobileFriendly (−30) → 92 − 30 = 62
+    expect(
+      computeSeoScore({ critical: 0, warning: 2.0, notice: 0, showstoppers: { notMobileFriendly: true } })
+    ).toBe(62);
+  });
+
+  it("both showstoppers: -55 total deduction, floors at 0", () => {
+    // Density: critical 1.5 → score = 100 − 15 = 85
+    // After both (−55) → 85 − 55 = 30
+    expect(
+      computeSeoScore({
+        critical: 1.5,
+        warning: 0,
+        notice: 0,
+        showstoppers: { noHttps: true, notMobileFriendly: true },
+      })
+    ).toBe(30);
+  });
+
+  it("showstoppers combined floor at 0, never negative", () => {
+    // Density: critical 5.0 → score = 100 − 50 = 50
+    // After both (−55) → 50 − 55 = −5 → floor to 0
+    expect(
+      computeSeoScore({
+        critical: 5.0,
+        warning: 0,
+        notice: 0,
+        showstoppers: { noHttps: true, notMobileFriendly: true },
+      })
+    ).toBe(0);
+  });
+
+  it("no showstoppers passed → uses only density calculation", () => {
+    expect(
+      computeSeoScore({ critical: 1.0, warning: 1.0, notice: 1.0 })
+    ).toBe(
+      computeSeoScore({
+        critical: 1.0,
+        warning: 1.0,
+        notice: 1.0,
+        showstoppers: undefined,
+      })
+    );
+  });
 });
 
 // ── validateAuditData ─────────────────────────────────────────────────────────

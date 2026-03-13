@@ -15,12 +15,23 @@ export interface AuditDensity {
   warning: number;
   /** totalNoticeOccurrences / totalPagesCrawled */
   notice: number;
+  /**
+   * Showstoppers: trigger large flat deductions regardless of issue density.
+   * Ensures "broken" sites can't hide behind a high page count.
+   */
+  showstoppers?: {
+    /** Site serves pages over HTTP — -25 flat points */
+    noHttps?: boolean;
+    /** Site has no viewport meta tag — not mobile-friendly — -30 flat points */
+    notMobileFriendly?: boolean;
+  };
 }
 
 /**
  * Compute SEO score from issue density (occurrences per page).
  *
  * Formula: score = 100 − (criticalDensity×10 + warningDensity×4 + noticeDensity×1)
+ * Apply showstopper deductions (-25 for HTTPS, -30 for mobile-friendliness).
  * Cap at 95 — no site is truly perfect.
  * Floor at 0.
  *
@@ -37,6 +48,14 @@ export function computeSeoScore(densities: AuditDensity): number {
     densities.notice   * NOTICE_WEIGHT;
 
   let score = 100 - deduction;
+
+  // Apply Showstopper overrides (Density First, Showstoppers Last)
+  // These flat deductions ensure critical structural failures drag the score down
+  // regardless of page count or issue density.
+  if (densities.showstoppers?.noHttps) score -= 25;
+  if (densities.showstoppers?.notMobileFriendly) score -= 30;
+
+  // Floor at 0, cap at 95
   if (score > 95) score = 95;
   if (score < 0)  score = 0;
   return Math.round(score);

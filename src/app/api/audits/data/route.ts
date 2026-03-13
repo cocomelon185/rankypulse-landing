@@ -94,19 +94,9 @@ export async function GET(req: NextRequest) {
     const pages: AuditPage[] = (rawPages ?? []).map((p) => ({
       url: p.url,
       score: p.score ?? null,
-      issues: (() => {
-        if (Array.isArray(p.issues)) return p.issues as RawIssue[];
-        if (typeof p.issues === "string") {
-          try { const parsed = JSON.parse(p.issues); return Array.isArray(parsed) ? (parsed as RawIssue[]) : []; } catch { return []; }
-        }
-        return [];
-      })(),
+      issues: Array.isArray(p.issues) ? (p.issues as RawIssue[]) : [],
       metadata: (p.metadata as PageMetadata) ?? null,
     }));
-
-    // Exclude synthetic __site_level__ row from real-page counts
-    const realPages = pages.filter(p => p.url !== "__site_level__");
-    const totalPages = realPages.length;
 
     // ── Aggregate issues across all pages grouped by issue ID ─────────────────
     const issueMap: Record<string, { sev: string; count: number }> = {};
@@ -118,8 +108,7 @@ export async function GET(req: NextRequest) {
           issueUrlMap[issue.id] = [];
         }
         issueMap[issue.id].count++;
-        // Don't push __site_level__ as an "affected URL" for display
-        if (issueUrlMap[issue.id].length < 10 && page.url !== "__site_level__") {
+        if (issueUrlMap[issue.id].length < 10) {
           issueUrlMap[issue.id].push(page.url);
         }
       }
@@ -131,7 +120,7 @@ export async function GET(req: NextRequest) {
     const linkedSet = new Set<string>();
     const homepage = `https://${targetDomain}`;
 
-    for (const page of realPages) {
+    for (const page of pages) {
       const meta = page.metadata;
       const title = meta?.title?.trim();
       const desc  = meta?.meta_description?.trim();
@@ -144,7 +133,7 @@ export async function GET(req: NextRequest) {
     const dupMetaUrls  = new Set(Object.values(metaDescMap).filter(u => u.length > 1).flat());
     const homepageWww  = `https://www.${targetDomain}`;
     const orphanUrls   = new Set(
-      realPages.map(p => p.url).filter(
+      pages.map(p => p.url).filter(
         url => url !== homepage && url !== homepageWww && !linkedSet.has(url)
       )
     );
@@ -163,30 +152,15 @@ export async function GET(req: NextRequest) {
     }
 
     // ── Post-crawl: deep page depth (URL path depth > 3) ─────────────────────
-    const deepPages = realPages.filter(p => (p.metadata?.depth ?? 0) > 3);
+    const deepPages = pages.filter(p => (p.metadata?.depth ?? 0) > 3);
     if (deepPages.length > 0) {
       issueMap["deep_page_depth"] = { sev: "MED", count: deepPages.length };
       issueUrlMap["deep_page_depth"] = deepPages.map(p => p.url).slice(0, 10);
     }
 
-    // ── Post-crawl: low internal links (<2 inbound) ───────────────────────────
-    const inboundCounts: Record<string, number> = {};
-    for (const page of realPages) {
-      for (const lnk of page.metadata?.outbound_links ?? []) {
-        inboundCounts[lnk] = (inboundCounts[lnk] ?? 0) + 1;
-      }
-    }
-    const lowInternalLinkPages = realPages.filter(
-      p => p.url !== homepage && p.url !== homepageWww && (inboundCounts[p.url] ?? 0) < 2
-    );
-    if (lowInternalLinkPages.length > 0 && totalPages > 3) {
-      issueMap["low_internal_links"] = { sev: "HIGH", count: lowInternalLinkPages.length };
-      issueUrlMap["low_internal_links"] = lowInternalLinkPages.map(p => p.url).slice(0, 10);
-    }
-
     // ── Post-crawl: keyword cannibalization (3+ pages sharing same 5-word title prefix) ──
     const titlePrefixGroups: Record<string, string[]> = {};
-    for (const page of realPages) {
+    for (const page of pages) {
       const title = (page.metadata?.title ?? "").trim();
       if (!title || title.length < 10) continue;
       const prefix = title.toLowerCase().split(/\s+/).slice(0, 5).join(" ");
@@ -241,10 +215,19 @@ export async function GET(req: NextRequest) {
       .filter(([, v]) => v.sev === "LOW")
       .reduce((s, [, v]) => s + v.count, 0);
 
+    // ── Detect showstoppers ───────────────────────────────────────────────────
+    // noHttps: http_pages issue detected OR any crawled page URL is http://
+    const noHttps = !!(issueMap["http_pages"]?.count) ||
+      pages.some(p => p.url.startsWith("http:"));
+    // notMobileFriendly: no_viewport issue detected on any page
+    const notMobileFriendly = !!(issueMap["no_viewport"]?.count);
+
+    // Compute density and apply showstoppers
     const density = {
       critical: totalPages > 0 ? totalCritical / totalPages : 0,
       warning:  totalPages > 0 ? totalWarning  / totalPages : 0,
       notice:   totalPages > 0 ? totalNotice   / totalPages : 0,
+      showstoppers: { noHttps, notMobileFriendly },
     };
 
     const finalScore = totalPages > 0 ? computeSeoScore(density) : 0;
@@ -262,8 +245,8 @@ export async function GET(req: NextRequest) {
         ))
       : null;
 
-    // ── Crawl stats (use realPages, not all pages including __site_level__) ────
-    const depths = realPages.map(p => p.metadata?.depth ?? 0);
+    // ── Crawl stats ────────────────────────────────────────────────────────────
+    const depths = pages.map(p => p.metadata?.depth ?? 0);
     const avgDepth = depths.length > 0
       ? Math.round(depths.reduce((a, b) => a + b, 0) / depths.length * 10) / 10
       : 0;
@@ -275,18 +258,18 @@ export async function GET(req: NextRequest) {
       depth4plus: depths.filter(d => d >= 4).length,
     };
 
-    const rawInternalLinks = realPages.reduce(
+    const rawInternalLinks = pages.reduce(
       (sum, p) => sum + (p.metadata?.outbound_links?.length ?? 0), 0
     );
     // Fallback estimate for crawls before Phase 4.5 (no outbound_links metadata yet)
-    const totalInternalLinks = rawInternalLinks === 0 && realPages.length > 0
-      ? Math.round(realPages.length * 4)
+    const totalInternalLinks = rawInternalLinks === 0 && pages.length > 0
+      ? Math.round(pages.length * 4)
       : rawInternalLinks;
     const brokenPageCount   = issueMap["broken_links"]?.count ?? 0;
     const redirectPageCount = issueMap["redirect_chain"]?.count ?? 0;
 
     // ── Broken link source→target report ──────────────────────────────────────
-    const brokenLinksReport: { source: string; targets: string[] }[] = realPages
+    const brokenLinksReport: { source: string; targets: string[] }[] = pages
       .filter(p => (p.metadata?.broken_link_targets?.length ?? 0) > 0)
       .map(p => ({ source: p.url, targets: p.metadata!.broken_link_targets! }))
       .slice(0, 20);
@@ -299,17 +282,15 @@ export async function GET(req: NextRequest) {
       notices,
       domain: targetDomain,
       crawledAt: latestJob.updated_at ?? latestJob.created_at,
-      totalPages: totalPages || latestJob.pages_crawled || 0,
+      totalPages: pages.length || latestJob.pages_crawled || 0,
       status: latestJob.status,
       issues,
       brokenLinks: brokenLinksReport,
       crawlDuration: crawlDurationSecs,
-      urgency,
-      density,
       crawlStats: {
         avgDepth,
         deepPageCount,
-        totalPages,
+        totalPages: pages.length,
         depthDistribution,
         internalLinks: totalInternalLinks,
         brokenPages: brokenPageCount,
