@@ -190,13 +190,17 @@ export async function GET(req: Request) {
         // notMobileFriendly: no_viewport issue detected
         const notMobileFriendly = topIssues.some(i => i.id === "no_viewport");
 
-        // Apply mobile cap to PSI performance score — non-responsive sites cap at 30
-        if (notMobileFriendly) psiPerfScore = Math.min(psiPerfScore, 30);
+        // Apply mobile cap to PSI performance score — non-responsive sites cap at 45
+        // Cap of 45 (not 30) keeps score in "Orange" (Needs Work) instead of "Red" (Failed)
+        if (notMobileFriendly) psiPerfScore = Math.min(psiPerfScore, 45);
 
-        // Apply showstopper flat deductions to site health score
+        // Apply showstopper percentage-based multipliers to site health score
+        // Proportional reductions ensure fair penalties: 100 × 0.7 = 70 (still respectable), 50 × 0.7 = 35 (clearly bad)
         let finalAvgScore = avgScore;
-        if (noHttps) finalAvgScore = Math.max(0, finalAvgScore - 25);
-        if (notMobileFriendly) finalAvgScore = Math.max(0, finalAvgScore - 30);
+        if (noHttps) finalAvgScore *= 0.8;              // 20% reduction
+        if (notMobileFriendly) finalAvgScore *= 0.7;    // 30% reduction
+        // Soft floor at 20 — matches industry practices (never shows 0)
+        finalAvgScore = Math.max(Math.round(finalAvgScore), 20);
 
         // ── Robots.txt: real bot blocking check ──────────────────────────────
         let robotsTxtContent = "";

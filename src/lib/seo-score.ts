@@ -16,13 +16,14 @@ export interface AuditDensity {
   /** totalNoticeOccurrences / totalPagesCrawled */
   notice: number;
   /**
-   * Showstoppers: trigger large flat deductions regardless of issue density.
-   * Ensures "broken" sites can't hide behind a high page count.
+   * Showstoppers: apply proportional percentage-based reductions.
+   * Ensures "broken" sites don't score too high, while rewarding smaller sites for effort.
+   * Uses multipliers (not flat deductions) so penalties scale with baseline quality.
    */
   showstoppers?: {
-    /** Site serves pages over HTTP — -25 flat points */
+    /** Site serves pages over HTTP — ×0.80 multiplier (20% reduction) */
     noHttps?: boolean;
-    /** Site has no viewport meta tag — not mobile-friendly — -30 flat points */
+    /** Site has no viewport meta tag — not mobile-friendly — ×0.70 multiplier (30% reduction) */
     notMobileFriendly?: boolean;
   };
 }
@@ -31,9 +32,9 @@ export interface AuditDensity {
  * Compute SEO score from issue density (occurrences per page).
  *
  * Formula: score = 100 − (criticalDensity×10 + warningDensity×4 + noticeDensity×1)
- * Apply showstopper deductions (-25 for HTTPS, -30 for mobile-friendliness).
+ * Apply showstopper multipliers (×0.8 for HTTPS, ×0.7 for mobile-friendliness).
+ * Soft floor at 20 — matches Ahrefs/Semrush practices (never shows 0).
  * Cap at 95 — no site is truly perfect.
- * Floor at 0.
  *
  * @param densities   Pre-computed density values (occurrences / pages)
  */
@@ -49,15 +50,18 @@ export function computeSeoScore(densities: AuditDensity): number {
 
   let score = 100 - deduction;
 
-  // Apply Showstopper overrides (Density First, Showstoppers Last)
-  // These flat deductions ensure critical structural failures drag the score down
-  // regardless of page count or issue density.
-  if (densities.showstoppers?.noHttps) score -= 25;
-  if (densities.showstoppers?.notMobileFriendly) score -= 30;
+  // Apply Showstopper multipliers (Density First, Percentage Reductions Last)
+  // These proportional penalties ensure critical structural failures reduce scores fairly:
+  // - A "perfect" site (100) losing 30% becomes 70 (still respectable)
+  // - A struggling site (50) losing 30% becomes 35 (clearly bad)
+  // This matches how Ahrefs/Semrush handle site-wide penalties.
+  if (densities.showstoppers?.noHttps) score *= 0.8;        // 20% reduction
+  if (densities.showstoppers?.notMobileFriendly) score *= 0.7; // 30% reduction
 
-  // Floor at 0, cap at 95
+  // Industry soft floor at 20, cap at 95
+  // Ensures tool never shows 0 (which looks like a bug) while staying authoritative
   if (score > 95) score = 95;
-  if (score < 0)  score = 0;
+  if (score < 20) score = 20;
   return Math.round(score);
 }
 

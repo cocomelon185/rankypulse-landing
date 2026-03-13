@@ -127,11 +127,13 @@ function computeThematicScores(issues: IssueItem[]) {
         const penalty = issue.severity === "error" ? 15 : issue.severity === "warning" ? 8 : 3;
         base[cat] = Math.max(0, base[cat] - penalty);
     }
-    // Showstopper cap: non-mobile-friendly sites cannot score above 30 in Performance or Technical
+    // Showstopper cap: non-mobile-friendly sites get a reasonable cap in Performance/Technical
+    // Cap of 45 (not 30) keeps score in "Orange" (Needs Work) instead of "Red" (Failed)
+    // This acknowledges performance merit while penalizing lack of responsiveness
     const hasNoViewport = issues.some(i => i.id === "no_viewport");
     if (hasNoViewport) {
-        base.Performance = Math.min(base.Performance, 30);
-        base.Technical   = Math.min(base.Technical, 30);
+        base.Performance = Math.min(base.Performance, 45);
+        base.Technical   = Math.min(base.Technical, 45);
     }
     return Object.entries(base).map(([label, score]) => ({
         label, score, color: THEMATIC_COLORS[label] ?? "#FF642D",
