@@ -6,15 +6,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Globe, RefreshCcw, Download, Share2, AlertTriangle, XCircle,
     CheckCircle, ChevronRight, Zap, ArrowRight, AlertCircle,
-    Loader2, Clock,
+    Loader2, Clock, Lock, TrendingDown, Sparkles,
 } from "lucide-react";
 import { AuditSummaryPanel } from "./AuditSummaryPanel";
 import { ISSUE_CONTENT } from "@/lib/issue-content";
-import { toast } from "sonner";
-import { PricingModal } from "@/components/PricingModal";
-import { usePlan } from "@/hooks/usePlan";
-import { useBilling } from "@/hooks/useBilling";
-import { fireFixConfetti } from "@/lib/confetti";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface ProjectData {
@@ -53,6 +48,16 @@ interface AuditData {
     issues: IssueItem[];
     brokenLinks?: { source: string; targets: string[] }[];
     crawlDuration?: number | null;
+    urgency?: {
+        monthlyLoss: number;
+        urgencyLevel: "critical" | "high" | "medium" | "low";
+        summary: string;
+    } | null;
+    density?: {
+        critical: number;
+        warning: number;
+        notice: number;
+    } | null;
     crawlStats?: {
         avgDepth: number;
         deepPageCount: number;
@@ -201,21 +206,16 @@ const INSIGHT_GAIN: Record<string, number> = {
 };
 
 // ── OpportunityCard ───────────────────────────────────────────────────────────
-function OpportunityCard({ topIssues, onKeywordResearch }: { topIssues: IssueItem[]; onKeywordResearch: () => void }) {
+function OpportunityCard({ topIssues }: { topIssues: IssueItem[] }) {
     if (topIssues.length === 0) {
         return (
             <div className="rounded-xl p-3 flex flex-col gap-1 min-w-0"
                 style={{ background: "#0d1526", border: "1px solid #1E2940" }}>
                 <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#6B7A99" }}>Opportunity</div>
-                <div className="text-sm font-black" style={{ color: "#22c55e" }}>Site is healthy</div>
-                <div className="text-[10px] leading-relaxed mb-1" style={{ color: "#4A5568" }}>
-                    No fixes needed. Grow traffic with new keywords.
+                <div className="text-xl font-black" style={{ color: "#eab308" }}>🏆</div>
+                <div className="text-[10px] leading-relaxed" style={{ color: "#4A5568" }}>
+                    Well optimized! Keep publishing content and building internal links.
                 </div>
-                <button onClick={onKeywordResearch}
-                    className="text-[10px] font-bold flex items-center gap-0.5 hover:opacity-80 transition"
-                    style={{ color: "#FF642D" }}>
-                    Find keywords →
-                </button>
             </div>
         );
     }
@@ -240,21 +240,19 @@ function OpportunityCard({ topIssues, onKeywordResearch }: { topIssues: IssueIte
 function CrawlTransparencyPanel({ pagesCrawled, internalLinks, brokenPages, redirectPages }: {
     pagesCrawled: number; internalLinks: number; brokenPages: number; redirectPages: number;
 }) {
-    const linksMissing = internalLinks === 0 && pagesCrawled > 5;
     const stats = [
-        { label: "Pages Crawled",        value: pagesCrawled.toLocaleString(),                             color: "#22c55e",  note: null },
-        { label: "Internal Links Found", value: linksMissing ? "—" : internalLinks.toLocaleString(),       color: linksMissing ? "#6B7A99" : "#3b82f6", note: linksMissing ? "Re-run to capture" : null },
-        { label: "Broken Pages",         value: brokenPages.toLocaleString(),                              color: brokenPages   > 0 ? "#ef4444" : "#22c55e", note: null },
-        { label: "Redirects Found",      value: redirectPages.toLocaleString(),                            color: redirectPages > 0 ? "#eab308" : "#22c55e", note: null },
+        { label: "Pages Crawled",        value: pagesCrawled.toLocaleString(),   color: "#22c55e" },
+        { label: "Internal Links Found", value: internalLinks.toLocaleString(),  color: "#3b82f6" },
+        { label: "Broken Pages",         value: brokenPages.toLocaleString(),    color: brokenPages   > 0 ? "#ef4444" : "#22c55e" },
+        { label: "Redirects Found",      value: redirectPages.toLocaleString(),  color: redirectPages > 0 ? "#eab308" : "#22c55e" },
     ];
     return (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-xl border p-4"
             style={{ background: "#0d1526", borderColor: "#1E2940" }}>
-            {stats.map(({ label, value, color, note }) => (
+            {stats.map(({ label, value, color }) => (
                 <div key={label} className="flex flex-col gap-0.5">
                     <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: "#6B7A99" }}>{label}</span>
                     <span className="text-xl font-black" style={{ color }}>{value}</span>
-                    {note && <span className="text-[9px]" style={{ color: "#4A5568" }}>{note}</span>}
                 </div>
             ))}
         </div>
@@ -278,39 +276,27 @@ function DepthDistributionWidget({ dist, total }: {
             <p className="text-[11px] mb-3" style={{ color: "#6B7A99" }}>
                 Internal links pass ranking authority across your site. Pages closer to the homepage receive stronger signals and more crawl budget.
             </p>
-            {total === 0 || rows.every(r => r.count === 0) ? (
-                <div className="flex items-start gap-2 rounded-lg px-3 py-2.5"
-                    style={{ background: "rgba(107,122,153,0.08)", border: "1px solid #1E2940" }}>
-                    <AlertCircle size={13} className="shrink-0 mt-0.5" style={{ color: "#6B7A99" }} />
-                    <p className="text-[11px] leading-relaxed" style={{ color: "#6B7A99" }}>
-                        Link depth data was not captured in this crawl. This can happen when internal link detection is still processing. Re-run the audit to populate this chart.
-                    </p>
-                </div>
-            ) : (
-                <>
-                    {rows.map(({ label, count, color }) => {
-                        const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-                        return (
-                            <div key={label} className="mb-2">
-                                <div className="flex justify-between text-xs mb-0.5" style={{ color: "#6B7A99" }}>
-                                    <span>{label}</span>
-                                    <span>{count} pages ({pct}%)</span>
-                                </div>
-                                <div className="rounded-full h-1.5 w-full" style={{ background: "#1E2940" }}>
-                                    <div className="rounded-full h-1.5 transition-all" style={{ width: `${pct}%`, background: color }} />
-                                </div>
-                            </div>
-                        );
-                    })}
-                    {dist.depth4plus > 0 && (
-                        <p className="text-[11px] mt-2" style={{ color: "#ef4444" }}>
-                            ⚠ {dist.depth4plus} page{dist.depth4plus > 1 ? "s are" : " is"} buried 4+ clicks from homepage.
-                            {total > 0 && (dist.depth4plus / total) > 0.2 && (
-                                <span> Many pages ({Math.round((dist.depth4plus / total) * 100)}%) are buried deep — consider flattening your site structure.</span>
-                            )}
-                        </p>
+            {rows.map(({ label, count, color }) => {
+                const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                return (
+                    <div key={label} className="mb-2">
+                        <div className="flex justify-between text-xs mb-0.5" style={{ color: "#6B7A99" }}>
+                            <span>{label}</span>
+                            <span>{count} pages ({pct}%)</span>
+                        </div>
+                        <div className="rounded-full h-1.5 w-full" style={{ background: "#1E2940" }}>
+                            <div className="rounded-full h-1.5 transition-all" style={{ width: `${pct}%`, background: color }} />
+                        </div>
+                    </div>
+                );
+            })}
+            {dist.depth4plus > 0 && (
+                <p className="text-[11px] mt-2" style={{ color: "#ef4444" }}>
+                    ⚠ {dist.depth4plus} page{dist.depth4plus > 1 ? "s are" : " is"} buried 4+ clicks from homepage.
+                    {total > 0 && (dist.depth4plus / total) > 0.2 && (
+                        <span> Many pages ({Math.round((dist.depth4plus / total) * 100)}%) are buried deep — consider flattening your site structure.</span>
                     )}
-                </>
+                </p>
             )}
         </div>
     );
@@ -321,8 +307,6 @@ function SEOInsightPanel({ auditData, crawlStats }: {
     auditData: AuditData;
     crawlStats: AuditData["crawlStats"];
 }) {
-    const [expanded, setExpanded] = useState(false);
-
     const crawlIssueIds = ["robots_txt_blocked","robots_noindex","canonical_mismatch","multiple_canonicals","redirect_chain","orphan_page"];
     const crawlIssues = auditData.issues.filter(i => crawlIssueIds.includes(i.id));
     const crawlBlocked = crawlIssues.reduce((s, i) => s + i.urlsAffected, 0);
@@ -341,7 +325,6 @@ function SEOInsightPanel({ auditData, crawlStats }: {
             title: "Crawlability",
             icon: crawlBlocked > 0 ? "🔴" : "✅",
             color: crawlBlocked > 0 ? "#ef4444" : "#22c55e",
-            clean: crawlBlocked === 0,
             body: crawlBlocked > 0
                 ? `${crawlBlocked} page${crawlBlocked > 1 ? "s are" : " is"} at risk of not being indexed. ${crawlIssues[0] ? `Top issue: ${crawlIssues[0].title}.` : ""} Fix critical crawl errors first to ensure Google can reach your content.`
                 : "All crawled pages appear indexable. No blocking robots.txt or noindex issues detected. Your site is fully accessible to search engines.",
@@ -350,7 +333,6 @@ function SEOInsightPanel({ auditData, crawlStats }: {
             title: "Content Quality",
             icon: contentAffected > 5 ? "⚠️" : contentAffected > 0 ? "🟡" : "✅",
             color: contentAffected > 5 ? "#ef4444" : contentAffected > 0 ? "#eab308" : "#22c55e",
-            clean: contentAffected === 0,
             body: contentAffected > 0
                 ? `${contentAffected} page${contentAffected > 1 ? "s have" : " has"} content metadata issues. ${contentIssues[0] ? `Highest impact: ${contentIssues[0].title} (${contentIssues[0].urlsAffected} pages).` : ""}${
                     kannibalizationIssue
@@ -363,55 +345,55 @@ function SEOInsightPanel({ auditData, crawlStats }: {
             title: "Link Architecture",
             icon: avgDepth > 3 || deepCount > 3 ? "⚠️" : "✅",
             color: avgDepth > 3 || deepCount > 3 ? "#eab308" : "#22c55e",
-            clean: avgDepth <= 3 && deepCount <= 3,
             body: deepCount > 0
                 ? `Average page depth is ${avgDepth}. ${deepCount} page${deepCount > 1 ? "s are" : " is"} buried 4+ clicks from the homepage — these pages receive less crawl budget and link equity.${orphanIssue ? ` ${orphanIssue.urlsAffected} orphan page${orphanIssue.urlsAffected > 1 ? "s have" : " has"} no internal links — add links from related content or navigation menus to pass PageRank.` : " Consider flattening your URL structure."}`
                 : `Average page depth is ${avgDepth > 0 ? avgDepth : "shallow"}. Your site structure is well-organized — all pages are reachable within a few clicks of the homepage.${orphanIssue ? ` Note: ${orphanIssue.urlsAffected} page${orphanIssue.urlsAffected > 1 ? "s lack" : " lacks"} internal links. Add links from related content pages or your site navigation.` : ""}`,
         },
     ];
 
-    const allClean = panels.every(p => p.clean);
-
-    if (allClean && !expanded) {
-        return (
-            <div className="rounded-xl border px-4 py-3 flex items-center justify-between"
-                style={{ background: "#0d1526", borderColor: "#1E2940" }}>
-                <div className="flex items-center gap-3">
-                    <CheckCircle size={15} style={{ color: "#22c55e" }} />
-                    <span className="text-sm font-semibold" style={{ color: "#22c55e" }}>All structural checks passed</span>
-                    <span className="text-[11px]" style={{ color: "#4A5568" }}>Crawlability · Content Quality · Link Architecture</span>
-                </div>
-                <button onClick={() => setExpanded(true)}
-                    className="text-[11px] font-semibold hover:opacity-80 transition flex items-center gap-1"
-                    style={{ color: "#6B7A99" }}>
-                    Details <ChevronRight size={11} />
-                </button>
-            </div>
-        );
-    }
-
     return (
-        <div className="space-y-3">
-            {allClean && (
-                <div className="flex justify-end">
-                    <button onClick={() => setExpanded(false)}
-                        className="text-[11px] font-semibold hover:opacity-80 transition"
-                        style={{ color: "#4A5568" }}>
-                        Collapse ↑
-                    </button>
-                </div>
-            )}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {panels.map(({ title, icon, color, body }) => (
-                    <div key={title} className="rounded-xl p-4" style={{ background: "#0d1526", border: "1px solid #1E2940" }}>
-                        <div className="flex items-center gap-2 mb-2">
-                            <span role="img" aria-label={title}>{icon}</span>
-                            <span className="text-sm font-semibold" style={{ color }}>{title}</span>
-                        </div>
-                        <p className="text-xs leading-relaxed" style={{ color: "#8892A4" }}>{body}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {panels.map(({ title, icon, color, body }) => (
+                <div key={title} className="rounded-xl p-4" style={{ background: "#0d1526", border: "1px solid #1E2940" }}>
+                    <div className="flex items-center gap-2 mb-2">
+                        <span role="img" aria-label={title}>{icon}</span>
+                        <span className="text-sm font-semibold" style={{ color }}>{title}</span>
                     </div>
-                ))}
+                    <p className="text-xs leading-relaxed" style={{ color: "#8892A4" }}>{body}</p>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+// ── UrgencyBanner ─────────────────────────────────────────────────────────────
+function UrgencyBanner({ monthlyLoss, criticalCount, onUpgrade }: {
+    monthlyLoss: number;
+    criticalCount: number;
+    onUpgrade: () => void;
+}) {
+    if (monthlyLoss <= 0 || criticalCount === 0) return null;
+    const formatted = monthlyLoss >= 1000
+        ? `$${(monthlyLoss / 1000).toFixed(1)}k`
+        : `$${Math.round(monthlyLoss).toLocaleString()}`;
+    return (
+        <div className="rounded-xl border px-5 py-4 flex flex-wrap items-center gap-4 relative overflow-hidden"
+            style={{ background: "rgba(239,68,68,0.07)", borderColor: "rgba(239,68,68,0.35)" }}>
+            <div className="absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(239,68,68,0.5), transparent)" }} />
+            <TrendingDown size={20} style={{ color: "#ef4444" }} className="shrink-0" />
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold" style={{ color: "#ef4444" }}>
+                    🚨 Your site is leaking <span className="text-white">{formatted}/month</span> due to <span className="text-white">{criticalCount} critical SEO failures</span>
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: "#8B9BB4" }}>
+                    Fix critical issues to recover estimated lost organic revenue
+                </p>
             </div>
+            <button onClick={onUpgrade}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-white shrink-0 transition hover:opacity-90"
+                style={{ background: "linear-gradient(135deg, #ef4444, #dc2626)", boxShadow: "0 0 20px rgba(239,68,68,0.3)" }}>
+                Fix Now →
+            </button>
         </div>
     );
 }
@@ -425,11 +407,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
     const [error, setError] = useState<string | null>(null);
     const [expandedIssue, setExpandedIssue] = useState<string | null>(null);
     const [rerunning, setRerunning] = useState(false);
-    const [showPricingModal, setShowPricingModal] = useState(false);
-    const hasShownConfetti = useRef(false);
-
-    const { isPro } = usePlan();
-    const { plan, auditsUsed, getAuditCap } = useBilling();
+    const [userPlan, setUserPlan] = useState<"free" | "starter" | "pro" | "premium">("free");
 
     // Tracks how many concurrent crawl driver workers are running.
     const activeDriversRef = useRef<number>(0);
@@ -441,6 +419,16 @@ export function AuditDomainClient({ domain }: { domain: string }) {
             localStorage.setItem("rankypulse_audit_domain", domain);
         }
     }, [domain]);
+
+    // Fetch user plan (once)
+    useEffect(() => {
+        fetch("/api/user/plan")
+            .then(r => r.ok ? r.json() : null)
+            .then(d => {
+                if (d?.plan) setUserPlan(d.plan as "free" | "starter" | "pro" | "premium");
+            })
+            .catch(() => { /* default to free */ });
+    }, []);
 
     const fetchData = useCallback(async () => {
         try {
@@ -539,29 +527,6 @@ export function AuditDomainClient({ domain }: { domain: string }) {
         // No cleanup: activeDriversRef controls worker lifetime.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [jobData?.jobId, jobData?.status]);
-
-    // ── Confetti on perfect score ──────────────────────────────────────────────
-    useEffect(() => {
-        if (!auditData) return;
-        const totalIssues = (auditData.errors ?? 0) + (auditData.warnings ?? 0) + (auditData.notices ?? 0);
-        const rawSc = auditData.healthScore ?? 0;
-        const displayScore = (auditData.totalPages > 0 && totalIssues === 0 && rawSc < 90) ? 95 : rawSc;
-        if (displayScore >= 95 && totalIssues === 0 && !hasShownConfetti.current) {
-            hasShownConfetti.current = true;
-            fireFixConfetti();
-            toast.success("Excellent score! 🎉", {
-                description: "Your site has zero critical SEO issues.",
-                action: {
-                    label: "Share →",
-                    onClick: () => {
-                        navigator.clipboard.writeText(window.location.href);
-                        toast.success("Link copied!");
-                    },
-                },
-                duration: 6000,
-            });
-        }
-    }, [auditData]);
 
     const handleRerun = async () => {
         if (rerunning) return;
@@ -665,27 +630,12 @@ export function AuditDomainClient({ domain }: { domain: string }) {
 
     return (
         <div className="space-y-8">
-            {showPricingModal && <PricingModal onClose={() => setShowPricingModal(false)} />}
-
             {/* ── Breadcrumb */}
             <nav className="flex items-center gap-2 text-[12px]" style={{ color: "#6B7A99" }}>
                 <button onClick={() => router.push("/app/audit")} className="hover:text-white transition">Site Audit</button>
                 <ChevronRight size={12} />
                 <span className="text-white font-semibold">{domain}</span>
             </nav>
-
-            {/* ── Free plan scarcity banner */}
-            {plan === "free" && (auditsUsed ?? 0) >= 2 && (
-                <div className="flex items-center justify-between rounded-lg border px-4 py-2.5 text-xs"
-                    style={{ background: "rgba(255,152,0,0.08)", borderColor: "rgba(255,152,0,0.2)", color: "#FF9800" }}>
-                    <span>You&apos;ve used <strong>{auditsUsed}</strong> of <strong>{getAuditCap()}</strong> free audits this month.</span>
-                    <button onClick={() => setShowPricingModal(true)}
-                        className="font-semibold hover:opacity-80 transition ml-4 shrink-0"
-                        style={{ color: "#FF9800" }}>
-                        Upgrade for unlimited →
-                    </button>
-                </div>
-            )}
 
             {/* ── Audit Summary Panel */}
             {auditData && !isCrawling && (
@@ -730,22 +680,12 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                     </div>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                        onClick={() => isPro
-                            ? toast.info("PDF export is coming soon — we're building it!")
-                            : setShowPricingModal(true)
-                        }
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition hover:bg-white/[0.04] relative"
+                    <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition hover:bg-white/[0.04] relative"
                         style={{ borderColor: "#1E2940", color: "#8B9BB4" }} title="Pro feature">
                         <Download size={12} /> Export PDF
                         <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold px-1 rounded" style={{ background: "#FF9800", color: "white" }}>PRO</span>
                     </button>
-                    <button
-                        onClick={() => {
-                            navigator.clipboard.writeText(window.location.href);
-                            toast.success("Link copied to clipboard!");
-                        }}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition hover:bg-white/[0.04]"
+                    <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition hover:bg-white/[0.04]"
                         style={{ borderColor: "#1E2940", color: "#8B9BB4" }}>
                         <Share2 size={12} /> Share
                     </button>
@@ -784,6 +724,15 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                 </div>
             )}
 
+            {/* ── Revenue Urgency Banner */}
+            {auditData && !isCrawling && (auditData.urgency?.monthlyLoss ?? 0) > 0 && (
+                <UrgencyBanner
+                    monthlyLoss={auditData.urgency!.monthlyLoss}
+                    criticalCount={errors}
+                    onUpgrade={() => router.push("/pricing")}
+                />
+            )}
+
             {/* ── Insight Cards */}
             {auditData && !isCrawling && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
@@ -816,13 +765,13 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                         desc={`${crawlStats?.deepPageCount ?? 0} deep pages (4+ clicks)`}
                     />
                     <InsightCard
-                        icon={topWin ? "→" : "✓"}
-                        color={topWin ? "#6366f1" : "#22c55e"}
+                        icon="→"
+                        color="#6366f1"
                         title="Quick Win"
-                        value={topWin ? `+${INSIGHT_GAIN[topWin.id]}pts` : "All Clear"}
-                        desc={topWin ? topWin.title : "Grow traffic with keywords →"}
+                        value={topWin ? `+${INSIGHT_GAIN[topWin.id]}pts` : "🎉"}
+                        desc={topWin ? topWin.title : "No critical issues!"}
                     />
-                    <OpportunityCard topIssues={issues} onKeywordResearch={() => router.push("/app/keywords")} />
+                    <OpportunityCard topIssues={issues} />
                 </div>
             )}
 
@@ -880,46 +829,37 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                             )}
                                         </div>
                                     )}
-                                    <p className="mt-3 text-[10px] text-center" style={{ color: "#4A5568" }}>12,400+ sites audited</p>
                                 </>
                             )}
                         </div>
                         {[
-                            { label: "Errors",   count: errors,   activeColor: "#FF3D3D", activeBg: "rgba(255,61,61,0.1)",   icon: XCircle },
-                            { label: "Warnings", count: warnings, activeColor: "#FF9800", activeBg: "rgba(255,152,0,0.1)",   icon: AlertTriangle },
-                            { label: "Notices",  count: notices,  activeColor: "#00B0FF", activeBg: "rgba(0,176,255,0.1)",   icon: AlertCircle },
-                        ].map(({ label, count, activeColor, activeBg, icon: Icon }) => {
-                            const isClean = !isCrawling && count === 0;
-                            const color = isClean ? "#22c55e" : activeColor;
-                            const bg    = isClean ? "rgba(34,197,94,0.05)" : activeBg;
-                            const border = isClean ? "rgba(34,197,94,0.15)" : `${activeColor}30`;
-                            return (
-                                <div key={label} className="rounded-xl border p-5 flex flex-col justify-between"
-                                    style={{ background: bg, borderColor: border }}>
-                                    <Icon size={20} style={{ color }} />
-                                    <div>
-                                        {isCrawling ? (
-                                            <Loader2 size={20} className="animate-spin mt-3 mb-1" style={{ color: activeColor }} />
-                                        ) : (
-                                            <p className="text-3xl font-black mt-3" style={{ color }}>{count}</p>
-                                        )}
-                                        <p className="text-xs font-semibold mt-0.5" style={{ color: isClean ? "#8B9BB4" : "white" }}>{label}</p>
-                                    </div>
+                            { label: "Errors", count: errors, color: "#FF3D3D", bg: "rgba(255,61,61,0.1)", icon: XCircle },
+                            { label: "Warnings", count: warnings, color: "#FF9800", bg: "rgba(255,152,0,0.1)", icon: AlertTriangle },
+                            { label: "Notices", count: notices, color: "#00B0FF", bg: "rgba(0,176,255,0.1)", icon: AlertCircle },
+                        ].map(({ label, count, color, bg, icon: Icon }) => (
+                            <div key={label} className="rounded-xl border p-5 flex flex-col justify-between"
+                                style={{ background: bg, borderColor: `${color}30` }}>
+                                <Icon size={20} style={{ color }} />
+                                <div>
+                                    {isCrawling ? (
+                                        <Loader2 size={20} className="animate-spin mt-3 mb-1" style={{ color }} />
+                                    ) : (
+                                        <p className="text-3xl font-black mt-3" style={{ color }}>{count}</p>
+                                    )}
+                                    <p className="text-xs font-semibold text-white mt-0.5">{label}</p>
                                 </div>
-                            );
-                        })}
+                            </div>
+                        ))}
                     </div>
 
                     {/* Issues */}
                     <div className="rounded-xl border overflow-hidden" style={{ background: "#151B27", borderColor: "#1E2940" }}>
                         <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "#1E2940" }}>
                             <h2 className="text-sm font-bold text-white">Top Issues</h2>
-                            {issues.length > 0 && (
-                                <button className="text-xs font-semibold flex items-center gap-1" style={{ color: "#FF642D" }}
-                                    onClick={() => router.push("/app/action-center")}>
-                                    Fix All <ArrowRight size={11} />
-                                </button>
-                            )}
+                            <button className="text-xs font-semibold flex items-center gap-1" style={{ color: "#FF642D" }}
+                                onClick={() => router.push("/app/action-center")}>
+                                Fix All <ArrowRight size={11} />
+                            </button>
                         </div>
                         {issues.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-10" style={{ color: "#4A5568" }}>
@@ -935,12 +875,6 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                         <p className="text-xs mt-1 text-center max-w-xs" style={{ color: "#4A5568" }}>
                                             Continue monitoring your site regularly to maintain strong search visibility.
                                         </p>
-                                        <button
-                                            onClick={() => router.push("/app/projects")}
-                                            className="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white transition hover:opacity-90"
-                                            style={{ background: "linear-gradient(135deg,#6366f1,#4f46e5)" }}>
-                                            Set up monitoring alerts <ArrowRight size={11} />
-                                        </button>
                                     </>
                                 )}
                             </div>
@@ -968,7 +902,10 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                                     </p>
                                                     {issue.affectedUrls && issue.affectedUrls.length > 0 && (
                                                         <div className="flex flex-wrap gap-1 mt-1.5">
-                                                            {issue.affectedUrls.slice(0, 3).map((url) => {
+                                                            {(userPlan === "free"
+                                                                ? issue.affectedUrls.slice(0, 1)
+                                                                : issue.affectedUrls.slice(0, 3)
+                                                            ).map((url) => {
                                                                 const path = url.replace(/^https?:\/\/[^/]+/, "") || "/";
                                                                 return (
                                                                     <span key={url} className="px-1.5 rounded text-[10px] font-mono truncate max-w-[160px]"
@@ -977,7 +914,15 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                                                     </span>
                                                                 );
                                                             })}
-                                                            {issue.affectedUrls.length > 3 && (
+                                                            {userPlan === "free" && issue.affectedUrls.length > 1 && (
+                                                                <span className="flex items-center gap-1 px-1.5 rounded text-[10px] font-mono cursor-pointer hover:opacity-80 transition"
+                                                                    style={{ background: "rgba(255,100,45,0.1)", color: "#FF642D", border: "1px solid rgba(255,100,45,0.3)" }}
+                                                                    onClick={() => router.push("/pricing")}>
+                                                                    <Lock size={9} />
+                                                                    +{issue.affectedUrls.length - 1} URLs — Unlock ($9)
+                                                                </span>
+                                                            )}
+                                                            {userPlan !== "free" && issue.affectedUrls.length > 3 && (
                                                                 <span className="text-[10px] font-mono" style={{ color: "#4A5568" }}>
                                                                     +{issue.affectedUrls.length - 3} more
                                                                 </span>
@@ -1077,24 +1022,74 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                                                     <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#6B7A99" }}>
                                                                         Affected Pages
                                                                     </p>
-                                                                    <div className="flex flex-wrap gap-1.5">
-                                                                        {issue.affectedUrls.map((url) => {
-                                                                            const path = url.replace(/^https?:\/\/[^/]+/, "") || "/";
-                                                                            return (
-                                                                                <span key={url} className="px-2 py-0.5 rounded text-[11px] font-mono truncate max-w-[280px]"
-                                                                                    style={{ background: "#1a2236", color: "#8B9BB4", border: "1px solid #1E2940" }}>
-                                                                                    {path}
-                                                                                </span>
-                                                                            );
-                                                                        })}
-                                                                    </div>
+                                                                    {userPlan === "free" ? (
+                                                                        <div>
+                                                                            <div className="flex flex-wrap gap-1.5 mb-2">
+                                                                                {issue.affectedUrls.slice(0, 1).map((url) => {
+                                                                                    const path = url.replace(/^https?:\/\/[^/]+/, "") || "/";
+                                                                                    return (
+                                                                                        <span key={url} className="px-2 py-0.5 rounded text-[11px] font-mono truncate max-w-[280px]"
+                                                                                            style={{ background: "#1a2236", color: "#8B9BB4", border: "1px solid #1E2940" }}>
+                                                                                            {path}
+                                                                                        </span>
+                                                                                    );
+                                                                                })}
+                                                                            </div>
+                                                                            {issue.affectedUrls.length > 1 && (
+                                                                                <div className="rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:opacity-80 transition"
+                                                                                    style={{ background: "rgba(255,100,45,0.06)", border: "1px dashed rgba(255,100,45,0.3)" }}
+                                                                                    onClick={() => router.push("/pricing")}>
+                                                                                    <Lock size={14} style={{ color: "#FF642D" }} className="shrink-0" />
+                                                                                    <div>
+                                                                                        <p className="text-xs font-bold" style={{ color: "#FF642D" }}>
+                                                                                            {issue.affectedUrls.length - 1} more affected URLs locked
+                                                                                        </p>
+                                                                                        <p className="text-[11px]" style={{ color: "#6B7A99" }}>
+                                                                                            Upgrade to Starter ($9/mo) to see all affected pages
+                                                                                        </p>
+                                                                                    </div>
+                                                                                    <span className="ml-auto text-xs font-bold px-2.5 py-1 rounded-lg shrink-0"
+                                                                                        style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)", color: "white" }}>
+                                                                                        Unlock
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                            {issue.affectedUrls.map((url) => {
+                                                                                const path = url.replace(/^https?:\/\/[^/]+/, "") || "/";
+                                                                                return (
+                                                                                    <span key={url} className="px-2 py-0.5 rounded text-[11px] font-mono truncate max-w-[280px]"
+                                                                                        style={{ background: "#1a2236", color: "#8B9BB4", border: "1px solid #1E2940" }}>
+                                                                                        {path}
+                                                                                    </span>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             )}
-                                                            <button onClick={() => router.push(`/app/action-center`)}
-                                                                className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-white transition hover:opacity-90"
-                                                                style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)" }}>
-                                                                <Zap size={12} /> Fix This Issue
-                                                            </button>
+                                                            <div className="flex items-center gap-3">
+                                                                <button onClick={() => router.push(`/app/action-center`)}
+                                                                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-white transition hover:opacity-90"
+                                                                    style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)" }}>
+                                                                    <Zap size={12} /> Fix This Issue
+                                                                </button>
+                                                                {(userPlan === "pro" || userPlan === "premium") ? (
+                                                                    <button
+                                                                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-white transition hover:opacity-90"
+                                                                        style={{ background: "linear-gradient(135deg, #7B5CF5, #6D48E8)" }}>
+                                                                        <Sparkles size={12} /> Generate AI Fix
+                                                                    </button>
+                                                                ) : (
+                                                                    <button onClick={() => router.push("/pricing")}
+                                                                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition hover:opacity-80"
+                                                                        style={{ background: "rgba(123,92,245,0.1)", color: "#7B5CF5", border: "1px solid rgba(123,92,245,0.3)" }}>
+                                                                        <Lock size={12} /> AI Fix ($29)
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </motion.div>
                                                 )}
@@ -1109,35 +1104,12 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                     {/* Thematic Analysis */}
                     <div className="rounded-xl border p-5" style={{ background: "#151B27", borderColor: "#1E2940" }}>
                         <h2 className="text-sm font-bold text-white mb-5">Thematic Analysis</h2>
-                        {thematicScores.every(t => t.score === 100) && !isCrawling ? (
-                            <div className="flex flex-col sm:flex-row items-center gap-4 py-2">
-                                <div className="flex items-center gap-3 flex-1">
-                                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                                        style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.25)" }}>
-                                        <CheckCircle size={18} style={{ color: "#22c55e" }} />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold" style={{ color: "#22c55e" }}>All categories score 100/100</p>
-                                        <p className="text-[11px] mt-0.5" style={{ color: "#6B7A99" }}>Technical · Content · Performance · Links · Indexing — no issues detected in any category.</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-3 shrink-0">
-                                    {thematicScores.map(({ label, color }) => (
-                                        <div key={label} className="flex flex-col items-center gap-1">
-                                            <div className="w-2 h-2 rounded-full" style={{ background: color }} />
-                                            <span className="text-[9px]" style={{ color: "#4A5568" }}>{label.slice(0, 4)}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
-                                {thematicScores.map(({ label, score: s, color }) => (
-                                    <ThematicScore key={label} label={label} score={s} color={color}
-                                        loading={isCrawling && issues.length === 0} />
-                                ))}
-                            </div>
-                        )}
+                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
+                            {thematicScores.map(({ label, score: s, color }) => (
+                                <ThematicScore key={label} label={label} score={s} color={color}
+                                    loading={isCrawling && issues.length === 0} />
+                            ))}
+                        </div>
                     </div>
                 </div>
 
@@ -1165,39 +1137,20 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                     Fix This Issue →
                                 </button>
                             </div>
-                        ) : isCrawling ? (
-                            <div className="rounded-lg p-4 mb-4 text-center" style={{ background: "#0D1424", border: "1px solid #1E2940" }}>
-                                <p className="text-sm" style={{ color: "#6B7A99" }}>Issues will appear as crawling progresses…</p>
-                            </div>
                         ) : (
-                            <div className="rounded-lg p-4 mb-4 space-y-2" style={{ background: "#0D1424", border: "1px solid #1E2940" }}>
-                                <div className="flex items-center gap-2 mb-3">
-                                    <CheckCircle size={14} style={{ color: "#22c55e" }} />
-                                    <p className="text-sm font-semibold" style={{ color: "#22c55e" }}>Site is fully optimised</p>
-                                </div>
-                                <p className="text-[11px] mb-3" style={{ color: "#6B7A99" }}>No fixes needed. Here is what to do next:</p>
-                                {[
-                                    { label: "Find keyword opportunities", path: "/app/keywords" },
-                                    { label: "Track your rankings", path: "/app/rank-tracking" },
-                                    { label: "Analyse competitors", path: "/app/competitor-intelligence" },
-                                ].map(({ label, path }) => (
-                                    <button key={path} onClick={() => router.push(path)}
-                                        className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-[11px] font-semibold border transition hover:bg-white/[0.03]"
-                                        style={{ borderColor: "#1E2940", color: "#8B9BB4" }}>
-                                        {label}
-                                        <ArrowRight size={10} style={{ color: "#FF642D" }} />
-                                    </button>
-                                ))}
+                            <div className="rounded-lg p-4 mb-4 text-center" style={{ background: "#0D1424", border: "1px solid #1E2940" }}>
+                                {isCrawling
+                                    ? <p className="text-sm" style={{ color: "#6B7A99" }}>Issues will appear as crawling progresses…</p>
+                                    : <p className="text-sm" style={{ color: "#00C853" }}>No issues found!</p>
+                                }
                             </div>
                         )}
                         <div className="text-center">
                             <p className="text-[11px]" style={{ color: "#4A5568" }}>{issues.length} total issues found</p>
-                            {issues.length > 0 && (
-                                <button className="text-[12px] font-semibold mt-1 hover:opacity-80 transition"
-                                    style={{ color: "#FF642D" }} onClick={() => router.push("/app/action-center")}>
-                                    View All Tasks →
-                                </button>
-                            )}
+                            <button className="text-[12px] font-semibold mt-1 hover:opacity-80 transition"
+                                style={{ color: "#FF642D" }} onClick={() => router.push("/app/action-center")}>
+                                View All Tasks →
+                            </button>
                         </div>
                     </div>
 

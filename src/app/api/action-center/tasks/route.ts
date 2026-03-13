@@ -254,27 +254,31 @@ export async function GET(req: NextRequest) {
       completionMap.set(c.issue_id, { status: c.status, marked_at: c.marked_at });
     }
 
-    // ── 7. Compute SEO scores ───────────────────────────────────────────
+    // ── 7. Compute SEO scores (density-based) ───────────────────────────
     const issueEntries = Object.entries(issueMap);
-    const criticalCount = issueEntries.filter(([, v]) => v.sev === "HIGH").length;
-    const warningCount = issueEntries.filter(([, v]) => v.sev === "MED").length;
-    const noticeCount = issueEntries.filter(([, v]) => v.sev === "LOW").length;
+    const totalPagesForDensity = pages.length > 0 ? pages.length : 1;
 
-    const seoScore = computeSeoScore({
-      pages: pages.length,
-      totalIssues: issueEntries.length,
-      criticalIssues: criticalCount,
-      warningIssues: warningCount,
-      noticeIssues: noticeCount,
-    });
+    const totalCriticalOcc = issueEntries
+      .filter(([, v]) => v.sev === "HIGH")
+      .reduce((s, [, v]) => s + v.count, 0);
+    const totalWarningOcc = issueEntries
+      .filter(([, v]) => v.sev === "MED")
+      .reduce((s, [, v]) => s + v.count, 0);
+    const totalNoticeOcc = issueEntries
+      .filter(([, v]) => v.sev === "LOW")
+      .reduce((s, [, v]) => s + v.count, 0);
 
-    const projectedScore = computeSeoScore({
-      pages: pages.length,
-      totalIssues: 0,
-      criticalIssues: 0,
-      warningIssues: 0,
-      noticeIssues: 0,
-    });
+    const seoScore = pages.length > 0 ? computeSeoScore({
+      critical: totalCriticalOcc / totalPagesForDensity,
+      warning:  totalWarningOcc  / totalPagesForDensity,
+      notice:   totalNoticeOcc   / totalPagesForDensity,
+    }) : 0;
+
+    const projectedScore = pages.length > 0 ? computeSeoScore({
+      critical: 0,
+      warning:  0,
+      notice:   0,
+    }) : 0;
 
     // ── 8. Transform issueMap → enriched Task[] ─────────────────────────
     const tasks: Task[] = issueEntries.map(([id, { sev, count, urls }], index) => {

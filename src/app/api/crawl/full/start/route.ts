@@ -68,8 +68,9 @@ export async function POST(req: NextRequest) {
         });
 
         // 3. Sitemap seeding — parse sitemap.xml and seed discovered URLs (best-effort, 3s timeout)
+        let sitemapXml = "";
         try {
-            const sitemapXml = await withTimeout(
+            sitemapXml = await withTimeout(
                 fetch(`https://${cleanDomain}/sitemap.xml`, {
                     headers: { "User-Agent": "Mozilla/5.0 (compatible; RankyPulse/1.0)" },
                 }).then(r => r.ok ? r.text() : ""),
@@ -100,6 +101,102 @@ export async function POST(req: NextRequest) {
                 }
             }
         } catch { /* sitemap is optional — continue without it */ }
+
+        // 3b. Site-level checks — stored as __site_level__ synthetic audit_pages row
+        try {
+            const siteLevelIssues: Array<{ id: string; sev: "LOW" | "MED" | "HIGH"; msg: string }> = [];
+
+            // Sitemap checks
+            if (!sitemapXml) {
+                siteLevelIssues.push({ id: "no_sitemap", sev: "MED", msg: "No sitemap.xml found (or returned error)" });
+            } else if (!/<urlset/i.test(sitemapXml) && !/<sitemapindex/i.test(sitemapXml)) {
+                siteLevelIssues.push({ id: "invalid_sitemap", sev: "MED", msg: "sitemap.xml exists but lacks <urlset> or <sitemapindex>" });
+            }
+
+            // HTTP→HTTPS redirect check
+            try {
+                const httpRes = await withTimeout(
+                    fetch(`http://${cleanDomain}`, {
+                        method: "HEAD",
+                        redirect: "manual",
+                        headers: { "User-Agent": "Mozilla/5.0 (compatible; RankyPulse/1.0)" },
+                    }),
+                    4000,
+                    null as unknown as Response
+                );
+                if (httpRes) {
+                    const isRedirect = httpRes.status >= 300 && httpRes.status < 400;
+                    const redirectsToHttps = (httpRes.headers.get("location") ?? "").startsWith("https://");
+                    if (!isRedirect || !redirectsToHttps) {
+                        siteLevelIssues.push({ id: "no_http_to_https_redirect", sev: "HIGH", msg: "HTTP does not redirect to HTTPS" });
+                    }
+                }
+            } catch { /* timeout or network — skip */ }
+
+            // www / non-www inconsistency
+            try {
+                const [wwwRes, nonWwwRes] = await Promise.all([
+                    withTimeout(
+                        fetch(`https://www.${cleanDomain}`, { method: "HEAD", redirect: "manual", headers: { "User-Agent": "Mozilla/5.0 (compatible; RankyPulse/1.0)" } }),
+                        4000,
+                        null as unknown as Response
+                    ),
+                    withTimeout(
+                        fetch(`https://${cleanDomain}`, { method: "HEAD", redirect: "manual", headers: { "User-Agent": "Mozilla/5.0 (compatible; RankyPulse/1.0)" } }),
+                        4000,
+                        null as unknown as Response
+                    ),
+                ]);
+                if (wwwRes?.status === 200 && nonWwwRes?.status === 200) {
+                    siteLevelIssues.push({ id: "www_inconsistency", sev: "MED", msg: "Both www and non-www return 200 (duplicate content risk)" });
+                }
+            } catch { /* skip */ }
+
+            // robots.txt: AI bot blocking + full site block
+            try {
+                const robotsText = await withTimeout(
+                    fetch(`https://${cleanDomain}/robots.txt`, {
+                        headers: { "User-Agent": "Mozilla/5.0 (compatible; RankyPulse/1.0)" },
+                    }).then(r => r.ok ? r.text() : ""),
+                    3000,
+                    ""
+                );
+                if (robotsText) {
+                    const aiBotPatterns = /User-agent:\s*(GPTBot|ChatGPT-User|Claude-Web|anthropic-ai|Google-Extended|CCBot)/i;
+                    const hasDisallow = /Disallow:\s*\//;
+                    if (aiBotPatterns.test(robotsText) && hasDisallow.test(robotsText)) {
+                        siteLevelIssues.push({ id: "ai_bot_blocked_sitewide", sev: "HIGH", msg: "robots.txt blocks AI bots (GPTBot, Claude-Web, etc.)" });
+                    }
+                }
+            } catch { /* skip */ }
+
+            // /llms.txt check
+            try {
+                const llmsRes = await withTimeout(
+                    fetch(`https://${cleanDomain}/llms.txt`, {
+                        method: "HEAD",
+                        headers: { "User-Agent": "Mozilla/5.0 (compatible; RankyPulse/1.0)" },
+                    }),
+                    3000,
+                    null as unknown as Response
+                );
+                if (!llmsRes || llmsRes.status >= 400) {
+                    siteLevelIssues.push({ id: "no_llms_txt_file", sev: "LOW", msg: "No /llms.txt file found (AI crawlers lack structured guidance)" });
+                }
+            } catch { /* skip */ }
+
+            if (siteLevelIssues.length > 0) {
+                await supabaseAdmin.from("audit_pages").upsert({
+                    job_id: job.id,
+                    url: "__site_level__",
+                    score: Math.max(0, 100 - siteLevelIssues.filter(i => i.sev === "HIGH").length * 10 - siteLevelIssues.filter(i => i.sev === "MED").length * 5),
+                    issues: siteLevelIssues,
+                    psi_data: null,
+                    metadata: { title: "__site_level__", is_root: false, psi_available: false },
+                }, { onConflict: "job_id,url", ignoreDuplicates: false });
+                console.log(`[Crawl Start] Site-level checks: ${siteLevelIssues.length} issues for ${cleanDomain}`);
+            }
+        } catch { /* site-level checks are best-effort */ }
 
         // Update job status to crawling
         await supabaseAdmin
