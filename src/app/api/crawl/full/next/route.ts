@@ -37,7 +37,8 @@ function auditPageCompact(
     let score = 100;
 
     if (!html) {
-        return { score: psi ? 50 : 30, issues };
+        issues.push({ id: "page_fetch_failed", sev: "HIGH", msg: "Could not fetch page HTML — site may block crawlers or timed out" });
+        return { score: psi ? 40 : 20, issues };
     }
 
     // ── HTTPS check ─────────────────────────────────────────────────────────────
@@ -533,6 +534,7 @@ export async function GET(req: NextRequest) {
 
         // 5. Run compact audit
         const { score, issues } = auditPageCompact(cleanDomain, targetUrl, html, psi, brokenLinks);
+        console.log(`[Crawl] ${targetUrl}: score=${score}, issues=${issues.length}, htmlLen=${html.length}, psi=${!!psi}`);
 
         // 5b. Detect redirect chain (≥2 hops = chain of 3+ URLs)
         if (redirectChain.length >= 3) {
@@ -570,7 +572,7 @@ export async function GET(req: NextRequest) {
             "";
 
         // 6. Save to audit_pages (upsert in case URL is revisited)
-        await supabaseAdmin.from("audit_pages").upsert({
+        const { error: upsertError } = await supabaseAdmin.from("audit_pages").upsert({
             job_id: jobId,
             url: targetUrl,
             score,
@@ -586,6 +588,9 @@ export async function GET(req: NextRequest) {
                 psi_available: !!psi,
             },
         }, { onConflict: "job_id,url", ignoreDuplicates: false });
+        if (upsertError) {
+            console.error(`[Crawl] UPSERT FAILED for ${targetUrl}:`, upsertError.message, upsertError.code);
+        }
 
         // 7. Add new links to queue (upsert to skip duplicates)
         if (internalLinks.length > 0) {

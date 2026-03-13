@@ -101,6 +101,7 @@ export const ISSUE_META: Record<string, {
   no_http_to_https_redirect:{ label: "No HTTP→HTTPS Redirect",              impact: "high",   action: "Configure Redirect",actionHref: "/audits/issues", gain: "Consolidates link equity to HTTPS version" },
   orphan_page:              { label: "Orphan Pages (No Internal Links)",    impact: "high",   action: "Add Internal Links",actionHref: "/audits/links",  gain: "Improves crawlability and PageRank flow" },
   page_not_found:           { label: "404 Pages Found",                     impact: "high",   action: "Fix or Redirect",   actionHref: "/audits/issues", gain: "Prevents crawl budget waste" },
+  page_fetch_failed:        { label: "Page Fetch Failed",                   impact: "high",   action: "Check Server",      actionHref: "/audits/issues", gain: "Page could not be fetched — may be blocking crawlers or timing out" },
   keyword_cannibalization:  { label: "Keyword Cannibalization",             impact: "high",   action: "Consolidate Pages", actionHref: "/audits/issues", gain: "Strengthens ranking signal by eliminating competition" },
   low_internal_links:       { label: "Pages With Few Internal Links",       impact: "high",   action: "Build Internal Links", actionHref: "/audits/links", gain: "Pages with 3+ internal links rank 30% higher" },
 
