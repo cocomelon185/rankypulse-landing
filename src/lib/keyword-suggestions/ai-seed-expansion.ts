@@ -86,7 +86,7 @@ export async function generateAiSeedSuggestions(input: {
     const timeout = setTimeout(() => controller.abort(), 12_000);
     const message = await client.messages.create(
       {
-        model: "claude-3-5-haiku-20241022",
+        model: "claude-haiku-4-20250414",
         max_tokens: 180,
         messages: [
           {
