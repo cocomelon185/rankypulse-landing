@@ -918,29 +918,37 @@ export function ActionCenterClient() {
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ duration: 0.3 }}
                                                 >
-                                                    {/* Score Impact Badge */}
-                                                    {aiFixStructured.scoreImpact && (
-                                                        <div className="flex items-center gap-2 mb-3">
-                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(255,100,45,0.15)", color: "#FF642D" }}>
-                                                                {aiFixStructured.scoreImpact}
-                                                            </span>
-                                                            <span className="text-[10px]" style={{ color: "#4A5568" }}>estimated score gain</span>
-                                                        </div>
-                                                    )}
+                                                    {/* Score Impact Banner */}
+                                                    {aiFixStructured.scoreImpact && (() => {
+                                                        const raw = aiFixStructured.scoreImpact;
+                                                        const ptsMatch = raw.match(/^([+\-\d\s\w]+points?)/i);
+                                                        const pts = ptsMatch ? ptsMatch[1].trim() : raw.split("—")[0].trim();
+                                                        const reason = raw.includes("—") ? raw.split("—").slice(1).join("—").trim() : "";
+                                                        return (
+                                                            <div className="flex items-center gap-2 mb-3 rounded-lg px-3 py-2" style={{ background: "rgba(255,100,45,0.08)", border: "1px solid rgba(255,100,45,0.2)" }}>
+                                                                <span className="text-[13px] font-bold shrink-0" style={{ color: "#FF642D" }}>{pts}</span>
+                                                                {reason && <span className="text-[11px] leading-snug" style={{ color: "#8A9BB0" }}>— {reason}</span>}
+                                                            </div>
+                                                        );
+                                                    })()}
 
                                                     {/* Tabs */}
-                                                    <div className="flex gap-1 mb-3">
-                                                        {(["code", "why", "steps"] as const).map((tab) => (
+                                                    <div className="flex gap-0.5 mb-3 rounded-lg p-0.5" style={{ background: "rgba(0,0,0,0.3)", border: "1px solid #1E2940" }}>
+                                                        {([
+                                                            { id: "code", label: "Code", icon: "⌥" },
+                                                            { id: "why",  label: "Why It Matters", icon: "◎" },
+                                                            { id: "steps", label: "Steps", icon: "☰" },
+                                                        ] as const).map(({ id, label, icon }) => (
                                                             <button
-                                                                key={tab}
-                                                                onClick={() => setAiFixTab(tab)}
-                                                                className="px-2.5 py-1 rounded text-[10px] font-semibold transition-all"
-                                                                style={aiFixTab === tab
-                                                                    ? { background: "rgba(139,92,246,0.2)", color: "#A78BFA" }
+                                                                key={id}
+                                                                onClick={() => setAiFixTab(id)}
+                                                                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-[10px] font-semibold transition-all"
+                                                                style={aiFixTab === id
+                                                                    ? { background: "rgba(139,92,246,0.25)", color: "#C4B5FD" }
                                                                     : { color: "#4A5568" }
                                                                 }
                                                             >
-                                                                {tab === "code" ? "Code" : tab === "why" ? "Why It Matters" : "Implementation"}
+                                                                <span>{icon}</span>{label}
                                                             </button>
                                                         ))}
                                                     </div>
@@ -948,54 +956,81 @@ export function ActionCenterClient() {
                                                     {/* Tab: Code */}
                                                     {aiFixTab === "code" && (
                                                         <div>
-                                                            <pre className="rounded-lg p-3 text-[11px] leading-relaxed overflow-x-auto mb-2 font-mono" style={{ background: "#0D1117", color: "#E6EDF3", border: "1px solid #30363D" }}>
-                                                                <code>{aiFixStructured.code}</code>
-                                                            </pre>
-                                                            <div className="flex justify-end">
-                                                                <button
-                                                                    onClick={copyAiFix}
-                                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all"
-                                                                    style={aiFixCopied
-                                                                        ? { background: "rgba(34,197,94,0.12)", color: "#22C55E" }
-                                                                        : { background: "rgba(139,92,246,0.1)", color: "#A78BFA" }
-                                                                    }
-                                                                >
-                                                                    {aiFixCopied ? <Check size={11} /> : <Copy size={11} />}
-                                                                    {aiFixCopied ? "Copied!" : "Copy Code"}
-                                                                </button>
+                                                            <div className="rounded-lg overflow-hidden mb-2" style={{ border: "1px solid #30363D" }}>
+                                                                <div className="flex items-center justify-between px-3 py-1.5" style={{ background: "#161B22", borderBottom: "1px solid #30363D" }}>
+                                                                    <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "#4A5568" }}>Code Fix</span>
+                                                                    <button
+                                                                        onClick={copyAiFix}
+                                                                        className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium transition-all"
+                                                                        style={aiFixCopied
+                                                                            ? { background: "rgba(34,197,94,0.12)", color: "#22C55E" }
+                                                                            : { background: "rgba(139,92,246,0.1)", color: "#A78BFA" }
+                                                                        }
+                                                                    >
+                                                                        {aiFixCopied ? <Check size={10} /> : <Copy size={10} />}
+                                                                        {aiFixCopied ? "Copied!" : "Copy"}
+                                                                    </button>
+                                                                </div>
+                                                                <pre className="p-3 text-[11px] leading-relaxed overflow-x-auto font-mono m-0" style={{ background: "#0D1117", color: "#E6EDF3" }}>
+                                                                    <code>
+                                                                        {aiFixStructured.code.split("\n").map((line, i) => {
+                                                                            const isComment = line.trim().startsWith("#") || line.trim().startsWith("//") || line.trim().startsWith("<!--");
+                                                                            return (
+                                                                                <span key={i} style={isComment ? { color: "#6A8A6A", fontStyle: "italic" } : {}}>
+                                                                                    {line}{"\n"}
+                                                                                </span>
+                                                                            );
+                                                                        })}
+                                                                    </code>
+                                                                </pre>
                                                             </div>
                                                         </div>
                                                     )}
 
                                                     {/* Tab: Why It Matters */}
                                                     {aiFixTab === "why" && (
-                                                        <div>
-                                                            <p className="text-[12px] leading-relaxed" style={{ color: "#C8D0E0" }}>
-                                                                {aiFixStructured.analysis}
-                                                            </p>
+                                                        <div className="space-y-3">
+                                                            <div className="rounded-lg p-3" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.15)" }}>
+                                                                <p className="text-[9px] font-bold uppercase tracking-widest mb-2" style={{ color: "#6D5FA8" }}>SEO Analysis</p>
+                                                                <p className="text-[12px] leading-relaxed" style={{ color: "#C8D0E0" }}>
+                                                                    {aiFixStructured.analysis}
+                                                                </p>
+                                                            </div>
                                                         </div>
                                                     )}
 
                                                     {/* Tab: Implementation */}
                                                     {aiFixTab === "steps" && (
                                                         <div className="space-y-2">
-                                                            {aiFixStructured.steps.split("\n").filter(s => s.trim()).map((step, i) => (
-                                                                <p key={i} className="text-[12px] leading-relaxed" style={{ color: "#C8D0E0" }}>
-                                                                    {step}
-                                                                </p>
-                                                            ))}
+                                                            {aiFixStructured.steps.split("\n").filter(s => s.trim()).map((step, i) => {
+                                                                const cleaned = step.replace(/^\d+\.\s*/, "").trim();
+                                                                const stepNum = step.match(/^(\d+)\./)?.[1];
+                                                                return (
+                                                                    <div key={i} className="flex items-start gap-2.5">
+                                                                        <span className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5"
+                                                                            style={{ background: "rgba(139,92,246,0.15)", color: "#A78BFA" }}>
+                                                                            {stepNum ?? i + 1}
+                                                                        </span>
+                                                                        <p className="text-[12px] leading-relaxed" style={{ color: "#C8D0E0" }}>{cleaned}</p>
+                                                                    </div>
+                                                                );
+                                                            })}
                                                             {aiFixStructured.verification && (
-                                                                <div className="mt-3 rounded-lg p-2.5" style={{ background: "rgba(0,0,0,0.3)", border: "1px solid #1E2940" }}>
-                                                                    <p className="text-[9px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "#4A5568" }}>Verify the fix</p>
-                                                                    <code className="text-[11px] font-mono break-all" style={{ color: "#22C55E" }}>
-                                                                        {aiFixStructured.verification}
-                                                                    </code>
+                                                                <div className="mt-3 rounded-lg overflow-hidden" style={{ border: "1px solid #1E2940" }}>
+                                                                    <div className="px-3 py-1.5" style={{ background: "rgba(34,197,94,0.06)", borderBottom: "1px solid #1E2940" }}>
+                                                                        <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "#22C55E" }}>✓ Verify the fix</p>
+                                                                    </div>
+                                                                    <div className="px-3 py-2" style={{ background: "rgba(0,0,0,0.3)" }}>
+                                                                        <code className="text-[11px] font-mono break-all" style={{ color: "#22C55E" }}>
+                                                                            {aiFixStructured.verification}
+                                                                        </code>
+                                                                    </div>
                                                                 </div>
                                                             )}
                                                         </div>
                                                     )}
 
-                                                    <p className="text-[10px] mt-2" style={{ color: "#4A5568" }}>Generated by Claude · Tailored to your stack</p>
+                                                    <p className="text-[10px] mt-3" style={{ color: "#2D3748" }}>Generated by Claude · Tailored to your stack</p>
                                                 </motion.div>
                                             ) : aiFixState === "done" && aiFixText ? (
                                                 /* Fallback: plain text for old cached suggestions */
