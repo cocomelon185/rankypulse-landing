@@ -191,7 +191,7 @@ export async function POST(req: NextRequest) {
   }
 
   let rawSuggestion: string;
-  const model = "claude-haiku-4-20250414";
+  const model = "claude-3-haiku-20240307";
 
   try {
     const client = new Anthropic({ apiKey });
