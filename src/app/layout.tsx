@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { Inter, DM_Mono } from "next/font/google";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { CanonicalFixer } from "@/components/CanonicalFixer";
 import "./globals.css";
 import { AnalyticsClient } from "@/components/AnalyticsClient";
 
@@ -132,6 +133,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ></script>
         <SessionProvider>
           <ThemeProvider attribute="class" forcedTheme="dark" enableSystem={false}>
+            <CanonicalFixer />
             {children}
             <Toaster position="bottom-center" richColors closeButton />
             <Suspense fallback={null}>
