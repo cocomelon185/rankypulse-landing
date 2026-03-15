@@ -86,8 +86,36 @@ const PROMPTS: Record<string, PromptFn> = {
   slow_page: ({ domain, techStack }) =>
     `Site: ${domain}\nArchitecture: ${techStack}\nIssue: Poor page speed score.\n\nProvide the top 5 most impactful technical fixes to improve page speed for a ${techStack} site. Be specific and actionable.`,
 
-  no_canonical: ({ affectedPageUrls, techStack }) =>
-    `Site: ${affectedPageUrls[0] ?? "this page"}\nArchitecture: ${techStack}\nIssue: Missing canonical tag.\n\nWrite the correct canonical tag for this page. Show how to add canonical tags in ${techStack}.`,
+  no_canonical: ({ affectedPageUrls, techStack }) => {
+    const isNextJs = /next\.?js/i.test(techStack);
+    return isNextJs
+      ? `Site: ${affectedPageUrls[0] ?? "this page"}\nArchitecture: ${techStack} (App Router)\nIssue: Missing canonical tag.\n\nThis is a Next.js App Router project using src/app/. The ONLY correct approach:\n1. Set metadataBase in the root layout.tsx so Next.js auto-derives canonicals:\n   export const metadata: Metadata = { metadataBase: new URL("https://yourdomain.com") }\n2. For pages needing a custom canonical, use alternates in generateMetadata:\n   alternates: { canonical: "/your-page-path" }\n\nDO NOT use <link rel="canonical"> in a head.tsx file — these override generateMetadata and create duplicate tags.\nDO NOT use pages/_app.js or useRouter from next/router — those are legacy Pages Router patterns and will break an App Router project.`
+      : `Site: ${affectedPageUrls[0] ?? "this page"}\nArchitecture: ${techStack}\nIssue: Missing canonical tag.\n\nWrite the correct canonical tag for this page. Show how to add canonical tags in ${techStack}.`;
+  },
+
+  multiple_canonical: ({ domain, affectedPageUrls, techStack }) => {
+    const isNextJs = /next\.?js/i.test(techStack);
+    const pages = affectedPageUrls.slice(0, 3).join(", ");
+    return isNextJs
+      ? `Site: ${domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${techStack} (App Router)\nIssue: Multiple or conflicting canonical tags detected — pages have more than one <link rel="canonical">.\n\nThis is a Next.js App Router project. Root cause is almost always a legacy head.tsx file that hardcodes a canonical, coexisting with generateMetadata. Fix:\n1. Delete any head.tsx files in src/app/ (these are a Next.js 13 legacy pattern that conflicts with generateMetadata).\n2. Ensure only ONE canonical source: generateMetadata with alternates.canonical.\n3. Confirm metadataBase is set in layout.tsx:\n   export const metadata: Metadata = { metadataBase: new URL("https://${domain}") }\n\nDO NOT generate pages/_app.js, useRouter, or any client-side <link> injection — those are Next.js Pages Router patterns and are NOT valid in App Router.\nDO NOT write React useEffect code that injects canonical tags into the DOM — Googlebot may not execute it.`
+      : `Site: ${domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${techStack}\nIssue: Multiple or conflicting canonical tags on the same page.\n\nIdentify and remove the duplicate canonical source. Provide the corrected implementation for ${techStack}.`;
+  },
+
+  duplicate_canonical: ({ domain, affectedPageUrls, techStack }) => {
+    const isNextJs = /next\.?js/i.test(techStack);
+    const pages = affectedPageUrls.slice(0, 3).join(", ");
+    return isNextJs
+      ? `Site: ${domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${techStack} (App Router)\nIssue: Duplicate canonical tags — the same page emits two or more <link rel="canonical"> elements.\n\nThis is a Next.js App Router project. The fix:\n1. Search for and delete any head.tsx files under src/app/ — they conflict with generateMetadata.\n2. Use a single canonical source: alternates.canonical in generateMetadata.\n3. Set metadataBase in root layout.tsx: new URL("https://${domain}")\n\nDO NOT generate pages/_app.js, useRouter, or client-side DOM injection code. Those are Pages Router patterns that do not work in App Router.`
+      : `Site: ${domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${techStack}\nIssue: Duplicate canonical tags.\n\nFind and eliminate the duplicate source. Show the corrected canonical implementation for ${techStack}.`;
+  },
+
+  canonical_mismatch: ({ domain, affectedPageUrls, techStack }) => {
+    const isNextJs = /next\.?js/i.test(techStack);
+    const pages = affectedPageUrls.slice(0, 3).join(", ");
+    return isNextJs
+      ? `Site: ${domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${techStack} (App Router)\nIssue: Canonical URL mismatch — the canonical tag points to a different URL than the page's actual URL.\n\nThis is a Next.js App Router project. Common causes:\n- A root head.tsx hardcoding the homepage URL as canonical for ALL pages.\n- Incorrect alternates.canonical values in generateMetadata.\n- www vs non-www mismatch when metadataBase is not set.\n\nFix:\n1. Delete any head.tsx files in src/app/ — they override generateMetadata globally.\n2. Set metadataBase once in root layout.tsx: new URL("https://${domain}")\n3. Per-page overrides: alternates: { canonical: "/exact-page-path" } in generateMetadata.\n\nDO NOT use pages/_app.js, useRouter, or client-side canonical injection — wrong router, Googlebot may not execute JS canonical tags.`
+      : `Site: ${domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${techStack}\nIssue: Canonical URL mismatch — canonicals point to wrong URLs.\n\nProvide the corrected canonical implementation for ${techStack} that ensures each page's canonical matches its actual URL.`;
+  },
 
   no_schema: ({ domain, techStack }) =>
     `Site: ${domain}\nArchitecture: ${techStack}\nIssue: No structured data (JSON-LD).\n\nWrite a complete Organization JSON-LD schema for ${domain}. Show where to add it in a ${techStack} project.`,
