@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { SprintSuccessModal } from "./SprintSuccessModal";
 import {
   Calendar,
   CheckCircle2,
@@ -105,6 +106,7 @@ function getDayLabel(addedAt: number, earliest: number): number {
 // ── Main component ─────────────────────────────────────────────────────────────
 export function GrowthRoadmap() {
   const { roadmapTasks, addTaskToRoadmap, toggleTaskStatus } = useAuditStore();
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // Seed the store with static tasks on first visit
   useEffect(() => {
@@ -126,7 +128,25 @@ export function GrowthRoadmap() {
 
   const highImpact = tasks.filter((t) => t.impact === "HIGH" && t.status === "TODO").length;
 
+  // Toggle handler — fires success modal when the final task is completed
+  const handleToggle = (task: RoadmapTask) => {
+    toggleTaskStatus(task.id);
+    if (task.status === "TODO") {
+      const newCompleted = completedCount + 1;
+      if (newCompleted === tasks.length) {
+        setTimeout(() => setShowSuccess(true), 500);
+      }
+    }
+  };
+
   return (
+    <>
+      <SprintSuccessModal
+        isOpen={showSuccess}
+        onClose={() => setShowSuccess(false)}
+        completedCount={tasks.length}
+        totalMinutes={tasks.reduce((sum, t) => sum + (parseInt(t.effort) || 0), 0)}
+      />
     <div className="space-y-8 p-6 bg-[#0B0F17] min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -213,7 +233,7 @@ export function GrowthRoadmap() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.07, duration: 0.35 }}
-                onClick={() => toggleTaskStatus(task.id)}
+                onClick={() => handleToggle(task)}
                 className={`cursor-pointer group relative p-5 rounded-2xl border transition-all ${
                   task.status === "DONE"
                     ? "bg-emerald-500/5 border-emerald-500/20 opacity-60"
@@ -283,5 +303,6 @@ export function GrowthRoadmap() {
         )}
       </div>
     </div>
+    </>
   );
 }

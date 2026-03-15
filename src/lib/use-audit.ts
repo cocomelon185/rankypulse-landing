@@ -44,6 +44,7 @@ interface AuditState {
   addTaskToRoadmap: (task: RoadmapTask) => void;
   removeTask: (id: string) => void;
   toggleTaskStatus: (id: string) => void;
+  clearRoadmap: () => void;
 
   openIssues: () => AuditIssueData[];
   fixedIssues: () => AuditIssueData[];
@@ -83,6 +84,8 @@ export const useAuditStore = create<AuditState>((set, get) => ({
         t.id === id ? { ...t, status: t.status === "DONE" ? "TODO" : "DONE" } : t
       ),
     })),
+
+  clearRoadmap: () => set({ roadmapTasks: [] }),
 
   setData: (data) => set({ data, completedFixIds: [], skippedIds: [], loadError: null, isLoading: false }),
   setLoading: (loading) => set({ isLoading: loading }),
