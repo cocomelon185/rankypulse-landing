@@ -3,7 +3,7 @@ import MetaTagCheckerClient from "./MetaTagCheckerClient";
 
 export async function generateMetadata(): Promise<Metadata> {
   const title = "Meta Tag Checker | OG Tag Generator & Validator | RankyPulse";
-  const description = "Check and validate meta tags, title tags, meta descriptions, and Open Graph tags. Get instant feedback on SEO optimization and social sharing readiness. Free meta tag checker tool.";
+  const description = "Check and validate meta tags, title tags, and Open Graph tags. Get instant feedback on SEO and social sharing optimization.";
 
   return {
     title,

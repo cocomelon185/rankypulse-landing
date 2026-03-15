@@ -3,7 +3,7 @@ import SMBSEOClient from "./SMBSEOClient";
 
 export async function generateMetadata(): Promise<Metadata> {
   const title = "Small Business SEO Audit | Affordable Strategy | RankyPulse";
-  const description = "Small business SEO audit focused on realistic, high-ROI tactics. Get visible in local search, compete with bigger players, and attract local customers with proven strategies.";
+  const description = "Small business SEO audit with realistic, high-ROI tactics. Get visible in local search and attract local customers.";
 
   return {
     title,

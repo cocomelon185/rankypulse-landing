@@ -3,7 +3,7 @@ import CompetitorAnalysisClient from "./CompetitorAnalysisClient";
 
 export async function generateMetadata(): Promise<Metadata> {
   const title = "Competitor SEO Analysis | Keywords & Backlinks | RankyPulse";
-  const description = "Analyze competitor SEO strategies, compare keyword rankings, identify backlink sources, and find content gaps. Discover untapped ranking opportunities in your market.";
+  const description = "Analyze competitors' SEO strategies, compare keyword rankings, and identify content gaps. Discover untapped ranking opportunities.";
 
   return {
     title,

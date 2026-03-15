@@ -3,7 +3,7 @@ import InternalLinkCheckerClient from "./InternalLinkCheckerClient";
 
 export async function generateMetadata(): Promise<Metadata> {
   const title = "Internal Link Checker | Broken Links & Orphans | RankyPulse";
-  const description = "Find broken internal links, orphaned pages, and linking opportunities. Analyze your internal link structure to improve crawlability, user experience, and page authority distribution.";
+  const description = "Find broken links, orphaned pages, and linking opportunities. Analyze internal link structure to improve crawlability and authority.";
 
   return {
     title,
