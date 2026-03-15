@@ -39,9 +39,10 @@ export async function POST(req: NextRequest) {
             .eq("id", session.user.id)
             .single();
         const userPlan = (userData?.plan as string) ?? "free";
+        const isAdmin = session.user.role === "admin";
 
-        // Set page limit based on server-verified plan
-        const limit = userPlan === "pro" ? 1000 : userPlan === "starter" ? 100 : 50;
+        // Set page limit based on server-verified plan (admin gets unlimited)
+        const limit = isAdmin ? 10000 : userPlan === "pro" ? 1000 : userPlan === "starter" ? 100 : 50;
 
         // 1. Create the job record
         const { data: job, error: jobError } = await supabaseAdmin

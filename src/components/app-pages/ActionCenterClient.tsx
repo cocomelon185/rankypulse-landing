@@ -113,8 +113,8 @@ function ScoreRing({ score, size = 80 }: { score: number; size?: number }) {
 
 // ── KPI Card ──────────────────────────────────────────────────────────────────
 
-function KpiCard({ icon: Icon, label, value, color }: {
-    icon: React.ElementType; label: string; value: string; color: string;
+function KpiCard({ icon: Icon, label, value, color, sublabel }: {
+    icon: React.ElementType; label: string; value: string; color: string; sublabel?: string;
 }) {
     return (
         <div className="rounded-xl border p-4" style={{ background: "#151B27", borderColor: "#1E2940" }}>
@@ -126,6 +126,7 @@ function KpiCard({ icon: Icon, label, value, color }: {
             </div>
             <p className="text-xl font-black text-white tabular-nums">{value}</p>
             <p className="text-[11px] mt-0.5 font-medium" style={{ color: "#6B7A99" }}>{label}</p>
+            {sublabel && <p className="text-[10px] mt-0.5" style={{ color: "#4A5568" }}>{sublabel}</p>}
         </div>
     );
 }
@@ -462,9 +463,9 @@ export function ActionCenterClient() {
                     </div>
 
                     {/* KPI Cards */}
-                    <KpiCard icon={XCircle} label="Critical Issues" value={String(criticalRemaining)} color="#FF3D3D" />
-                    <KpiCard icon={Sparkles} label="Quick Wins Left" value={String(quickWins)} color="#00C853" />
-                    <KpiCard icon={Target} label="Points to Unlock" value={String(pointsToUnlock)} color="#FF642D" />
+                    <KpiCard icon={XCircle} label="Critical Issues" value={String(criticalRemaining)} color="#FF3D3D" sublabel="Needs immediate fix" />
+                    <KpiCard icon={Sparkles} label="Quick Wins" value={String(quickWins)} color="#00C853" sublabel="Easy fixes available" />
+                    <KpiCard icon={Target} label="Score Potential" value={`+${pointsToUnlock}`} color="#FF642D" sublabel="Points if all fixed" />
 
                     {/* Progress Card */}
                     <div className="rounded-xl border p-4" style={{ background: "#151B27", borderColor: "#1E2940" }}>
@@ -477,6 +478,7 @@ export function ActionCenterClient() {
                         </div>
                         <p className="text-xl font-black text-white tabular-nums">{doneTasks}/{tasks.length}</p>
                         <p className="text-[11px] mt-0.5 font-medium" style={{ color: "#6B7A99" }}>Tasks Complete</p>
+                        <p className="text-[10px] mt-0.5" style={{ color: "#4A5568" }}>Fixed vs total issues</p>
                         <div className="h-1.5 rounded-full overflow-hidden mt-2" style={{ background: "#1E2940" }}>
                             <motion.div className="h-full rounded-full"
                                 style={{ background: "linear-gradient(90deg, #7B5CF5, #9B7DFF)" }}

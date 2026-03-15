@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
-import { calculateSeoScore } from "@/lib/seo-score";
+import { computeSeoScore } from "@/lib/seo-score";
 import {
   getAccessibleAuditDomainsForUser,
   getLatestSharedAuditJobsForDomains,
@@ -30,7 +30,6 @@ export async function GET() {
         .select("score, issues")
         .eq("job_id", job.id);
 
-      const score = calculateSeoScore(pages ?? []);
       let errors = 0, warnings = 0, notices = 0;
 
       for (const page of pages ?? []) {
@@ -46,6 +45,14 @@ export async function GET() {
           else notices++;
         }
       }
+
+      // Density-based score — same formula as audit detail page
+      const totalPages = (pages ?? []).length || 1;
+      const score = computeSeoScore({
+        critical: errors / totalPages,
+        warning: warnings / totalPages,
+        notice: notices / totalPages,
+      });
 
       return {
         domain: job.domain,

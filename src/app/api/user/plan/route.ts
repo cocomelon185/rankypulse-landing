@@ -27,7 +27,9 @@ export async function GET() {
     return NextResponse.json({ plan: "free", keywordsUsed: 0, keywordCap: 10 });
   }
 
-  const plan = data.plan ?? "free";
+  // Admin users get full "pro" access regardless of DB plan
+  const isAdmin = session.user.role === "admin";
+  const plan = isAdmin ? "pro" : (data.plan ?? "free");
   const keywordCap = getKeywordCap(plan);
 
   // Count tracked keywords for this user
