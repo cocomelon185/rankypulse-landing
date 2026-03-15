@@ -6,9 +6,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Zap, CheckCircle, ChevronRight, AlertTriangle,
     XCircle, AlertCircle, ExternalLink, Check, X, Loader2,
-    ChevronDown, Copy, Target, Shield, Sparkles, Globe, Lock,
+    ChevronDown, Copy, Target, Shield, Sparkles, Globe, Lock, TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
+import { ScoreRevealModal } from "@/components/action-center/ScoreRevealModal";
+import type { FixedTaskSummary } from "@/components/action-center/ScoreRevealModal";
 
 // ── Enriched Task interface (matches API v5 response) ────────────────────────
 
@@ -138,6 +140,8 @@ export function ActionCenterClient() {
     const [allDomains, setAllDomains] = useState<string[]>([]);
     const [seoScore, setSeoScore] = useState(0);
     const [projectedScore, setProjectedScore] = useState(0);
+    const [earnedPoints, setEarnedPoints] = useState(0);
+    const [showReveal, setShowReveal] = useState(false);
     const [userPlan, setUserPlan] = useState<"free" | "starter" | "pro">("free");
 
     // UI state
@@ -253,6 +257,7 @@ export function ActionCenterClient() {
             setAllDomains(data.allDomains);
             setSeoScore(data.seoScore);
             setProjectedScore(data.projectedScore);
+            setEarnedPoints(data.earnedPoints);
         } catch {
             setTasks([]);
         } finally {
@@ -279,10 +284,11 @@ export function ActionCenterClient() {
         const newStatus = task.status === "done" ? "todo" : "done";
         setSaving(task.id);
 
-        // Optimistic update
+        // Optimistic update — also reflect earned points so the live score ring reacts immediately
         setTasks(prev => prev.map(t =>
             t.id === task.id ? { ...t, status: newStatus as "todo" | "done", progress: newStatus === "done" ? 100 : 0 } : t
         ));
+        setEarnedPoints(prev => newStatus === "done" ? prev + task.estimatedPoints : Math.max(0, prev - task.estimatedPoints));
 
         try {
             await fetch("/api/action-center/complete", {
@@ -340,6 +346,16 @@ export function ActionCenterClient() {
     const quickWins = tasks.filter(t => t.effort === "easy" && t.status !== "done").length;
     const pointsRemaining = tasks.filter(t => t.status !== "done").reduce((s, t) => s + t.estimatedPoints, 0);
     const progressPct = tasks.length > 0 ? Math.round((doneTasks / tasks.length) * 100) : 0;
+
+    // Live score: cached score + what the user has already fixed (optimistic, pre-crawl)
+    const liveScore = doneTasks > 0
+        ? Math.min(projectedScore, seoScore + earnedPoints)
+        : seoScore;
+
+    // Summary of fixed tasks for the ScoreRevealModal
+    const fixedTaskSummaries: FixedTaskSummary[] = tasks
+        .filter(t => t.status === "done")
+        .map(t => ({ issueId: t.issueId, title: t.title, estimatedPoints: t.estimatedPoints, severity: t.severity }));
 
     const selectedTaskData = tasks.find(t => t.id === selectedTask);
 
@@ -410,14 +426,32 @@ export function ActionCenterClient() {
             {tasks.length > 0 && (
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
                     {/* Score Ring Card */}
-                    <div className="col-span-2 lg:col-span-1 rounded-xl border p-4 flex flex-col items-center justify-center"
-                        style={{ background: "#151B27", borderColor: "#1E2940" }}>
-                        <ScoreRing score={seoScore} size={80} />
-                        <p className="text-[11px] font-medium mt-2" style={{ color: "#6B7A99" }}>SEO Score</p>
-                        {projectedScore > seoScore && (
-                            <p className="text-[10px] font-semibold mt-0.5" style={{ color: "#00C853" }}>
-                                → {projectedScore} if all fixed
+                    <div className="col-span-2 lg:col-span-1 rounded-xl border p-4 flex flex-col items-center justify-center relative overflow-hidden"
+                        style={{
+                            background: "#151B27",
+                            borderColor: doneTasks > 0 ? "rgba(0,200,83,0.3)" : "#1E2940",
+                            boxShadow: doneTasks > 0 ? "0 0 0 1px rgba(0,200,83,0.15)" : "none",
+                        }}>
+                        {/* Live score ring (animated to liveScore when tasks are done) */}
+                        <ScoreRing score={liveScore} size={80} />
+                        <p className="text-[11px] font-medium mt-2" style={{ color: "#6B7A99" }}>
+                            {doneTasks > 0 ? "Live Score" : "SEO Score"}
+                        </p>
+                        {doneTasks > 0 && liveScore > seoScore && (
+                            <p className="text-[10px] font-bold mt-0.5" style={{ color: "#00C853" }}>
+                                +{liveScore - seoScore} pts gained
                             </p>
+                        )}
+                        {/* See Score Boost CTA */}
+                        {doneTasks > 0 && (
+                            <button
+                                onClick={() => setShowReveal(true)}
+                                className="mt-2.5 w-full flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-bold transition hover:opacity-90"
+                                style={{ background: "rgba(0,200,83,0.12)", color: "#00C853", border: "1px solid rgba(0,200,83,0.2)" }}
+                            >
+                                <TrendingUp size={11} />
+                                See Score Boost
+                            </button>
                         )}
                     </div>
 
@@ -1116,6 +1150,16 @@ export function ActionCenterClient() {
                     </div>
                 </>
             )}
+
+            {/* ═══ Score Reveal Modal ═══ */}
+            <ScoreRevealModal
+                isOpen={showReveal}
+                onClose={() => setShowReveal(false)}
+                oldScore={seoScore}
+                newScore={liveScore}
+                fixedTasks={fixedTaskSummaries}
+                domain={domain ?? "your site"}
+            />
         </div>
     );
 }
