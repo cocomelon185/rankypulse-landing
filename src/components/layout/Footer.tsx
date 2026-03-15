@@ -8,7 +8,7 @@ export function Footer() {
         <footer className="w-full mt-auto border-t border-[#1e2336] bg-[#0c0e14] py-8">
             <div className="max-w-[1600px] mx-auto px-4 md:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex flex-col md:flex-row items-center gap-2 md:gap-6 text-sm text-[#545a72]">
-                    <Link href="/dashboard" className="flex items-center gap-2 mr-4">
+                    <Link href="/app/dashboard" className="flex items-center gap-2 mr-4">
                         <div
                             className="w-6 h-6 rounded bg-gradient-to-tr from-[#f97316] to-[#fb923c] flex items-center justify-center -rotate-12 transform shadow-lg shadow-[#f97316]/20"
                         >

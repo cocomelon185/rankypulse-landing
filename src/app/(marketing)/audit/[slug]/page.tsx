@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { getAuditLanding } from "@/lib/pseo/auditPages";
 import { Check } from "lucide-react";
 import { AuditCtaForm } from "../AuditCtaForm";
+import { clampTitle, clampDesc } from "@/lib/metadata";
 
 const BASE_URL = "https://rankypulse.com";
 
@@ -17,14 +18,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!page) return { title: "Not Found" };
 
   const canonical = `/audit/${slug}`;
+  const title = clampTitle(page.metaTitle);
+  const description = clampDesc(page.metaDescription);
   return {
-    title: page.metaTitle,
-    description: page.metaDescription,
+    title,
+    description,
     alternates: { canonical },
     robots: { index: true, follow: true },
     openGraph: {
-      title: page.metaTitle,
-      description: page.metaDescription,
+      title,
+      description,
       url: canonical,
       siteName: "RankyPulse",
       type: "article",
@@ -32,8 +35,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title: page.metaTitle,
-      description: page.metaDescription,
+      title,
+      description,
     },
   };
 }

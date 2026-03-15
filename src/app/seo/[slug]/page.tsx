@@ -1,3 +1,5 @@
+import { clampTitle, clampDesc } from "@/lib/metadata";
+
 const pages = {
   "seo-audit-tool": {
     title: "Free SEO Audit Tool",
@@ -40,8 +42,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 
   return {
-    title: `${page.title} | RankyPulse`,
-    description: page.description
+    title: clampTitle(`${page.title} | RankyPulse`),
+    description: clampDesc(page.description),
   };
 }
 

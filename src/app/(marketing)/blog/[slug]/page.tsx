@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { BLOG_POSTS } from '@/lib/blog-posts';
 import { BlogPost } from '@/components/blog/BlogPost';
+import { clampTitle, clampDesc } from '@/lib/metadata';
 
 export function generateStaticParams() {
   return BLOG_POSTS.map(post => ({ slug: post.slug }));
@@ -15,12 +16,14 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = BLOG_POSTS.find(p => p.slug === slug);
   if (!post) return {};
+  const title = clampTitle(`${post.title} | RankyPulse`);
+  const description = clampDesc(post.excerpt);
   return {
-    title: { absolute: `${post.title} | RankyPulse` },
-    description: post.excerpt,
+    title: { absolute: title },
+    description,
     openGraph: {
-      title: post.title,
-      description: post.excerpt,
+      title: clampTitle(post.title),
+      description,
       type: 'article',
       publishedTime: post.publishedAt,
     },
