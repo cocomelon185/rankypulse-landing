@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: { absolute: "Forgot Username | RankyPulse" },
   description: "Get a reminder of your RankyPulse username.",
   robots: { index: false },
+  alternates: { canonical: "https://rankypulse.com/auth/forgot-username" },
 };
 
 export default function ForgotUsernamePage() {

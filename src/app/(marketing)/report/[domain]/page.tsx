@@ -13,6 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${domain} — SEO Audit`,
     description: `Free SEO audit for ${domain}. See what's broken, how much traffic it's costing you, and how to fix each issue in minutes.`,
     robots: { index: false, follow: false },
+    alternates: { canonical: `https://rankypulse.com/report/${domain}` },
   };
 }
 

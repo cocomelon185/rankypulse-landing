@@ -162,7 +162,7 @@ export async function GET(req: NextRequest) {
     const homepageWww  = `https://www.${targetDomain}`;
     const orphanUrls   = new Set(
       pages.map(p => p.url).filter(
-        url => url !== homepage && url !== homepageWww && !linkedSet.has(url)
+        url => url !== "__site_level__" && url !== homepage && url !== homepageWww && !linkedSet.has(url)
       )
     );
 

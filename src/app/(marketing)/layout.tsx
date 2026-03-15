@@ -37,9 +37,6 @@ export const metadata: Metadata = {
     follow: true,
     googleBot: { index: true, follow: true },
   },
-  alternates: {
-    canonical: "https://rankypulse.com",
-  },
   openGraph: {
     type: "website",
     url: "https://rankypulse.com",

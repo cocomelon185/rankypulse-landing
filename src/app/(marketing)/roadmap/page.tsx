@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "30-Day Growth Roadmap | RankyPulse",
   description:
     "Your personalised 30-day SEO sprint — synthesised from audit, link, and keyword data.",
+  alternates: { canonical: "https://rankypulse.com/roadmap" },
 };
 
 export default function RoadmapPage() {

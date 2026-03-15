@@ -4,6 +4,7 @@ export const metadata: Metadata = {
     title: { absolute: "Cookie Policy | RankyPulse" },
     description:
         "Learn how RankyPulse uses cookies. We keep it minimal: only essential session cookies and optional analytics.",
+    alternates: { canonical: "https://rankypulse.com/cookies" },
 };
 
 export default function CookiesPage() {

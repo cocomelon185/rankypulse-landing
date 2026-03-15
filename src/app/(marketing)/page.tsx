@@ -1,4 +1,9 @@
+import type { Metadata } from "next";
 import { AppNavbar } from "@/components/layout/Navbar";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "https://rankypulse.com" },
+};
 import { Hero } from "@/components/landing/Hero";
 import { TrustProofSection } from "@/components/landing/TrustProofSection";
 import { FeatureGrid } from "@/components/landing/FeatureGrid";

@@ -20,14 +20,10 @@ export function CanonicalFixer() {
       const pathName = window.location.pathname;
       const search = window.location.search;
 
-      // Construct canonical URL (normalize to www)
+      // Construct canonical URL (use non-www to match metadataBase)
       let domain = "rankypulse.com";
-      if (window.location.hostname === "www.rankypulse.com") {
-        domain = "www.rankypulse.com";
-      } else if (window.location.hostname !== "rankypulse.com") {
+      if (window.location.hostname !== "rankypulse.com" && window.location.hostname !== "www.rankypulse.com") {
         domain = window.location.hostname;
-      } else {
-        domain = "www.rankypulse.com";
       }
 
       const canonicalUrl = `https://${domain}${pathName}${search}`;

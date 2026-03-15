@@ -21,6 +21,7 @@ export async function generateMetadata({
   return {
     title: { absolute: title },
     description,
+    alternates: { canonical: `https://rankypulse.com/blog/${slug}` },
     openGraph: {
       title: clampTitle(post.title),
       description,
