@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     robots: { index: true, follow: true },
     openGraph: {
         title: "Free SEO Tools | RankyPulse",
-        description: "Free SEO tools: site audit, meta tag checker, rank tracker, and more.",
+        description: "Audit your site, check SEO optimization, analyze competitors, track rankings, and research keywords with our suite of free and Pro tools.",
         url: "/tools",
         siteName: "RankyPulse",
         type: "website",
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     twitter: {
         card: "summary_large_image",
         title: "Free SEO Tools | RankyPulse",
-        description: "Free SEO tools: site audit, meta tag checker, rank tracker, and more.",
+        description: "Everything for SEO success: free site audits, meta tag analysis, rank tracking, backlink insights, and competitive intelligence.",
     },
 };
 
