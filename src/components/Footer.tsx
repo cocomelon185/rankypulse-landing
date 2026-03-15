@@ -34,10 +34,28 @@ export function Footer() {
               Run free audit
             </Link>
             <Link
+              href="/seo-audit-tool"
+              className="text-sm text-gray-600 transition-colors hover:text-[#4318ff]"
+            >
+              SEO Audit Tool
+            </Link>
+            <Link
+              href="/seo-audit-for-wordpress"
+              className="text-sm text-gray-600 transition-colors hover:text-[#4318ff]"
+            >
+              WordPress Audit
+            </Link>
+            <Link
               href="/contact"
               className="text-sm text-gray-600 transition-colors hover:text-[#4318ff]"
             >
               Contact
+            </Link>
+            <Link
+              href="/cookies"
+              className="text-sm text-gray-600 transition-colors hover:text-[#4318ff]"
+            >
+              Cookies
             </Link>
             <Link
               href="/auth/signin"
