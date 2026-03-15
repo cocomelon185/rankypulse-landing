@@ -11,6 +11,9 @@ import { useAuditStore } from "@/lib/use-audit";
 import { useActiveAudit } from "@/lib/audit-context";
 import { ShareScoreCard } from "./ShareScoreCard";
 import { ReauditButton } from "./ReauditButton";
+import { ScoreSparkline } from "./ScoreSparkline";
+import { NicheBenchmarkWidget } from "./NicheBenchmarkWidget";
+import { TrafficOpportunityCard } from "./TrafficOpportunityCard";
 
 function MetricCard({
   value,
@@ -197,6 +200,11 @@ export function AuditHero() {
             SEO Health Score
           </p>
           <ScoreGauge score={adjustedScore} />
+          {data.scoreHistory.length >= 2 && (
+            <div className="mt-3">
+              <ScoreSparkline history={data.scoreHistory} />
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col justify-center gap-4">
@@ -343,6 +351,12 @@ export function AuditHero() {
           delay={800}
           color="var(--accent-primary)"
         />
+      </div>
+
+      {/* Enhancement widgets row */}
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <TrafficOpportunityCard />
+        <NicheBenchmarkWidget />
       </div>
     </motion.section>
   );

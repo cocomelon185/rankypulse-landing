@@ -4,6 +4,13 @@ import { create } from "zustand";
 import type { AuditData, AuditIssueData } from "./audit-data";
 import { MOCK_AUDIT } from "./audit-data";
 
+export interface BrandingConfig {
+  logoUrl: string | null;
+  primaryColor: string;
+  shareEnabled: boolean;
+  sharePassword: string;
+}
+
 interface AuditState {
   data: AuditData;
   completedFixIds: string[];
@@ -12,6 +19,7 @@ interface AuditState {
   expandedIssueId: string | null;
   isLoading: boolean;
   loadError: string | null;
+  brandingConfig: BrandingConfig;
 
   setData: (data: AuditData) => void;
   setLoading: (loading: boolean) => void;
@@ -20,6 +28,7 @@ interface AuditState {
   skipIssue: (issueId: string) => void;
   setActiveIssue: (issueId: string | null) => void;
   setExpandedIssue: (issueId: string | null) => void;
+  setBrandingConfig: (patch: Partial<BrandingConfig>) => void;
 
   openIssues: () => AuditIssueData[];
   fixedIssues: () => AuditIssueData[];
@@ -39,6 +48,12 @@ export const useAuditStore = create<AuditState>((set, get) => ({
   expandedIssueId: null,
   isLoading: false,
   loadError: null,
+  brandingConfig: {
+    logoUrl: null,
+    primaryColor: "#FF642D",
+    shareEnabled: false,
+    sharePassword: "",
+  },
 
   setData: (data) => set({ data, completedFixIds: [], skippedIds: [], loadError: null, isLoading: false }),
   setLoading: (loading) => set({ isLoading: loading }),
@@ -67,6 +82,8 @@ export const useAuditStore = create<AuditState>((set, get) => ({
   },
 
   setActiveIssue: (id) => set({ activeIssueId: id }),
+  setBrandingConfig: (patch) =>
+    set((s) => ({ brandingConfig: { ...s.brandingConfig, ...patch } })),
   setExpandedIssue: (id) =>
     set((state) => ({
       expandedIssueId: state.expandedIssueId === id ? null : id,
