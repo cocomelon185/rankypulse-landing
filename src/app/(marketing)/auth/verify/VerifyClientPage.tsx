@@ -59,6 +59,10 @@ export function VerifyClientPage() {
           <span className="font-['Fraunces'] text-xl font-bold text-white">RankyPulse</span>
         </Link>
 
+        <h1 className="font-['Fraunces'] text-3xl font-bold text-white mb-4">
+          Verify your email address
+        </h1>
+
         {status === "verifying" && (
           <div className="mt-4">
             <Loader2 size={24} className="mx-auto mb-3 animate-spin text-indigo-400" />

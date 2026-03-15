@@ -87,7 +87,7 @@ export default function SignUpClientPage() {
             </span>
           </Link>
           <h1 className="font-['Fraunces'] text-3xl font-bold text-white">
-            Create account
+            Create your RankyPulse account
           </h1>
           <p className="mt-2 font-['DM_Sans'] text-sm text-gray-500">
             Sign up to get more audits and unlock premium features

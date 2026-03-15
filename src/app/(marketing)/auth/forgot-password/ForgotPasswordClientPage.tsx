@@ -60,7 +60,7 @@ export default function ForgotPasswordClientPage() {
             </span>
           </Link>
           <h1 className="font-['Fraunces'] text-3xl font-bold text-white">
-            Forgot password?
+            Reset your RankyPulse password
           </h1>
           <p className="mt-2 font-['DM_Sans'] text-sm text-gray-500">
             Enter your email and we&apos;ll send you a reset link
