@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { LinkOpportunityTable } from "@/components/audit/v2/LinkOpportunityTable";
+import { AnchorAnalysis } from "@/components/audit/v2/AnchorAnalysis";
 import {
   Network,
   AlertTriangle,
@@ -598,192 +600,16 @@ function PagesTab({
 
 // ── Opportunities Tab ─────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function OpportunitiesTab({ opportunities }: { opportunities: LinkOpportunity[] }) {
-  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
-  const [visibleCount, setVisibleCount] = useState(10);
-
-  async function copyOpportunity(opp: LinkOpportunity, idx: number) {
-    const text = `Add a link from ${opp.sourcePage} → ${opp.targetPage}`;
-    await navigator.clipboard.writeText(text);
-    setCopiedIdx(idx);
-    setTimeout(() => setCopiedIdx(null), 2000);
-  }
-
-  if (opportunities.length === 0) {
-    return <EmptyState message="No link opportunities found. Your internal linking looks solid!" />;
-  }
-
-  return (
-    <div className="space-y-3">
-      <p className="text-xs" style={{ color: TEXT_MUTED }}>
-        {opportunities.length} link opportunity{opportunities.length !== 1 ? "ies" : ""} detected — pages at similar depth that don't yet link to each other.
-      </p>
-
-      {opportunities.slice(0, visibleCount).map((opp, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: Math.min(i * 0.03, 0.3) }}
-          className="rounded-xl border p-4"
-          style={{ background: CARD_BG, borderColor: BORDER }}
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <p className="text-xs mb-2" style={{ color: TEXT_MUTED }}>
-                Add a link from:
-              </p>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span
-                  className="text-xs font-mono px-2 py-1 rounded truncate max-w-[200px]"
-                  style={{ background: "#0D1424", color: "#94A3B8" }}
-                  title={opp.sourcePage}
-                >
-                  {pathOnly(opp.sourcePage)}
-                </span>
-                <ArrowRight size={14} style={{ color: ACCENT, flexShrink: 0 }} />
-                <span
-                  className="text-xs font-mono px-2 py-1 rounded truncate max-w-[200px]"
-                  style={{ background: "#0D1424", color: "#94A3B8" }}
-                  title={opp.targetPage}
-                >
-                  {pathOnly(opp.targetPage)}
-                </span>
-              </div>
-              <p className="text-[11px] mt-2" style={{ color: TEXT_MUTED }}>
-                Reason: <span style={{ color: "#C8D0E0" }}>{opp.reason}</span>
-              </p>
-            </div>
-            <button
-              onClick={() => copyOpportunity(opp, i)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap"
-              style={
-                copiedIdx === i
-                  ? { background: "rgba(34,197,94,0.12)", color: "#22C55E" }
-                  : { background: BORDER, color: TEXT_DIM }
-              }
-            >
-              {copiedIdx === i ? (
-                <><Check size={12} /> Copied</>
-              ) : (
-                <><Copy size={12} /> Copy Suggestion</>
-              )}
-            </button>
-          </div>
-        </motion.div>
-      ))}
-
-      {visibleCount < opportunities.length && (
-        <button
-          onClick={() => setVisibleCount((v) => v + 10)}
-          className="w-full py-2.5 rounded-xl border text-sm font-medium transition-colors"
-          style={{ borderColor: BORDER, color: TEXT_DIM }}
-        >
-          Load {Math.min(10, opportunities.length - visibleCount)} more opportunities
-        </button>
-      )}
-    </div>
-  );
+  return <LinkOpportunityTable />;
 }
 
 // ── Anchors Tab ───────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function AnchorsTab({ anchorSummary }: { anchorSummary: AnchorSummary }) {
-  // Detect duplicate anchor → multiple targets
-  const anchorTargetMap = new Map<string, string[]>();
-  for (const entry of anchorSummary.topAnchors) {
-    const existing = anchorTargetMap.get(entry.text) ?? [];
-    if (!existing.includes(entry.targetPage)) existing.push(entry.targetPage);
-    anchorTargetMap.set(entry.text, existing);
-  }
-
-  return (
-    <div className="space-y-4">
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard
-          label="Total Anchor Uses"
-          value={anchorSummary.totalAnchors.toLocaleString()}
-          sublabel="internal links with computed anchor"
-        />
-        <StatCard
-          label="Unique Anchors"
-          value={anchorSummary.uniqueAnchors.toLocaleString()}
-          sublabel="distinct anchor text values"
-        />
-      </div>
-
-      {/* Table */}
-      <div className="rounded-xl border overflow-hidden" style={{ borderColor: BORDER }}>
-        <table className="w-full text-sm">
-          <thead>
-            <tr style={{ background: "#0D1424", borderBottom: `1px solid ${BORDER}` }}>
-              <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
-                Anchor Text (from URL)
-              </th>
-              <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
-                Usage Count
-              </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" style={{ color: TEXT_MUTED }}>
-                Target Page
-              </th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {anchorSummary.topAnchors.map((entry, i) => {
-              const targets = anchorTargetMap.get(entry.text) ?? [];
-              const isDuplicate = targets.length > 1;
-              return (
-                <tr
-                  key={`${entry.text}-${i}`}
-                  style={{
-                    background: isDuplicate
-                      ? "rgba(245,158,11,0.04)"
-                      : i % 2 === 0
-                      ? CARD_BG
-                      : "#0D1424",
-                    borderBottom: `1px solid ${BORDER}`,
-                  }}
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {isDuplicate && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 whitespace-nowrap">
-                          Duplicate
-                        </span>
-                      )}
-                      <span className="text-xs font-medium" style={{ color: "#C8D0E0" }}>
-                        {entry.text}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right font-mono text-xs" style={{ color: "#C8D0E0" }}>
-                    {entry.count}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs truncate max-w-[200px]" style={{ color: "#64748B" }}>
-                    {pathOnly(entry.targetPage)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <CopyBtn text={entry.targetPage} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-
-        {anchorSummary.topAnchors.length === 0 && (
-          <EmptyState message="No anchor data available for this domain." />
-        )}
-      </div>
-
-      <p className="text-[11px]" style={{ color: TEXT_MUTED }}>
-        * Anchor text is derived from the target URL path since the crawler stores links as URL arrays.
-        Actual anchor text may differ from page source.
-      </p>
-    </div>
-  );
+  return <AnchorAnalysis />;
 }
 
 // ── No-data state ─────────────────────────────────────────────────────────────
