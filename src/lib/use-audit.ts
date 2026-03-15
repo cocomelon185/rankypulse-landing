@@ -4,6 +4,17 @@ import { create } from "zustand";
 import type { AuditData, AuditIssueData } from "./audit-data";
 import { MOCK_AUDIT } from "./audit-data";
 
+export interface RoadmapTask {
+  id: string;
+  type: "CONTENT" | "LINK" | "TECHNICAL";
+  title: string;
+  description: string;
+  impact: "HIGH" | "MED";
+  effort: string;
+  status: "TODO" | "DONE";
+  addedAt: number;
+}
+
 export interface BrandingConfig {
   logoUrl: string | null;
   primaryColor: string;
@@ -20,6 +31,7 @@ interface AuditState {
   isLoading: boolean;
   loadError: string | null;
   brandingConfig: BrandingConfig;
+  roadmapTasks: RoadmapTask[];
 
   setData: (data: AuditData) => void;
   setLoading: (loading: boolean) => void;
@@ -29,6 +41,9 @@ interface AuditState {
   setActiveIssue: (issueId: string | null) => void;
   setExpandedIssue: (issueId: string | null) => void;
   setBrandingConfig: (patch: Partial<BrandingConfig>) => void;
+  addTaskToRoadmap: (task: RoadmapTask) => void;
+  removeTask: (id: string) => void;
+  toggleTaskStatus: (id: string) => void;
 
   openIssues: () => AuditIssueData[];
   fixedIssues: () => AuditIssueData[];
@@ -54,6 +69,20 @@ export const useAuditStore = create<AuditState>((set, get) => ({
     shareEnabled: false,
     sharePassword: "",
   },
+  roadmapTasks: [],
+
+  addTaskToRoadmap: (task) =>
+    set((s) => ({ roadmapTasks: [...s.roadmapTasks, task] })),
+
+  removeTask: (id) =>
+    set((s) => ({ roadmapTasks: s.roadmapTasks.filter((t) => t.id !== id) })),
+
+  toggleTaskStatus: (id) =>
+    set((s) => ({
+      roadmapTasks: s.roadmapTasks.map((t) =>
+        t.id === id ? { ...t, status: t.status === "DONE" ? "TODO" : "DONE" } : t
+      ),
+    })),
 
   setData: (data) => set({ data, completedFixIds: [], skippedIds: [], loadError: null, isLoading: false }),
   setLoading: (loading) => set({ isLoading: loading }),

@@ -9,6 +9,7 @@ import { fireFixConfetti } from "@/lib/confetti";
 import { EffortImpactBadge } from "./EffortImpactBadge";
 import { FixAssistantDrawer } from "./FixAssistantDrawer";
 import { GlossaryTooltip, GLOSSARY } from "./GlossaryTooltip";
+import { AddToRoadmapButton } from "./AddToRoadmapButton";
 
 interface IssueCardProps {
   issue: AuditIssueData;
@@ -187,6 +188,19 @@ export function IssueCard({
                   <Check className="h-4 w-4" />
                   {isFixing ? "Marking..." : "Mark as Fixed"}
                 </button>
+                <AddToRoadmapButton
+                  task={{
+                    id: `issue-${issue.id}`,
+                    type: "TECHNICAL",
+                    title: issue.title,
+                    description: issue.description,
+                    impact:
+                      issue.priority === "critical" || issue.priority === "high"
+                        ? "HIGH"
+                        : "MED",
+                    effort: `${issue.timeEstimateMinutes} min`,
+                  }}
+                />
                 {issue.learnMoreUrl && (
                   <a
                     href={issue.learnMoreUrl}

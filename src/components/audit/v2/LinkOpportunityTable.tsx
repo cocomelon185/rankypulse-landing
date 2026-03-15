@@ -13,6 +13,7 @@ import {
   Layers,
 } from "lucide-react";
 import { toast } from "sonner";
+import { AddToRoadmapButton } from "./AddToRoadmapButton";
 
 // ── Styling constants (matching InternalLinksClient.tsx palette) ───────────────
 const CARD_BG   = "#151B27";
@@ -347,6 +348,16 @@ export function LinkOpportunityTable() {
                     <CheckCircle2 size={12} />
                     Mark as Implemented
                   </button>
+                  <AddToRoadmapButton
+                    task={{
+                      id: `link-${s.id}`,
+                      type: "LINK",
+                      title: `Add link: ${s.anchorText} → ${s.targetPage}`,
+                      description: `From ${s.sourcePage}: ${s.contextSnippet}`,
+                      impact: s.impact >= 75 ? "HIGH" : "MED",
+                      effort: "15 min",
+                    }}
+                  />
                 </div>
               </motion.div>
             );
