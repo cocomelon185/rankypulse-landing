@@ -212,11 +212,14 @@ export async function getDashboardData(userId: string, domain: string): Promise<
       .eq("job_id", latestJob.id);
 
     if (pages) {
-      auditPages = pages.map((p) => ({
-        url: p.url,
-        score: p.score ?? 0,
-        issues: Array.isArray(p.issues) ? (p.issues as AuditIssue[]) : [],
-      }));
+      // Exclude __site_level__ synthetic page from score computation
+      auditPages = pages
+        .filter((p) => p.url !== "__site_level__")
+        .map((p) => ({
+          url: p.url,
+          score: p.score ?? 0,
+          issues: Array.isArray(p.issues) ? (p.issues as AuditIssue[]) : [],
+        }));
     }
   }
 

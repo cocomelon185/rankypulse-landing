@@ -180,13 +180,15 @@ export async function GET(req: NextRequest) {
     const jobId = latestJob.id;
     const domain = latestJob.domain;
 
-    // ── 3. Parse pages ──────────────────────────────────────────────────
-    const pages = rawPages.map((p) => ({
-      url: p.url as string,
-      score: p.score as number,
-      issues: Array.isArray(p.issues) ? (p.issues as RawIssue[]) : [],
-      metadata: (p.metadata as PageMetadata) ?? null,
-    }));
+    // ── 3. Parse pages (exclude __site_level__ synthetic row) ──────────
+    const pages = rawPages
+      .filter((p) => p.url !== "__site_level__")
+      .map((p) => ({
+        url: p.url as string,
+        score: p.score as number,
+        issues: Array.isArray(p.issues) ? (p.issues as RawIssue[]) : [],
+        metadata: (p.metadata as PageMetadata) ?? null,
+      }));
 
     // ── 4. Aggregate issues + track affected URLs per issue ─────────────
     const issueMap: Record<string, { sev: string; count: number; urls: string[] }> = {};

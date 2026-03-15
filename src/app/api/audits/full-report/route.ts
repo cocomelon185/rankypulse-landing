@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { ISSUE_META } from "@/lib/dashboard-data";
-import { calculateSeoScore } from "@/lib/seo-score";
+import { computeSeoScore } from "@/lib/seo-score";
 import { resolveSharedAuditContext } from "@/lib/shared-audits";
 
 type IssueSeverity = "error" | "warning" | "notice";
@@ -95,18 +95,34 @@ export async function GET(req: Request) {
             .select("url, score, issues")
             .eq("job_id", job.id);
 
-        const pages = (rawPages ?? []).map((p) => ({
-            url: p.url as string,
-            score: p.score as number | null,
-            issues: Array.isArray(p.issues) ? (p.issues as CompactIssue[]) : [],
-        }));
+        // Exclude __site_level__ synthetic page
+        const pages = (rawPages ?? [])
+            .filter((p) => p.url !== "__site_level__")
+            .map((p) => ({
+                url: p.url as string,
+                score: p.score as number | null,
+                issues: Array.isArray(p.issues) ? (p.issues as CompactIssue[]) : [],
+            }));
 
         if (pages.length === 0) {
             return NextResponse.json({ noData: true, domain });
         }
 
-        // ── Site Health Score ────────────────────────────────────────────────
-        const avgScore = calculateSeoScore(pages);
+        // ── Site Health Score (density-based, same formula as all pages) ─────
+        let critOcc = 0, warnOcc = 0, noticeOcc = 0;
+        for (const page of pages) {
+            for (const iss of page.issues) {
+                if (iss.sev === "HIGH") critOcc++;
+                else if (iss.sev === "MED") warnOcc++;
+                else noticeOcc++;
+            }
+        }
+        const totalPg = pages.length || 1;
+        const avgScore = computeSeoScore({
+            critical: critOcc / totalPg,
+            warning: warnOcc / totalPg,
+            notice: noticeOcc / totalPg,
+        });
 
         // ── Page breakdown ───────────────────────────────────────────────────
         const pageBreakdown = { healthy: 0, broken: 0, hasIssues: 0, redirects: 0, blocked: 0 };

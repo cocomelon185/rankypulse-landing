@@ -691,12 +691,13 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                     </div>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                    <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition hover:bg-white/[0.04] relative"
-                        style={{ borderColor: "#1E2940", color: "#8B9BB4" }} title="Pro feature">
+                    <button onClick={() => window.print()}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition hover:bg-white/[0.04] relative"
+                        style={{ borderColor: "#1E2940", color: "#8B9BB4" }}>
                         <Download size={12} /> Export PDF
-                        <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold px-1 rounded" style={{ background: "#FF9800", color: "white" }}>PRO</span>
                     </button>
-                    <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition hover:bg-white/[0.04]"
+                    <button onClick={() => { navigator.clipboard.writeText(window.location.href); alert("Link copied to clipboard!"); }}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition hover:bg-white/[0.04]"
                         style={{ borderColor: "#1E2940", color: "#8B9BB4" }}>
                         <Share2 size={12} /> Share
                     </button>

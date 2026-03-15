@@ -377,7 +377,9 @@ function BlockedBotsCard({ bots }: { bots: { name: string; status: BotStatus }[]
         ))}
       </div>
       <a
-        href="#"
+        href="https://developers.google.com/search/docs/crawling-indexing/robots/intro"
+        target="_blank"
+        rel="noopener noreferrer"
         className="mt-3 block text-[11px] text-[#FF642D] hover:underline"
       >
         How to unblock pages ↗

@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { ISSUE_META } from "@/lib/dashboard-data";
-import { calculateSeoScore, computeSeoScore, calculateUrgencyMetrics } from "@/lib/seo-score";
+import { computeSeoScore, calculateUrgencyMetrics } from "@/lib/seo-score";
 import { resolveSharedAuditContext } from "@/lib/shared-audits";
 
 interface RawIssue {
@@ -77,10 +77,25 @@ export async function GET(req: NextRequest) {
       if (prevJob?.id) {
         const { data: prevPages } = await supabaseAdmin
           .from("audit_pages")
-          .select("score")
+          .select("url, issues")
           .eq("job_id", prevJob.id);
         if (prevPages && prevPages.length > 0) {
-          previousScore = calculateSeoScore(prevPages as { score: number | null }[]);
+          // Density-based previous score (same formula as current score)
+          const realPrev = prevPages.filter(p => p.url !== "__site_level__");
+          let prevCrit = 0, prevWarn = 0, prevNotice = 0;
+          for (const pg of realPrev) {
+            for (const iss of (Array.isArray(pg.issues) ? pg.issues : []) as { sev: string }[]) {
+              if (iss.sev === "HIGH") prevCrit++;
+              else if (iss.sev === "MED") prevWarn++;
+              else prevNotice++;
+            }
+          }
+          const prevTotal = realPrev.length || 1;
+          previousScore = computeSeoScore({
+            critical: prevCrit / prevTotal,
+            warning: prevWarn / prevTotal,
+            notice: prevNotice / prevTotal,
+          });
         }
       }
     } catch { /* non-critical */ }
@@ -105,7 +120,11 @@ export async function GET(req: NextRequest) {
     // ── Aggregate issues across all pages grouped by issue ID ─────────────────
     const issueMap: Record<string, { sev: string; count: number }> = {};
     const issueUrlMap: Record<string, string[]> = {};
+    // rawIssueMap: only persisted issues from real pages (no __site_level__, no derived)
+    // Used exclusively for the density-based score so it matches all other pages.
+    const rawIssueMap: Record<string, { sev: string; count: number }> = {};
     for (const page of pages) {
+      const isReal = page.url !== "__site_level__";
       for (const issue of page.issues ?? []) {
         if (!issueMap[issue.id]) {
           issueMap[issue.id] = { sev: issue.sev, count: 0 };
@@ -114,6 +133,11 @@ export async function GET(req: NextRequest) {
         issueMap[issue.id].count++;
         if (issueUrlMap[issue.id].length < 10) {
           issueUrlMap[issue.id].push(page.url);
+        }
+        // Only count real-page persisted issues for score density
+        if (isReal) {
+          if (!rawIssueMap[issue.id]) rawIssueMap[issue.id] = { sev: issue.sev, count: 0 };
+          rawIssueMap[issue.id].count++;
         }
       }
     }
@@ -208,30 +232,24 @@ export async function GET(req: NextRequest) {
       );
 
     // ── Density-based scoring (Semrush-style, normalized by page count) ───────
-    // Count total OCCURRENCES per severity (not just distinct issue types)
-    const totalCritical = Object.entries(issueMap)
+    // Use rawIssueMap (persisted issues from real pages only) for score density
+    // so it matches Projects, Dashboard, and Action Center pages exactly.
+    const rawEntries = Object.entries(rawIssueMap);
+    const totalCritical = rawEntries
       .filter(([, v]) => v.sev === "HIGH")
       .reduce((s, [, v]) => s + v.count, 0);
-    const totalWarning = Object.entries(issueMap)
+    const totalWarning = rawEntries
       .filter(([, v]) => v.sev === "MED")
       .reduce((s, [, v]) => s + v.count, 0);
-    const totalNotice = Object.entries(issueMap)
+    const totalNotice = rawEntries
       .filter(([, v]) => v.sev === "LOW")
       .reduce((s, [, v]) => s + v.count, 0);
 
-    // ── Detect showstoppers ───────────────────────────────────────────────────
-    // noHttps: http_pages issue detected OR any crawled page URL is http://
-    const noHttps = !!(issueMap["http_pages"]?.count) ||
-      pages.some(p => p.url.startsWith("http:"));
-    // notMobileFriendly: no_viewport issue detected on any page
-    const notMobileFriendly = !!(issueMap["no_viewport"]?.count);
-
-    // Compute density and apply showstoppers
+    // Compute density — no showstoppers, matching all other routes
     const density = {
       critical: totalPages > 0 ? totalCritical / totalPages : 0,
       warning:  totalPages > 0 ? totalWarning  / totalPages : 0,
       notice:   totalPages > 0 ? totalNotice   / totalPages : 0,
-      showstoppers: { noHttps, notMobileFriendly },
     };
 
     const finalScore = totalPages > 0 ? computeSeoScore(density) : 0;

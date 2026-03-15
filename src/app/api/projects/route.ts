@@ -25,14 +25,16 @@ export async function GET() {
   // For each domain, fetch score + issue counts from audit_pages
   const domains = await Promise.all(
     latestJobs.map(async (job) => {
-      const { data: pages } = await supabaseAdmin
+      const { data: rawPages } = await supabaseAdmin
         .from("audit_pages")
-        .select("score, issues")
+        .select("url, score, issues")
         .eq("job_id", job.id);
 
+      // Exclude __site_level__ synthetic page from score computation
+      const pages = (rawPages ?? []).filter(p => p.url !== "__site_level__");
       let errors = 0, warnings = 0, notices = 0;
 
-      for (const page of pages ?? []) {
+      for (const page of pages) {
         const rawIssues: Array<{ sev?: string; priority?: string }> = Array.isArray(page.issues)
           ? page.issues
           : [];

@@ -34,7 +34,7 @@ export interface AuditDensity {
  * Formula: score = 100 − (criticalDensity×10 + warningDensity×4 + noticeDensity×1)
  * Apply showstopper multipliers (×0.8 for HTTPS, ×0.7 for mobile-friendliness).
  * Soft floor at 20 — matches Ahrefs/Semrush practices (never shows 0).
- * Cap at 95 — no site is truly perfect.
+ * Max score is 100 — a perfect site with zero issues gets a perfect score.
  *
  * @param densities   Pre-computed density values (occurrences / pages)
  */
@@ -58,9 +58,9 @@ export function computeSeoScore(densities: AuditDensity): number {
   if (densities.showstoppers?.noHttps) score *= 0.8;        // 20% reduction
   if (densities.showstoppers?.notMobileFriendly) score *= 0.7; // 30% reduction
 
-  // Industry soft floor at 20, cap at 95
-  // Ensures tool never shows 0 (which looks like a bug) while staying authoritative
-  if (score > 95) score = 95;
+  // Soft floor at 20 — never shows 0 (looks like a bug)
+  // Max is 100 — a perfect site gets a perfect score
+  if (score > 100) score = 100;
   if (score < 20) score = 20;
   return Math.round(score);
 }
@@ -132,8 +132,7 @@ export function calculateSeoScore(pages: { score: number | null }[]): number {
   if (!pages.length) return 0;
   const total = pages.reduce((sum, p) => sum + (p.score ?? 0), 0);
   const avg = Math.round(total / pages.length);
-  // Cap at 95 — matches computeSeoScore guardrail
-  return Math.min(avg, 95);
+  return Math.min(avg, 100);
 }
 
 // ── Legacy SeoScoreInput shape (kept so any remaining callers don't break) ───
