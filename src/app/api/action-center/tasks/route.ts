@@ -280,13 +280,45 @@ export async function GET(req: NextRequest) {
       notice:   0,
     }) : 0;
 
+    // ── 7b. Compute currentProjected — score if only remaining (not-done) issues exist
+    const remainingCriticalOcc = issueEntries
+      .filter(([id, v]) => v.sev === "HIGH" && completionMap.get(id)?.status !== "done")
+      .reduce((s, [, v]) => s + v.count, 0);
+    const remainingWarningOcc = issueEntries
+      .filter(([id, v]) => v.sev === "MED" && completionMap.get(id)?.status !== "done")
+      .reduce((s, [, v]) => s + v.count, 0);
+    const remainingNoticeOcc = issueEntries
+      .filter(([id, v]) => v.sev === "LOW" && completionMap.get(id)?.status !== "done")
+      .reduce((s, [, v]) => s + v.count, 0);
+
+    const currentProjected = pages.length > 0 ? computeSeoScore({
+      critical: remainingCriticalOcc / totalPagesForDensity,
+      warning:  remainingWarningOcc  / totalPagesForDensity,
+      notice:   remainingNoticeOcc   / totalPagesForDensity,
+    }) : 0;
+
+    // ── 7c. Compute density-proportional estimatedPoints per issue ────────
+    //   Each issue's score impact = (count / totalPages) × severityWeight
+    //   Distribute maxDelta (projectedScore − seoScore) proportionally
+    const SEV_WEIGHT = { HIGH: 10, MED: 4, LOW: 1 } as const;
+    const rawContribMap = new Map<string, number>();
+    for (const [id, { sev, count }] of issueEntries) {
+      rawContribMap.set(id, (count / totalPagesForDensity) * (SEV_WEIGHT[sev as keyof typeof SEV_WEIGHT] ?? 1));
+    }
+    const totalDeduction = [...rawContribMap.values()].reduce((s, v) => s + v, 0);
+    const maxDelta = Math.max(0, projectedScore - seoScore);
+
     // ── 8. Transform issueMap → enriched Task[] ─────────────────────────
     const tasks: Task[] = issueEntries.map(([id, { sev, count, urls }], index) => {
       const meta = ISSUE_META[id];
       const content = ISSUE_CONTENT[id];
       const severity = sevToSeverity(sev);
       const effort = impactToEffort[meta?.impact ?? "medium"] ?? "medium";
-      const estimatedPoints = Math.round((basePoints[severity] ?? 3) * (1 + count / 100));
+      // Points proportional to this issue's actual density contribution
+      const rawContrib = rawContribMap.get(id) ?? 0;
+      const estimatedPoints = totalDeduction > 0 && maxDelta > 0
+        ? Math.max(1, Math.round((rawContrib / totalDeduction) * maxDelta))
+        : 0;
       const title = meta?.label ?? id.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
       const description = meta?.gain
         ? `${meta.gain}. Fix this issue to improve your SEO performance.`
@@ -339,6 +371,7 @@ export async function GET(req: NextRequest) {
       allDomains,
       seoScore,
       projectedScore,
+      currentProjected,
       totalPoints,
       earnedPoints,
     };

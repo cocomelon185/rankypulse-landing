@@ -42,6 +42,7 @@ interface ApiResponse {
     allDomains: string[];
     seoScore: number;
     projectedScore: number;
+    currentProjected: number;
     totalPoints: number;
     earnedPoints: number;
 }
@@ -140,7 +141,7 @@ export function ActionCenterClient() {
     const [allDomains, setAllDomains] = useState<string[]>([]);
     const [seoScore, setSeoScore] = useState(0);
     const [projectedScore, setProjectedScore] = useState(0);
-    const [earnedPoints, setEarnedPoints] = useState(0);
+    const [currentProjected, setCurrentProjected] = useState(0);
     const [showReveal, setShowReveal] = useState(false);
     const [userPlan, setUserPlan] = useState<"free" | "starter" | "pro">("free");
 
@@ -257,7 +258,7 @@ export function ActionCenterClient() {
             setAllDomains(data.allDomains);
             setSeoScore(data.seoScore);
             setProjectedScore(data.projectedScore);
-            setEarnedPoints(data.earnedPoints);
+            setCurrentProjected(data.currentProjected ?? data.seoScore);
         } catch {
             setTasks([]);
         } finally {
@@ -284,11 +285,16 @@ export function ActionCenterClient() {
         const newStatus = task.status === "done" ? "todo" : "done";
         setSaving(task.id);
 
-        // Optimistic update — also reflect earned points so the live score ring reacts immediately
+        // Optimistic update — adjust currentProjected based on density-proportional estimatedPoints
         setTasks(prev => prev.map(t =>
             t.id === task.id ? { ...t, status: newStatus as "todo" | "done", progress: newStatus === "done" ? 100 : 0 } : t
         ));
-        setEarnedPoints(prev => newStatus === "done" ? prev + task.estimatedPoints : Math.max(0, prev - task.estimatedPoints));
+        setCurrentProjected(prev => {
+            const delta = task.estimatedPoints;
+            return newStatus === "done"
+                ? Math.min(projectedScore, prev + delta)
+                : Math.max(seoScore, prev - delta);
+        });
 
         try {
             await fetch("/api/action-center/complete", {
@@ -344,13 +350,13 @@ export function ActionCenterClient() {
     const doneTasks = tasks.filter(t => t.status === "done").length;
     const criticalRemaining = tasks.filter(t => t.severity === "error" && t.status !== "done").length;
     const quickWins = tasks.filter(t => t.effort === "easy" && t.status !== "done").length;
-    const pointsRemaining = tasks.filter(t => t.status !== "done").reduce((s, t) => s + t.estimatedPoints, 0);
     const progressPct = tasks.length > 0 ? Math.round((doneTasks / tasks.length) * 100) : 0;
 
-    // Live score: cached score + what the user has already fixed (optimistic, pre-crawl)
-    const liveScore = doneTasks > 0
-        ? Math.min(projectedScore, seoScore + earnedPoints)
-        : seoScore;
+    // Live score: uses server-computed currentProjected (density-based, same formula as Site Audit)
+    const liveScore = doneTasks > 0 ? currentProjected : seoScore;
+
+    // Real remaining improvement (never exceeds projectedScore − liveScore)
+    const pointsToUnlock = Math.max(0, projectedScore - liveScore);
 
     // Summary of fixed tasks for the ScoreRevealModal
     const fixedTaskSummaries: FixedTaskSummary[] = tasks
@@ -458,7 +464,7 @@ export function ActionCenterClient() {
                     {/* KPI Cards */}
                     <KpiCard icon={XCircle} label="Critical Issues" value={String(criticalRemaining)} color="#FF3D3D" />
                     <KpiCard icon={Sparkles} label="Quick Wins Left" value={String(quickWins)} color="#00C853" />
-                    <KpiCard icon={Target} label="Points to Unlock" value={String(pointsRemaining)} color="#FF642D" />
+                    <KpiCard icon={Target} label="Points to Unlock" value={String(pointsToUnlock)} color="#FF642D" />
 
                     {/* Progress Card */}
                     <div className="rounded-xl border p-4" style={{ background: "#151B27", borderColor: "#1E2940" }}>
