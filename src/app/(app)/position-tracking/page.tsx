@@ -4,6 +4,8 @@ import PositionTrackingClient from "./PositionTrackingClient";
 export const metadata: Metadata = {
     title: "Position Tracking - Monitor Keyword Rankings | RankyPulse",
     description: "Track your keyword rankings and visibility over time in Google search.",
+    alternates: { canonical: "https://rankypulse.com/app/features/position-tracking" },
+    robots: { index: false, follow: false },
 };
 
 export default function PositionTrackingPage() {
