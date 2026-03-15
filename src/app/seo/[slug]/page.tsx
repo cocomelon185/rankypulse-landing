@@ -3,31 +3,38 @@ import { clampTitle, clampDesc } from "@/lib/metadata";
 const pages = {
   "seo-audit-tool": {
     title: "Free SEO Audit Tool",
-    description: "Run a free SEO audit and discover technical SEO issues affecting your website."
+    description: "Run a free SEO audit and discover technical SEO issues affecting your website.",
+    canonical: "https://rankypulse.com/seo-audit-tool"
   },
   "technical-seo-audit": {
     title: "Technical SEO Audit",
-    description: "Check crawlability, indexing, and technical SEO health."
+    description: "Check crawlability, indexing, and technical SEO health.",
+    canonical: "https://rankypulse.com/technical-seo-audit"
   },
   "meta-tag-checker": {
     title: "Meta Tag Checker",
-    description: "Analyze title tags and meta descriptions for SEO optimization."
+    description: "Analyze title tags and meta descriptions for SEO optimization.",
+    canonical: "https://rankypulse.com/meta-tag-checker"
   },
   "internal-link-checker": {
     title: "Internal Link Checker",
-    description: "Find internal linking opportunities and orphan pages."
+    description: "Find internal linking opportunities and orphan pages.",
+    canonical: "https://rankypulse.com/internal-link-checker"
   },
   "redirect-checker": {
     title: "Redirect Checker",
-    description: "Detect redirect chains and SEO redirect issues."
+    description: "Detect redirect chains and SEO redirect issues.",
+    canonical: "https://rankypulse.com/redirect-checker"
   },
   "competitor-seo-analysis": {
     title: "Competitor SEO Analysis",
-    description: "Analyze competitors and uncover SEO opportunities."
+    description: "Analyze competitors and uncover SEO opportunities.",
+    canonical: "https://rankypulse.com/seo/competitor-seo-analysis"
   },
   "keyword-gap-analysis": {
     title: "Keyword Gap Analysis",
-    description: "Find keywords your competitors rank for but you don't."
+    description: "Find keywords your competitors rank for but you don't.",
+    canonical: "https://rankypulse.com/seo/keyword-gap-analysis"
   }
 };
 
@@ -44,6 +51,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: clampTitle(`${page.title} | RankyPulse`),
     description: clampDesc(page.description),
+    alternates: {
+      canonical: page.canonical
+    }
   };
 }
 

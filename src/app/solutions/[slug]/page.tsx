@@ -1,15 +1,18 @@
 const pages = {
   "seo-audit-for-small-business": {
     title: "SEO Audit for Small Business",
-    description: "Find technical SEO issues and growth opportunities for small business websites."
+    description: "Find technical SEO issues and growth opportunities for small business websites.",
+    canonical: "https://rankypulse.com/seo-audit-for-small-business"
   },
   "seo-audit-for-shopify": {
     title: "SEO Audit for Shopify",
-    description: "Audit Shopify SEO issues including metadata, indexing, and site structure."
+    description: "Audit Shopify SEO issues including metadata, indexing, and site structure.",
+    canonical: "https://rankypulse.com/seo-audit-for-shopify"
   },
   "seo-audit-for-wordpress": {
     title: "SEO Audit for WordPress",
-    description: "Run a WordPress SEO audit to find technical and on-page issues quickly."
+    description: "Run a WordPress SEO audit to find technical and on-page issues quickly.",
+    canonical: "https://rankypulse.com/seo-audit-for-wordpress"
   }
 };
 
@@ -25,7 +28,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   return {
     title: `${page.title} | RankyPulse`,
-    description: page.description
+    description: page.description,
+    alternates: {
+      canonical: page.canonical
+    }
   };
 }
 
