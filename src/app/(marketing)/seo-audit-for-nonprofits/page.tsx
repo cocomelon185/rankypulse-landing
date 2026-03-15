@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import NonprofitSEOClient from "./NonprofitSEOClient";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "SEO Audit for Nonprofits | Mission-Driven Marketing | RankyPulse";
+  const title = "SEO Audit for Nonprofits | Mission Impact | RankyPulse";
   const description = "Free and affordable SEO for nonprofits. Increase donor awareness, volunteer recruitment, and mission impact through search visibility.";
 
   return {

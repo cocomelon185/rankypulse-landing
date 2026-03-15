@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import RedirectCheckerClient from "./RedirectCheckerClient";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "Redirect Checker | 301 Redirect Validator | Find Redirect Chains | RankyPulse";
+  const title = "Redirect Checker | Find & Fix Redirect Chains | RankyPulse";
   const description = "Check 301 redirects, find redirect chains, and validate redirect health. Ensure proper redirect implementation to preserve SEO value and prevent crawl budget waste.";
 
   return {

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import SaaSSEOClient from "./SaaSSEOClient";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "SEO Audit for SaaS | Product-Led Growth Strategy | RankyPulse";
+  const title = "SEO Audit for SaaS | Product Growth Strategy | RankyPulse";
   const description = "SaaS SEO strategy focused on free trial signups and product-led growth. Rank for high-value keywords and attract qualified users.";
 
   return {
