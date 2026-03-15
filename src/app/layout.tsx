@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     title: "RankyPulse SEO Audit",
     description:
       "Fix your SEO in minutes. Step-by-step guides with traffic impact estimates.",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "RankyPulse — SEO Audit & Fix Tool" }],
+    images: [{ url: "/og.jpg", width: 1200, height: 630, alt: "RankyPulse — SEO Audit & Fix Tool" }],
     siteName: "RankyPulse",
     type: "website",
   },
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     title: "RankyPulse SEO Audit",
     description:
       "Fix your SEO in minutes. Step-by-step guides with traffic impact estimates.",
-    images: ["/og.png"],
+    images: ["/og.jpg"],
   },
 };
 

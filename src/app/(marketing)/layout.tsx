@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     siteName: "RankyPulse",
     images: [
       {
-        url: "https://rankypulse.com/og.png",
+        url: "https://rankypulse.com/og.jpg",
         width: 1200,
         height: 630,
         alt: "RankyPulse SEO Audit Tool — Enter your domain, get your score",
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     title: "RankyPulse — Free SEO Audit Tool",
     description:
       "Get a complete SEO audit in 30 seconds. Step-by-step fix guides with real traffic estimates. Free.",
-    images: ["https://rankypulse.com/og.png"],
+    images: ["https://rankypulse.com/og.jpg"],
     creator: "@rankypulse",
   },
 };

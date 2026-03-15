@@ -15,7 +15,7 @@ export const metadata: Metadata = {
         url: "/tools",
         siteName: "RankyPulse",
         type: "website",
-        images: [{ url: "https://rankypulse.com/og.png", width: 1200, height: 630, alt: "RankyPulse Free SEO Tools" }],
+        images: [{ url: "https://rankypulse.com/og.jpg", width: 1200, height: 630, alt: "RankyPulse Free SEO Tools" }],
     },
     twitter: {
         card: "summary_large_image",
