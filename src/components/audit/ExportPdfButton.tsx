@@ -5,6 +5,7 @@ import { Download, Lock, X } from "lucide-react";
 import { generatePdfFromElements } from "@/lib/export-pdf";
 import { useSession } from "next-auth/react";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuditStore } from "@/lib/use-audit";
 
 interface ExportPdfButtonProps {
     domain: string;
@@ -19,6 +20,7 @@ export function ExportPdfButton({
 }: ExportPdfButtonProps) {
     const { isAuthenticated } = useAuth();
     const { data: session } = useSession();
+    const brandingConfig = useAuditStore((s) => s.brandingConfig);
     const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
     const [progress, setProgress] = useState("");
     const [showUpgrade, setShowUpgrade] = useState(false);
@@ -40,9 +42,43 @@ export function ExportPdfButton({
         setStatus("generating");
         setProgress("Preparing report...");
 
+        // Inject branding header overlay into DOM before capture
+        let brandingEl: HTMLDivElement | null = null;
+        if (brandingConfig.logoUrl || brandingConfig.primaryColor !== "#FF642D") {
+            brandingEl = document.createElement("div");
+            brandingEl.id = "pdf-branding-header";
+            brandingEl.style.cssText = `
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+                width: 800px;
+                pointer-events: none;
+                visibility: hidden;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 20px;
+                background: white;
+            `;
+            brandingEl.setAttribute("tabindex", "-1");
+            brandingEl.setAttribute("aria-hidden", "true");
+            if (brandingConfig.logoUrl) {
+                const img = document.createElement("img");
+                img.src = brandingConfig.logoUrl;
+                img.style.cssText = "height: 40px; object-fit: contain;";
+                brandingEl.appendChild(img);
+            }
+            const label = document.createElement("span");
+            label.textContent = "SEO Audit Report";
+            label.style.cssText = `font-size: 14px; font-weight: 600; color: ${brandingConfig.primaryColor};`;
+            brandingEl.appendChild(label);
+            document.body.appendChild(brandingEl);
+        }
+
         try {
             // Sections to screenshot, by DOM element ID
             const sections = [
+                ...(brandingEl ? [{ id: "pdf-branding-header", name: "Branding" }] : []),
                 { id: "pdf-cover", name: "Cover" },
                 { id: "pdf-hero", name: "Score Overview" },
                 { id: "pdf-findings", name: "Issue Findings" },
@@ -61,6 +97,9 @@ export function ExportPdfButton({
             console.error(err);
             setStatus("error");
             setTimeout(() => setStatus("idle"), 3000);
+        } finally {
+            // Clean up branding overlay
+            brandingEl?.remove();
         }
     };
 

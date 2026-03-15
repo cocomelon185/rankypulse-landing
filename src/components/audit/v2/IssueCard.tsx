@@ -6,6 +6,9 @@ import { Clock, TrendingUp, ChevronDown, Check } from "lucide-react";
 import type { AuditIssueData } from "@/lib/audit-data";
 import { SerpPreview } from "./SerpPreview";
 import { fireFixConfetti } from "@/lib/confetti";
+import { EffortImpactBadge } from "./EffortImpactBadge";
+import { FixAssistantDrawer } from "./FixAssistantDrawer";
+import { GlossaryTooltip, GLOSSARY } from "./GlossaryTooltip";
 
 interface IssueCardProps {
   issue: AuditIssueData;
@@ -13,6 +16,28 @@ interface IssueCardProps {
   isHighlighted: boolean;
   onToggleExpand: () => void;
   onMarkFixed: () => void;
+}
+
+const TERMS = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+const TERM_REGEX = new RegExp(
+  `(${TERMS.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`,
+  "gi"
+);
+
+function highlightTerms(text: string): React.ReactNode[] {
+  if (!text) return [];
+  const parts = text.split(TERM_REGEX);
+  return parts.map((part, i) => {
+    const matchedKey = TERMS.find(t => t.toLowerCase() === part.toLowerCase());
+    if (matchedKey) {
+      return (
+        <GlossaryTooltip key={i} term={matchedKey as keyof typeof GLOSSARY}>
+          {part}
+        </GlossaryTooltip>
+      );
+    }
+    return part;
+  });
 }
 
 const priorityConfig = {
@@ -76,12 +101,22 @@ export function IssueCard({
               <TrendingUp className="h-3 w-3" />
               +{issue.trafficImpact.min}–{issue.trafficImpact.max} visits/mo
             </span>
+            <EffortImpactBadge
+              timeEstimateMinutes={issue.timeEstimateMinutes}
+              impact={
+                issue.priority === "critical" || issue.priority === "high"
+                  ? "HIGH"
+                  : issue.priority === "medium"
+                  ? "MED"
+                  : "LOW"
+              }
+            />
           </div>
           <h3 className="mt-2 font-display text-base font-semibold text-[var(--text-primary)]">
             {issue.title}
           </h3>
           <p className="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]">
-            {issue.description}
+            {highlightTerms(issue.description)}
           </p>
         </div>
         <ChevronDown
@@ -118,6 +153,9 @@ export function IssueCard({
                   ))}
                 </ol>
               </div>
+
+              {/* Fix Assistant */}
+              <FixAssistantDrawer issueId={issue.id} issueTitle={issue.title} />
 
               {/* Affected pages */}
               {issue.affectedPages && issue.affectedPages.length > 0 && (
