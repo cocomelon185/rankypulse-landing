@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import SMBSEOClient from "./SMBSEOClient";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "Small Business SEO Audit | Affordable & Effective | RankyPulse";
+  const title = "Small Business SEO Audit | Affordable Strategy | RankyPulse";
   const description = "Small business SEO audit focused on realistic, high-ROI tactics. Get visible in local search, compete with bigger players, and attract local customers with proven strategies.";
 
   return {

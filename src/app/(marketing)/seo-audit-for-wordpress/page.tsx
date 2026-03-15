@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import WordPressSEOClient from "./WordPressSEOClient";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "WordPress SEO Audit | Plugin & Theme Optimization | RankyPulse";
+  const title = "WordPress SEO Audit | Plugins & Theme Fixes | RankyPulse";
   const description = "WordPress SEO audit with plugin recommendations, performance optimization, and site structure improvements. Fix technical SEO issues in your WordPress site.";
 
   return {
