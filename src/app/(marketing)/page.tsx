@@ -2,6 +2,8 @@ import { AppNavbar } from "@/components/layout/Navbar";
 import { Hero } from "@/components/landing/Hero";
 import { TrustProofSection } from "@/components/landing/TrustProofSection";
 import { FeatureGrid } from "@/components/landing/FeatureGrid";
+import { PersonaTabs } from "@/components/landing/PersonaTabs";
+import { AuditPreviewSection } from "@/components/landing/AuditPreviewSection";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { Testimonials } from "@/components/landing/Testimonials";
 import { ComparisonTable } from "@/components/landing/ComparisonTable";
@@ -18,6 +20,8 @@ export default function HomePage() {
         <Hero />
         <TrustProofSection />
         <FeatureGrid />
+        <PersonaTabs />
+        <AuditPreviewSection />
         <HowItWorks />
         <Testimonials />
         <ComparisonTable />

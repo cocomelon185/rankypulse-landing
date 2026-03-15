@@ -1,124 +1,63 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, Clock, Eye, BarChart2, ListChecks, Share2 } from "lucide-react";
+import { Building2, Code2, TrendingUp, BarChart3, CheckCircle2 } from "lucide-react";
 
 const containerVariants = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.08 } },
+  visible: { transition: { staggerChildren: 0.1 } },
 };
 const cardVariants = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" as const } },
 };
 
-const FEATURES = [
+const PILLARS = [
   {
-    icon: TrendingUp,
-    color: "#10b981",
-    title: "Traffic-first priorities",
+    persona: "AGENCY",
+    personaColor: "bg-[#7B5CF5]/10 text-[#7B5CF5] border-[#7B5CF5]/20",
+    iconBg: "bg-[#7B5CF5]/10 border-[#7B5CF5]/20",
+    icon: <Building2 size={20} className="text-[#7B5CF5]" />,
+    title: "White-Label Perfection",
     description:
-      "Every issue shows the exact visits/month you're losing. Fix the highest-impact issues first — not the longest list.",
+      "Upload your logo and brand colors. Send secure, password-protected share links to clients — no RankyPulse branding in sight.",
+    highlight: "Close 3× more retainers",
+    highlightColor: "text-[#7B5CF5]",
   },
   {
-    icon: Clock,
-    color: "#6366f1",
-    title: "5-minute fix guides",
+    persona: "DEV",
+    personaColor: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
+    iconBg: "bg-cyan-500/10 border-cyan-500/20",
+    icon: <Code2 size={20} className="text-cyan-400" />,
+    title: "AI Fix Assistant",
     description:
-      "Every issue has a time estimate and step-by-step instructions. No Googling required. Copy-paste ready.",
+      "Don't just find issues. Copy/paste the exact code snippet to fix them instantly — from hreflang tags to canonical headers.",
+    highlight: "Zero Googling required",
+    highlightColor: "text-cyan-400",
   },
   {
-    icon: Eye,
-    color: "#a5b4fc",
-    title: "SERP before/after preview",
+    persona: "OWNERS",
+    personaColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    iconBg: "bg-emerald-500/10 border-emerald-500/20",
+    icon: <TrendingUp size={20} className="text-emerald-400" />,
+    title: "Traffic Opportunity ROI",
     description:
-      "See exactly how Google will display your page before and after you apply the fix. No more guessing.",
+      "See exactly how much organic traffic you're leaving on the table. Projections show +15–25% growth from fixing your open issues.",
+    highlight: "ROI-first, not vanity metrics",
+    highlightColor: "text-emerald-400",
   },
   {
-    icon: BarChart2,
-    color: "#f59e0b",
-    title: "Competitor benchmark",
+    persona: "UX",
+    personaColor: "bg-[#FF642D]/10 text-[#FF642D] border-[#FF642D]/20",
+    iconBg: "bg-[#FF642D]/10 border-[#FF642D]/20",
+    icon: <BarChart3 size={20} className="text-[#FF642D]" />,
+    title: "Competitive Benchmarking",
     description:
-      "See where you rank across 6 SEO dimensions vs. your top 5 competitors. Know exactly where to focus.",
-  },
-  {
-    icon: ListChecks,
-    color: "#34d399",
-    title: "Fix queue UX",
-    description:
-      "One fix at a time. No overwhelm. A clear next action is always in front of you — and you can see your score climb.",
-    hasMiniDemo: true,
-  },
-  {
-    icon: Share2,
-    color: "#c084fc",
-    title: "Score sharing",
-    description:
-      "Share a branded score card to Twitter or LinkedIn in one click. Built-in viral loop, zero effort.",
+      "Know exactly where you stand vs. the industry average in your specific niche — ecommerce, SaaS, local, blog, or agency.",
+    highlight: "Niche-specific, not generic",
+    highlightColor: "text-[#FF642D]",
   },
 ];
-
-const STEPPER_STEPS = [
-  { num: 1, status: "DONE", label: "Redirect chain fixed", color: "emerald" },
-  { num: 2, status: "NEXT", label: "Fix canonical URL",    color: "indigo"  },
-  { num: 3, status: "TODO", label: "Add meta description", color: "gray"    },
-] as const;
-
-function LiveStepper() {
-  const [activeStep, setActiveStep] = useState(1);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveStep((s) => (s === STEPPER_STEPS.length ? 1 : s + 1));
-    }, 1800);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className="mt-4 space-y-2">
-      {STEPPER_STEPS.map((step) => {
-        const isActive = activeStep === step.num;
-        return (
-          <motion.div
-            key={step.num}
-            animate={{ opacity: isActive ? 1 : 0.45, scale: isActive ? 1.02 : 1 }}
-            transition={{ duration: 0.3 }}
-            className={`flex items-center gap-2.5 rounded-lg border px-3 py-2 transition-all duration-300 ${
-              isActive
-                ? "border-indigo-500/25 bg-indigo-500/10"
-                : "border-white/5 bg-white/2"
-            }`}
-          >
-            <div
-              className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${
-                step.color === "emerald"
-                  ? "bg-emerald-500/20 text-emerald-400"
-                  : step.color === "indigo"
-                    ? "bg-indigo-500/20 text-indigo-400"
-                    : "bg-white/8 text-gray-500"
-              }`}
-            >
-              {step.color === "emerald" ? "✓" : step.num}
-            </div>
-            <span
-              className="font-['DM_Mono'] text-[9px] tracking-wider"
-              style={{ color: isActive ? "#a5b4fc" : "#475569" }}
-            >
-              {step.status}
-            </span>
-            <span
-              className="flex-1 truncate font-['DM_Sans'] text-xs"
-              style={{ color: isActive ? "#f1f5f9" : "#475569" }}
-            >
-              {step.label}
-            </span>
-          </motion.div>
-        );
-      })}
-    </div>
-  );
-}
 
 export function FeatureGrid() {
   return (
@@ -132,56 +71,59 @@ export function FeatureGrid() {
         className="mb-16 text-center"
       >
         <p className="mb-3 font-['DM_Mono'] text-xs uppercase tracking-widest text-gray-600">
-          What makes it different
+          Built for every stakeholder
         </p>
         <h2
           className="font-['Fraunces'] font-bold leading-tight tracking-tight text-white"
           style={{ fontSize: "clamp(28px, 4vw, 48px)" }}
         >
-          Most SEO tools tell you what&apos;s broken.
+          One platform.
           <br />
-          <span className="italic text-indigo-400">RankyPulse tells you how to fix it.</span>
+          <span className="italic text-[#FF642D]">Every SEO persona covered.</span>
         </h2>
       </motion.div>
 
-      {/* Grid */}
+      {/* 2×2 Pillar Grid */}
       <motion.div
         variants={containerVariants}
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-80px" }}
-        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        className="grid gap-5 sm:grid-cols-2"
       >
-        {FEATURES.map((feature) => {
-          const Icon = feature.icon;
-          return (
-            <motion.div
-              key={feature.title}
-              variants={cardVariants}
-              className="group rounded-2xl border border-white/6 bg-white/3 p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/12 hover:bg-white/5"
-              style={{
-                boxShadow: "0 0 0 0 transparent",
-              }}
+        {PILLARS.map((p) => (
+          <motion.div
+            key={p.persona}
+            variants={cardVariants}
+            whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            className="relative overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] p-8 transition-colors duration-300 hover:border-white/10 hover:bg-white/[0.04]"
+          >
+            {/* Persona pill — top-right */}
+            <span
+              className={`absolute right-6 top-6 rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-widest ${p.personaColor}`}
             >
-              {/* Icon */}
-              <div
-                className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl"
-                style={{ background: `${feature.color}18`, border: `1px solid ${feature.color}30` }}
-              >
-                <Icon size={18} style={{ color: feature.color }} />
-              </div>
+              {p.persona}
+            </span>
 
-              <h3 className="mb-2 font-['DM_Sans'] text-base font-semibold text-white">
-                {feature.title}
-              </h3>
-              <p className="font-['DM_Sans'] text-sm leading-relaxed text-gray-500">
-                {feature.description}
-              </p>
+            {/* Icon */}
+            <div
+              className={`mb-5 inline-flex h-11 w-11 items-center justify-center rounded-xl border ${p.iconBg}`}
+            >
+              {p.icon}
+            </div>
 
-              {feature.hasMiniDemo && <LiveStepper />}
-            </motion.div>
-          );
-        })}
+            <h3 className="mb-2 font-['DM_Sans'] text-xl font-bold text-white">{p.title}</h3>
+            <p className="mb-6 font-['DM_Sans'] text-sm leading-relaxed text-slate-400">
+              {p.description}
+            </p>
+
+            {/* Highlight badge */}
+            <div className={`flex items-center gap-2 text-xs font-semibold ${p.highlightColor}`}>
+              <CheckCircle2 size={14} />
+              {p.highlight}
+            </div>
+          </motion.div>
+        ))}
       </motion.div>
     </section>
   );

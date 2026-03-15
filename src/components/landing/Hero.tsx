@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Zap, Search, TrendingUp, Clock, Eye } from "lucide-react";
+import { Zap, Search, TrendingUp, Clock, Eye, ChevronRight, Sparkles } from "lucide-react";
 import { extractAuditDomain, isValidExtractedDomain } from "@/lib/url-validation";
 import CountUp from "react-countup";
 
@@ -158,17 +158,16 @@ export function Hero() {
       />
 
       <div className="relative mx-auto w-full max-w-4xl text-center">
-        {/* Badge */}
+        {/* V2 Badge */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05, duration: 0.5 }}
-          className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-white/8 bg-white/4 px-4 py-2"
+          className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#FF642D]/30 bg-[#FF642D]/10 px-4 py-2 text-[#FF642D]"
         >
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-          <span className="small uppercase tracking-[2px] text-[var(--landing-text-muted)]">
-            Free SEO audit · No signup required
-          </span>
+          <Sparkles size={13} className="shrink-0" />
+          <span className="text-xs font-semibold uppercase tracking-[1.5px]">What&apos;s New in V2</span>
+          <ChevronRight size={13} className="opacity-60" />
         </motion.div>
 
         {/* H1 */}
@@ -178,7 +177,7 @@ export function Hero() {
           transition={{ delay: 0.15, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="h1 mb-6 leading-[1.06] text-foreground"
         >
-          Find and fix SEO problems on your website in minutes.
+          The SEO Audit Tool Built for Results, Not Just Reports.
         </motion.h1>
 
         {/* Subheadline */}
@@ -188,8 +187,8 @@ export function Hero() {
           transition={{ delay: 0.25, duration: 0.5 }}
           className="mx-auto mb-10 max-w-2xl text-xl leading-relaxed text-gray-600 dark:text-gray-400"
         >
-          Enter your website, run a free audit, and see your SEO score plus the top fixes to make first.
-          <span className="text-foreground"> Get the aha moment before signup friction.</span>
+          Identify critical errors, benchmark against your niche, and unlock hidden traffic growth with AI-powered fixes.{" "}
+          <span className="text-foreground">Trusted by agencies and built for developers.</span>
         </motion.p>
 
         {/* Input */}
