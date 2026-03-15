@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import BacklinkGapClient from "./BacklinkGapClient";
 
 export const metadata: Metadata = {
-    title: "Backlink Gap | RankyPulse",
+    title: "Backlink Gap Analysis - Find Link Opportunities | RankyPulse",
     description: "Identify link-building opportunities by comparing your backlink profile with your competitors.",
 };
 

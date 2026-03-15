@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import OnPageCheckerClient from "./OnPageCheckerClient";
 
 export const metadata: Metadata = {
-    title: "On-Page SEO Checker | RankyPulse",
+    title: "On-Page SEO Checker - Fix Pages to Rank Higher | RankyPulse",
     description: "Get actionable, page-level recommendations to improve rankings for your target keywords.",
 };
 

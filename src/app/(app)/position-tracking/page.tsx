@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import PositionTrackingClient from "./PositionTrackingClient";
 
 export const metadata: Metadata = {
-    title: "Position Tracking | RankyPulse",
+    title: "Position Tracking - Monitor Keyword Rankings | RankyPulse",
     description: "Track your keyword rankings and visibility over time in Google search.",
 };
 
