@@ -6,7 +6,7 @@
  */
 
 import { supabaseAdmin } from "./supabase";
-import { calculateSeoScore } from "./seo-score";
+import { computeSeoScore } from "./seo-score";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -312,8 +312,16 @@ export async function getDashboardData(userId: string, domain: string): Promise<
 
   // ── 8. KPI cards — real where possible, estimated otherwise ───────────────
   const indexedPages = latestJob?.pages_crawled ?? 0;
-  // Compute average health score from audit_pages — shared formula used across all pages
-  const domainScore = calculateSeoScore(auditPages);
+  // Density-based score — same formula as Projects and Site Audit pages
+  const totalAuditPages = auditPages.length || 1;
+  const rawCritOcc = Object.entries(issueCountMap).filter(([id]) => issueSevMap[id] === "HIGH").reduce((s, [, n]) => s + n, 0);
+  const rawWarnOcc = Object.entries(issueCountMap).filter(([id]) => issueSevMap[id] === "MED").reduce((s, [, n]) => s + n, 0);
+  const rawNoticeOcc = Object.entries(issueCountMap).filter(([id]) => issueSevMap[id] === "LOW").reduce((s, [, n]) => s + n, 0);
+  const domainScore = computeSeoScore({
+    critical: rawCritOcc / totalAuditPages,
+    warning: rawWarnOcc / totalAuditPages,
+    notice: rawNoticeOcc / totalAuditPages,
+  });
   const scoreDelta = 0; // No historical data without saved_domains
 
   const kpis = [

@@ -190,11 +190,17 @@ export async function GET(req: NextRequest) {
 
     // ── 4. Aggregate issues + track affected URLs per issue ─────────────
     const issueMap: Record<string, { sev: string; count: number; urls: string[] }> = {};
+    // rawIssueMap contains only persisted (crawled) issues — used for the base seoScore
+    // so it matches exactly what Projects and Site Audit pages compute.
+    const rawIssueMap: Record<string, { sev: string; count: number }> = {};
     for (const page of pages) {
       for (const issue of page.issues) {
         if (!issueMap[issue.id]) issueMap[issue.id] = { sev: issue.sev, count: 0, urls: [] };
         issueMap[issue.id].count++;
         if (issueMap[issue.id].urls.length < 10) issueMap[issue.id].urls.push(page.url);
+        // Track raw (no derived) counts separately for consistent score computation
+        if (!rawIssueMap[issue.id]) rawIssueMap[issue.id] = { sev: issue.sev, count: 0 };
+        rawIssueMap[issue.id].count++;
       }
     }
 
@@ -254,17 +260,20 @@ export async function GET(req: NextRequest) {
       completionMap.set(c.issue_id, { status: c.status, marked_at: c.marked_at });
     }
 
-    // ── 7. Compute SEO scores (density-based) ───────────────────────────
+    // ── 7. Compute SEO scores (density-based, raw issues only) ──────────
+    // Use rawIssueMap (persisted issues only, no derived) so seoScore matches
+    // Projects and Site Audit pages which only see persisted audit_pages data.
     const issueEntries = Object.entries(issueMap);
+    const rawIssueEntries = Object.entries(rawIssueMap);
     const totalPagesForDensity = pages.length > 0 ? pages.length : 1;
 
-    const totalCriticalOcc = issueEntries
+    const totalCriticalOcc = rawIssueEntries
       .filter(([, v]) => v.sev === "HIGH")
       .reduce((s, [, v]) => s + v.count, 0);
-    const totalWarningOcc = issueEntries
+    const totalWarningOcc = rawIssueEntries
       .filter(([, v]) => v.sev === "MED")
       .reduce((s, [, v]) => s + v.count, 0);
-    const totalNoticeOcc = issueEntries
+    const totalNoticeOcc = rawIssueEntries
       .filter(([, v]) => v.sev === "LOW")
       .reduce((s, [, v]) => s + v.count, 0);
 
@@ -280,14 +289,14 @@ export async function GET(req: NextRequest) {
       notice:   0,
     }) : 0;
 
-    // ── 7b. Compute currentProjected — score if only remaining (not-done) issues exist
-    const remainingCriticalOcc = issueEntries
+    // ── 7b. Compute currentProjected — score if only remaining (not-done) raw issues exist
+    const remainingCriticalOcc = rawIssueEntries
       .filter(([id, v]) => v.sev === "HIGH" && completionMap.get(id)?.status !== "done")
       .reduce((s, [, v]) => s + v.count, 0);
-    const remainingWarningOcc = issueEntries
+    const remainingWarningOcc = rawIssueEntries
       .filter(([id, v]) => v.sev === "MED" && completionMap.get(id)?.status !== "done")
       .reduce((s, [, v]) => s + v.count, 0);
-    const remainingNoticeOcc = issueEntries
+    const remainingNoticeOcc = rawIssueEntries
       .filter(([id, v]) => v.sev === "LOW" && completionMap.get(id)?.status !== "done")
       .reduce((s, [, v]) => s + v.count, 0);
 
