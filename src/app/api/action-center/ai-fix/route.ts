@@ -142,8 +142,41 @@ const PROMPTS: Record<string, PromptFn> = {
     `Site: ${ctx.domain}\nArchitecture: ${ctx.techStack}\nIssue: Broken internal links detected.${formatPageContext(ctx)}Based on the ACTUAL broken link data above, provide the specific fix for each broken link. Show how to update or redirect them in ${ctx.techStack}.`,
 
   orphan_page: (ctx) => {
-    const pages = ctx.affectedPageUrls.slice(0, 3).join(", ");
-    return `Site: orphaned pages: ${pages}\nArchitecture: ${ctx.techStack}\nIssue: These pages have no internal links pointing to them.${formatPageContext(ctx)}Based on the page titles above, suggest 3 specific places in the site to add links to these pages, with contextual anchor text. Show how to add them in ${ctx.techStack}.`;
+    const isNextJs = /next\.?js/i.test(ctx.techStack);
+    const orphanPaths = ctx.affectedPageUrls.slice(0, 5).map(u => {
+      try { return new URL(u).pathname; } catch { return u; }
+    });
+    const pathList = orphanPaths.map(p => `  - ${p}`).join("\n");
+
+    if (isNextJs) {
+      return `Site: ${ctx.domain}
+Tech: Next.js (App Router)
+Orphaned pages (no internal links point to them):
+${pathList}
+${formatPageContext(ctx)}
+TASK: Add Next.js <Link> components in src/components/Footer.tsx (or the main nav) so every orphaned page is reachable.
+
+Rules:
+- Use Next.js <Link href="..."> — NEVER raw <a href="...">
+- Add to the existing footer link list (it likely uses Link already)
+- Use descriptive anchor text matching the page purpose
+- Show the EXACT lines to add inside the existing flex/ul container
+
+Example output format:
+// In src/components/Footer.tsx, add inside the existing link group:
+<Link href="/your-orphan-page" className="text-sm text-gray-600 transition-colors hover:text-[#4318ff]">
+  Descriptive Anchor Text
+</Link>
+
+Generate one <Link> block per orphaned page listed above. No generic HTML. No <a> tags. Next.js only.`;
+    }
+
+    return `Site: ${ctx.domain}
+Orphaned pages (no internal links point to them):
+${pathList}
+${formatPageContext(ctx)}
+These pages exist but no other page links to them. Add navigation links in the site footer or nav.
+Show exact code for ${ctx.techStack} to add internal links to each orphaned path listed above.`;
   },
 
   slow_page: (ctx) =>

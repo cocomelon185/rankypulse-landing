@@ -148,22 +148,37 @@ export async function GET(req: NextRequest) {
     const linkedSet = new Set<string>();
     const homepage = `https://${targetDomain}`;
 
+    // Normalize URL: strip trailing slash (except bare origin), strip www, lowercase
+    const normUrl = (u: string) => {
+      try {
+        const parsed = new URL(u);
+        const host = parsed.hostname.replace(/^www\./, "");
+        const path = parsed.pathname.replace(/\/+$/, "") || "/";
+        return `https://${host}${path}`;
+      } catch { return u.toLowerCase().replace(/\/+$/, ""); }
+    };
+
     for (const page of pages) {
       const meta = page.metadata;
       const title = meta?.title?.trim();
       const desc  = meta?.meta_description?.trim();
       if (title) { titleMap[title] = [...(titleMap[title] ?? []), page.url]; }
       if (desc)  { metaDescMap[desc]  = [...(metaDescMap[desc]  ?? []), page.url]; }
-      for (const lnk of meta?.outbound_links ?? []) { linkedSet.add(lnk); }
+      // Normalize each outbound link so trailing-slash variants resolve to same key
+      for (const lnk of meta?.outbound_links ?? []) { linkedSet.add(normUrl(lnk)); }
     }
 
     const dupTitleUrls = new Set(Object.values(titleMap).filter(u => u.length > 1).flat());
     const dupMetaUrls  = new Set(Object.values(metaDescMap).filter(u => u.length > 1).flat());
     const homepageWww  = `https://www.${targetDomain}`;
     const orphanUrls   = new Set(
-      pages.map(p => p.url).filter(
-        url => url !== "__site_level__" && url !== homepage && url !== homepageWww && !linkedSet.has(url)
-      )
+      pages.map(p => p.url).filter(url => {
+        if (url === "__site_level__") return false;
+        // Normalize the page URL for comparison — catches trailing-slash mismatches
+        // e.g. sitemap seeds "https://example.com/cookies/" but footer links "/cookies"
+        const norm = normUrl(url);
+        return norm !== normUrl(homepage) && norm !== normUrl(homepageWww) && !linkedSet.has(norm);
+      })
     );
 
     if (dupTitleUrls.size > 0) {
