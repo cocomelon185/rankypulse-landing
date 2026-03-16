@@ -25,31 +25,44 @@ function parseFixXml(text: string) {
 
 // ── System prompt (instructs Claude to always return XML) ─────────────────────
 
-const SYSTEM_PROMPT = `You are a Lead SEO Engineer. You will receive REAL crawl data and live HTML from the affected page. Use this data to provide a SPECIFIC, surgical fix — NOT generic advice.
+const SYSTEM_PROMPT = `You are a Lead SEO Engineer. Your job is to STUDY the real page data first, then produce a WORKING fix — not generic advice.
+
+CRITICAL RULES:
+1. STUDY FIRST: Before writing any code, analyze the ACTUAL crawl data and live HTML provided. Identify the EXACT root cause.
+2. MATCH THE TECH STACK: If it's Next.js, use Next.js patterns (<Link>, metadata exports). If it's plain HTML, use <meta> tags. NEVER mix them.
+3. SPECIFY THE FILE: Always tell the user EXACTLY which file to edit. Reference actual file paths based on the tech stack.
+4. WORKING CODE ONLY: Every code block must be copy-pasteable and immediately functional. No placeholders like "your-value-here".
+5. VERIFY AFTER: Always end with a way to verify the fix is live.
 
 Output ONLY the XML tags below — no greetings, no explanations, no markdown outside the tags. Start your response immediately with <analysis>.
 
 Format:
-<analysis>2 sentences explaining WHY this is a critical SEO failure, citing Google's specific guidelines. Reference the ACTUAL values found in the crawl data.</analysis>
-<code_block_primary>Ready-to-paste code fix based on the ACTUAL HTML structure observed. Include inline comments. The code MUST match the site's architecture. Do NOT provide React/Next.js code for Legacy HTML sites. Do NOT provide raw HTML for Next.js sites.</code_block_primary>
-<steps>1. [Exact file to open based on the architecture]
-2. [Where to paste the code — reference actual elements found in the HTML]
-3. [How to deploy and verify]</steps>
-<verification>One single curl command OR a browser console snippet to confirm the fix is live. Use the ACTUAL affected URL.</verification>
+<analysis>First, state what you FOUND in the real page data (actual values, actual HTML). Then explain WHY this causes an SEO failure, citing Google's specific guidelines.</analysis>
+<code_block_primary>Ready-to-paste code fix. MUST reference actual values found in the crawl data. Include the exact file path as a comment on line 1. The code MUST match the site's tech stack — Next.js gets JSX/metadata, HTML gets tags.</code_block_primary>
+<steps>1. [Exact file path to open]
+2. [Exact location in the file — reference line numbers or surrounding code]
+3. [How to deploy — specific to their stack]
+4. [How to verify — click Verify Fix button or run a new audit]</steps>
+<verification>One curl command or browser console check to confirm the fix is live. Use the ACTUAL affected URL from the data provided.</verification>
 <score_impact>+X to +Y points — one short reason why.</score_impact>`;
 
-// ── Smart model routing ──────────────────────────────────────────────────────
+// ── HARDWIRED MODEL ROUTING — Sonnet or Opus ONLY, never Haiku ──────────────
+// Sonnet: default for straightforward issues (missing tags, short titles, etc.)
+// Opus: auto-escalated for issues requiring deep analysis of page structure
+// NEVER use Haiku — it produces generic, non-working fixes.
 
 const COMPLEX_ISSUES = new Set([
   "canonical_mismatch", "multiple_canonicals", "duplicate_canonical",
   "keyword_cannibalization", "redirect_chain", "http_pages",
-  "robots_txt_blocked", "slow_page",
+  "robots_txt_blocked", "slow_page", "orphan_page", "broken_links",
+  "internal_linking",
 ]);
 
-function selectModel(issueId: string): string {
-  return COMPLEX_ISSUES.has(issueId)
-    ? "claude-opus-4-0-20250514"     // Complex: use Opus for deep reasoning
-    : "claude-sonnet-4-20250514";     // Simple: Sonnet for fast, reliable fixes
+function selectModel(issueId: string): { model: string; label: string } {
+  if (COMPLEX_ISSUES.has(issueId)) {
+    return { model: "claude-opus-4-0-20250514", label: "Claude Opus" };
+  }
+  return { model: "claude-sonnet-4-20250514", label: "Claude Sonnet" };
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -381,7 +394,7 @@ export async function POST(req: NextRequest) {
   }
 
   let rawSuggestion: string;
-  const model = selectModel(issueId);
+  const { model, label: modelLabel } = selectModel(issueId);
 
   try {
     const client = new Anthropic({ apiKey });
@@ -424,6 +437,7 @@ export async function POST(req: NextRequest) {
         charCount: rawSuggestion.length,
         issueTitle: title,
         model,
+        modelLabel,
         techStack,
         hasLiveHtml: !!liveHtmlHead,
         pagesWithCrawlData: pageMetadata.length,
@@ -436,6 +450,9 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     ...parsed,
     cached: false,
+    modelLabel,
+    hasLiveHtml: !!liveHtmlHead,
+    pagesAnalyzed: pageMetadata.length,
     createdAt: inserted?.created_at ?? new Date().toISOString(),
   });
 }
