@@ -1230,42 +1230,81 @@ Sitemap: https://yoursite.com/sitemap.xml
     title: 'Broken links: small problem, surprisingly large SEO impact',
     subtitle: 'Why 404s hurt more than you think — and the 10-minute fix',
     category: 'Technical SEO',
-    readingMinutes: 4,
+    readingMinutes: 8,
     publishedAt: '2026-01-16',
     pullQuote: "Every broken internal link is a dead end for both users and Google's crawler. They accumulate silently.",
     excerpt: "404 errors don't just frustrate users — they waste your crawl budget and break the flow of PageRank through your site. Here's how to find and fix them fast.",
     featured: false,
     content: `
-      When Google follows a link and gets a 404, two things happen:
+When Google follows a link and gets a 404, two things happen:
 
 1. The crawl path ends — Google can't discover anything beyond that broken link
 2. Any PageRank that was flowing through that link is lost
 
-      On small sites this is a minor issue.On sites with hundreds of pages, broken internal
-      links can quietly starve entire sections from Google's attention.
+On small sites this is a minor issue. On sites with hundreds of pages, broken internal links can quietly starve entire sections from Google's attention.
 
-  ** The three types of broken links:**
+**The three types of broken links:**
 
-      ** Broken internal links ** — Links within your own site pointing to pages that no longer exist.
-      Usually caused by deleting or renaming pages without updating links.
+**Broken internal links** — Links within your own site pointing to pages that no longer exist. Usually caused by deleting or renaming pages without updating links.
 
-      ** Broken external links ** — Links from your site to other sites that have moved or disappeared.
-      These don't directly affect your rankings, but they hurt user experience and signal low quality.
+**Broken external links** — Links from your site to other sites that have moved or disappeared. These don't directly affect your rankings, but they hurt user experience and signal low quality.
 
-  ** Broken backlinks ** — External sites linking to pages on your site that no longer exist.
-      This is lost PageRank — often significant.Fix by 301 redirecting the dead URL to the
-      closest live equivalent.
+**Broken backlinks** — External sites linking to pages on your site that no longer exist. This is lost PageRank — often significant. Fix by 301 redirecting the dead URL to the closest live equivalent.
 
-      ** How to find them:**
-  Run RankyPulse on your domain — broken links appear in the Technical Issues section.
-      Or use Google Search Console → Coverage → Not Found(404) for a crawled list.
+**How to find them:**
+Run RankyPulse on your domain — broken links appear in the Technical Issues section. Or use Google Search Console → Coverage → Not Found (404) for a crawled list.
 
-      ** How to fix them:**
-  - Internal links: update the link to point to the correct URL
-    - Deleted pages with backlinks: 301 redirect to the closest relevant live page
-      - Don't redirect everything to the homepage — Google sees through this
+**How to fix them:**
+- Internal links: update the link to point to the correct URL
+- Deleted pages with backlinks: 301 redirect to the closest relevant live page
+- Don't redirect everything to the homepage — Google sees through this
 
-      Set a calendar reminder to run a broken link check monthly.Takes 10 minutes.
+Set a calendar reminder to run a broken link check monthly. Takes 10 minutes.
+
+---
+
+## Why Broken Links Hurt More Than You Think
+
+Broken internal links create a cascade of SEO problems. When Googlebot encounters a 404, it can't pass PageRank to that page, effectively creating a "dead end" in your link graph. This means the authority you've built up through backlinks gets trapped instead of flowing throughout your site.
+
+External broken links are equally damaging. They signal to Google that your content isn't well-maintained, potentially impacting your site's perceived freshness and reliability. More critically, they waste your crawl budget — the limited number of pages Google will crawl during each visit.
+
+## The Hidden Cost of Broken Link Equity
+
+Every broken link represents lost link equity. When you link to a page that returns a 404, you're essentially throwing away the SEO value that link could have passed. This is particularly costly for:
+
+- High-authority pages linking to broken internal pages
+- Guest posts with broken backlinks to your site
+- Social media shares pointing to moved or deleted content
+- Email campaign links that no longer work
+
+## Advanced Broken Link Detection Strategies
+
+Beyond basic crawling tools, implement these detection methods:
+
+**Log File Analysis**: Monitor your server logs for 404 patterns. Sudden spikes often indicate broken internal linking from recent site changes.
+
+**Google Search Console Monitoring**: The Coverage report shows which pages Google tried to crawl but found broken. Set up email alerts for new 404 errors.
+
+**Third-Party Monitoring**: Tools like RankyPulse Site Audit can detect broken links that basic checkers miss, including broken links within JavaScript-rendered content.
+
+## Emergency Broken Link Triage Protocol
+
+When you discover broken links, prioritize fixes using this framework:
+
+1. **High-Traffic 404s First**: Use Google Analytics to identify which broken pages receive the most organic traffic
+2. **High-Authority Source Links**: Fix broken links from your highest-authority pages first
+3. **Recent Breaks**: Newly broken links haven't lost all their equity yet — fix them within 48 hours when possible
+4. **Redirect vs. Fix**: If the content moved, use 301 redirects. If it's permanently gone, update the linking page to remove or replace the link
+
+## Preventing Future Link Rot
+
+Implement these systems to catch broken links before they impact SEO:
+
+- Weekly automated crawls of your entire site
+- Pre-launch broken link checks for any site updates
+- Redirect planning before moving or deleting any content
+- Link validation in your CMS workflow
     `,
   },
   {
