@@ -312,6 +312,7 @@ export async function GET(req: NextRequest) {
       .slice(0, 20);
 
     return NextResponse.json({
+      auditId: latestJob.id,
       healthScore: finalScore,
       previousScore,
       errors,
