@@ -15,6 +15,10 @@ import {
   Clock,
   TrendingUp,
   ShieldCheck,
+  Lightbulb,
+  Wrench,
+  MonitorSmartphone,
+  Globe,
 } from "lucide-react";
 import { getIssueContent } from "@/lib/quickwins/issueCatalog";
 
@@ -55,6 +59,17 @@ const DIFFICULTY_COLOR: Record<string, string> = {
   Hard: "bg-red-500/15 text-red-400",
 };
 
+type Platform = "html" | "wordpress" | "shopify" | "wix";
+
+const PLATFORMS: { id: Platform; label: string }[] = [
+  { id: "html", label: "HTML / Custom" },
+  { id: "wordpress", label: "WordPress" },
+  { id: "shopify", label: "Shopify" },
+  { id: "wix", label: "Wix" },
+];
+
+const PLATFORM_STORAGE_KEY = "rp_platform_preference";
+
 export default function AuditFixPage() {
   const params = useParams();
   const router = useRouter();
@@ -64,6 +79,22 @@ export default function AuditFixPage() {
   const [data, setData] = useState<AuditData | null>(null);
   const [loading, setLoading] = useState(true);
   const [markedFixed, setMarkedFixed] = useState(false);
+  const [platform, setPlatform] = useState<Platform>("html");
+
+  // Load saved platform preference
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(PLATFORM_STORAGE_KEY) as Platform | null;
+      if (saved && ["html", "wordpress", "shopify", "wix"].includes(saved)) {
+        setPlatform(saved);
+      }
+    } catch { /* silent */ }
+  }, []);
+
+  function savePlatform(p: Platform) {
+    setPlatform(p);
+    try { localStorage.setItem(PLATFORM_STORAGE_KEY, p); } catch { /* silent */ }
+  }
 
   useEffect(() => {
     if (!auditId) return;
@@ -79,8 +110,17 @@ export default function AuditFixPage() {
   const prevIssue = issueIndex > 0 ? data?.issues[issueIndex - 1] : null;
   const nextIssue = issueIndex >= 0 && data ? data.issues[issueIndex + 1] : null;
 
-  // Rich catalog content — falls back to GENERIC_FALLBACK for unknown issue IDs
   const catalog = getIssueContent(issueId);
+
+  // Platform-specific steps if available, else generic manual steps
+  const platformStepsForPlatform =
+    platform !== "html" ? catalog.platformSteps?.[platform] : undefined;
+  const stepsToShow = platformStepsForPlatform ?? catalog.manualSteps;
+  const hasPlatformSteps = !!(
+    catalog.platformSteps?.wordpress ||
+    catalog.platformSteps?.shopify ||
+    catalog.platformSteps?.wix
+  );
 
   const Icon = issue ? (SEV_ICON[issue.severity] ?? Info) : Info;
   const color = issue ? (SEV_COLOR[issue.severity] ?? "#6B7A99") : "#6B7A99";
@@ -127,32 +167,22 @@ export default function AuditFixPage() {
           <div className="flex items-start gap-3 mb-3">
             <Icon className="h-5 w-5 mt-0.5 shrink-0" style={{ color }} />
             <div className="flex-1 min-w-0">
-              <span
-                className="text-xs font-semibold uppercase tracking-wider"
-                style={{ color }}
-              >
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color }}>
                 {SEV_LABEL[issue.severity] ?? issue.severity}
               </span>
               <h1 className="text-xl font-bold text-white mt-1">{issue.title}</h1>
             </div>
           </div>
 
-          {/* Badges row */}
+          {/* Badges */}
           <div className="flex flex-wrap items-center gap-2 mb-4">
-            {/* Difficulty */}
             <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${DIFFICULTY_COLOR[catalog.difficulty]}`}>
               {catalog.difficulty}
             </span>
-
-            {/* Effort */}
             <span className="inline-flex items-center gap-1 rounded-full bg-white/[0.06] px-2.5 py-0.5 text-xs text-gray-400">
               <Clock className="h-3 w-3" />
-              {catalog.effortMinutes < 60
-                ? `~${catalog.effortMinutes} min`
-                : `~${Math.round(catalog.effortMinutes / 60)} hr`}
+              {catalog.effortMinutes < 60 ? `~${catalog.effortMinutes} min` : `~${Math.round(catalog.effortMinutes / 60)} hr`}
             </span>
-
-            {/* Estimated impact */}
             {catalog.estimatedImpact && (
               <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/15 px-2.5 py-0.5 text-xs font-semibold text-indigo-400">
                 <TrendingUp className="h-3 w-3" />
@@ -166,12 +196,8 @@ export default function AuditFixPage() {
           <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
             <span>{issue.urlsAffected} {issue.urlsAffected === 1 ? "page" : "pages"} affected</span>
             {data?.domain && (
-              <a
-                href={`https://${data.domain}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 transition"
-              >
+              <a href={`https://${data.domain}`} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 transition">
                 {data.domain}
                 <ExternalLink className="h-3 w-3" />
               </a>
@@ -187,6 +213,17 @@ export default function AuditFixPage() {
           </h2>
           <p className="text-sm text-gray-300 leading-relaxed">{catalog.whyItMatters}</p>
         </div>
+
+        {/* ── Pro Tip (SEMrush doesn't have this) ──────────────────────── */}
+        {catalog.proTip && (
+          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.07] p-5">
+            <h2 className="text-sm font-semibold text-amber-300 mb-1.5 flex items-center gap-2">
+              <Lightbulb className="h-4 w-4" />
+              Pro Tip
+            </h2>
+            <p className="text-sm text-amber-100/80 leading-relaxed">{catalog.proTip}</p>
+          </div>
+        )}
 
         {/* ── Before / After code examples ─────────────────────────────── */}
         {(catalog.exampleBefore || catalog.exampleAfter) && (
@@ -219,11 +256,44 @@ export default function AuditFixPage() {
           </div>
         )}
 
-        {/* ── How to fix ───────────────────────────────────────────────── */}
+        {/* ── How to fix (with platform selector) ──────────────────────── */}
         <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6">
-          <h2 className="text-sm font-semibold text-white mb-4">How to Fix</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Wrench className="h-4 w-4 text-indigo-400" />
+              How to Fix
+            </h2>
+
+            {/* Platform selector — only shown when platform steps exist */}
+            {hasPlatformSteps && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <MonitorSmartphone className="h-3.5 w-3.5 text-gray-500 shrink-0" />
+                <span className="text-xs text-gray-500 mr-0.5">Platform:</span>
+                {PLATFORMS.map((p) => {
+                  const hasSteps =
+                    p.id === "html" || !!(catalog.platformSteps?.[p.id as "wordpress" | "shopify" | "wix"]);
+                  if (!hasSteps) return null;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => savePlatform(p.id)}
+                      className={`rounded-full px-3 py-0.5 text-xs font-medium transition ${
+                        platform === p.id
+                          ? "bg-indigo-500 text-white"
+                          : "bg-white/[0.06] text-gray-400 hover:bg-white/[0.10]"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Steps */}
           <ol className="space-y-3">
-            {catalog.manualSteps.map((step, i) => (
+            {stepsToShow.map((step, i) => (
               <li key={i} className="flex items-start gap-3">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-xs font-bold text-indigo-400">
                   {i + 1}
@@ -243,6 +313,44 @@ export default function AuditFixPage() {
             </div>
           )}
         </div>
+
+        {/* ── Recommended free tools (SEMrush doesn't have this) ───────── */}
+        {catalog.tools && catalog.tools.length > 0 && (
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6">
+            <h2 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+              <Globe className="h-4 w-4 text-indigo-400" />
+              Recommended Tools
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {catalog.tools.map((tool) => (
+                <a
+                  key={tool.name}
+                  href={tool.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 hover:border-indigo-500/40 hover:bg-indigo-500/[0.05] transition"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-white group-hover:text-indigo-300 transition">
+                      {tool.name}
+                    </p>
+                    {tool.description && (
+                      <p className="text-xs text-gray-500 mt-0.5 leading-tight">{tool.description}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {tool.free && (
+                      <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400">
+                        Free
+                      </span>
+                    )}
+                    <ExternalLink className="h-3 w-3 text-gray-600 group-hover:text-indigo-400 transition" />
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── How to verify ────────────────────────────────────────────── */}
         {catalog.validationSteps.length > 0 && (
@@ -301,6 +409,48 @@ export default function AuditFixPage() {
             </a>
           )}
         </div>
+
+        {/* ── Related issues (SEMrush doesn't have this) ───────────────── */}
+        {catalog.relatedIssues && catalog.relatedIssues.length > 0 && (
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6">
+            <h2 className="text-sm font-semibold text-white mb-3">
+              Related issues to check
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {catalog.relatedIssues.map((relId) => {
+                const rel = getIssueContent(relId);
+                const relIssue = data?.issues.find((i) => i.id === relId);
+                const isActive = !!relIssue;
+                return (
+                  <button
+                    key={relId}
+                    onClick={() => {
+                      if (isActive && auditId) {
+                        router.push(`/audits/${auditId}/fix/${relId}`);
+                      }
+                    }}
+                    disabled={!isActive}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition ${
+                      isActive
+                        ? "border border-white/10 bg-white/[0.04] text-gray-300 hover:border-indigo-500/40 hover:text-indigo-300 cursor-pointer"
+                        : "border border-white/[0.04] bg-white/[0.02] text-gray-600 cursor-default"
+                    }`}
+                  >
+                    {rel.title}
+                    {isActive && (
+                      <span className="rounded-full bg-red-500/20 px-1.5 py-0.5 text-[10px] font-bold text-red-400">
+                        {relIssue.urlsAffected}
+                      </span>
+                    )}
+                    {!isActive && (
+                      <span className="text-[10px] text-gray-600">✓ Clean</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* ── Mark as fixed + navigation ───────────────────────────────── */}
         <div className="flex flex-col sm:flex-row items-center gap-3">
