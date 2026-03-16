@@ -111,10 +111,13 @@ export function BlogPost({ post }: { post: BlogPostType }) {
             // Normal paragraph (may contain **bold** spans and `inline code`)
             // IMPORTANT: Escape HTML first to prevent <meta>, <link> etc. in blog content
             // from being injected into the DOM (causes noindex / multiple canonicals bugs).
+            // Also escape " so that content="noindex" examples in code blocks don't match
+            // the crawler's robots noindex regex on the raw HTML.
             const escaped = trimmed
               .replace(/&/g, '&amp;')
               .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;');
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;');
             // Convert `inline code` to <code> tags
             const withCode = escaped.replace(
               /`([^`]+)`/g,

@@ -133,9 +133,11 @@ function auditPageCompact(
         }
     }
 
-    // Robots noindex
-    const isNoindex = /content=["'][^"']*noindex/i.test(html) ||
-        /<meta\s[^>]*name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(html);
+    // Robots noindex — check <head> ONLY to avoid false positives from
+    // blog post content examples like `<meta name="robots" content="noindex">`
+    // rendered as escaped text inside <code> blocks.
+    const headHtml = html.match(/<head[\s>][\s\S]*?<\/head>/i)?.[0] ?? "";
+    const isNoindex = /<meta\s[^>]*name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(headHtml);
     if (isNoindex) {
         score -= 15;
         issues.push({ id: "robots_noindex", sev: "HIGH", msg: "Page set to noindex" });
