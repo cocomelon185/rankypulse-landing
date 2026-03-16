@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { absolute: title },
     description,
     alternates: { canonical: "/auth/signin" },
-    robots: { index: false, follow: false },
+    robots: { index: true, follow: true },
     openGraph: {
       title,
       description,
