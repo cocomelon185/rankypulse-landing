@@ -248,7 +248,7 @@ export const AUDIT_PAGES: AuditLanding[] = [
   {
     slug: "real-estate-seo-audit",
     title: "Real Estate SEO Audit",
-    metaTitle: "Real Estate SEO Audit — Free Agent & Broker Check | RankyPulse",
+    metaTitle: "Real Estate SEO Audit — Agent & Broker Check | RankyPulse",
     metaDescription:
       "Free real estate SEO audit for agents and brokers. Fix listing pages, local schema, and site structure. Get more leads from search.",
     intro:
@@ -269,7 +269,7 @@ export const AUDIT_PAGES: AuditLanding[] = [
   {
     slug: "restaurant-seo-audit",
     title: "Restaurant SEO Audit",
-    metaTitle: "Restaurant SEO Audit — Free Local Visibility Check | RankyPulse",
+    metaTitle: "Restaurant SEO Audit — Local Visibility Check | RankyPulse",
     metaDescription:
       "Free restaurant SEO audit. Fix menu pages, local schema, and GBP signals. Get more reservations from search.",
     intro:
@@ -374,7 +374,7 @@ export const AUDIT_PAGES: AuditLanding[] = [
   {
     slug: "core-web-vitals-audit",
     title: "Core Web Vitals Audit",
-    metaTitle: "Core Web Vitals Audit — Free LCP, FID, CLS Check | RankyPulse",
+    metaTitle: "Core Web Vitals Audit — LCP, FID & CLS Check | RankyPulse",
     metaDescription:
       "Free Core Web Vitals audit. Check LCP, FID, and CLS. Get actionable fixes to pass Page Experience and rankings.",
     intro:

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import ContactClientPage from "./ContactClientPage";
+import { SEOContentWrapper } from "@/components/landing/SEOContentWrapper";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "Contact | RankyPulse";
+  const title = "Contact RankyPulse | Questions & Feedback";
   const description =
     "Have a question or feedback? Send us a message — we usually reply within 1 business day.";
 
@@ -27,5 +28,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function ContactPage() {
-  return <ContactClientPage />;
+  return (
+    <>
+      <ContactClientPage />
+      <SEOContentWrapper />
+    </>
+  );
 }

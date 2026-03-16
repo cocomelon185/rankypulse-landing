@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import SEOAuditToolClient from "./SEOAuditToolClient";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "Free SEO Audit Tool | Complete Website Analysis | RankyPulse";
+  const title = "Free SEO Audit Tool | Website Analysis | RankyPulse";
   const description = "Get a complete SEO audit in seconds. Analyze technical SEO, on-page issues, core web vitals, and more. Find actionable fixes to improve your rankings.";
 
   return {

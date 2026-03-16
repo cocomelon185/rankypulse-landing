@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     url: "https://rankypulse.com",
     title: "RankyPulse — Free Site SEO Audit & Website Audit Tool",
     description:
-      "Enter any domain. Get a free site SEO audit with step-by-step fix guides and real traffic estimates. RankyPulse is the website audit tool that shows you exactly what to fix. Takes 30 seconds.",
+      "Enter any domain. Get a free site SEO audit with step-by-step fix guides and real traffic estimates. Find exactly what to fix in 30 seconds.",
     siteName: "RankyPulse",
     images: [
       {

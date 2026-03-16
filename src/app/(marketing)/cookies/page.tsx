@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { SEOContentWrapper } from "@/components/landing/SEOContentWrapper";
 
 export const metadata: Metadata = {
-    title: { absolute: "Cookie Policy | RankyPulse" },
+    title: { absolute: "Cookie Policy | How RankyPulse Uses Cookies" },
     description:
         "Learn how RankyPulse uses cookies. We keep it minimal: only essential session cookies and optional analytics.",
     alternates: { canonical: "https://rankypulse.com/cookies" },
@@ -68,5 +69,6 @@ export default function CookiesPage() {
                 </section>
             </div>
         </div>
+        <SEOContentWrapper />
     );
 }

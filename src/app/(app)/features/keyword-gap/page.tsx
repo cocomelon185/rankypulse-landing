@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import KeywordGapClient from "./KeywordGapClient";
 
 export const metadata: Metadata = {
-    title: "Keyword Gap - Find Keywords Your Competitors Rank For | RankyPulse",
+    title: "Keyword Gap — Find Competitor Keywords | RankyPulse",
     description: "Discover missing keyword opportunities by comparing your domain with competitors.",
     alternates: { canonical: "https://rankypulse.com/app/features/keyword-gap" },
     robots: { index: false, follow: false },

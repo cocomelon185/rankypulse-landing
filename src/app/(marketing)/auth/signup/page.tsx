@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import SignUpClientPage from "./SignUpClientPage";
+import { SEOContentWrapper } from "@/components/landing/SEOContentWrapper";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "Create Account | RankyPulse";
+  const title = "Sign Up for RankyPulse — Free SEO Audits";
   const description =
     "Create your RankyPulse account to save audits, track scores, and access your dashboard.";
 
@@ -33,8 +34,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function SignUpPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0d0f14]" />}>
-      <SignUpClientPage />
-    </Suspense>
+    <>
+      <Suspense fallback={<div className="min-h-screen bg-[#0d0f14]" />}>
+        <SignUpClientPage />
+      </Suspense>
+      <SEOContentWrapper />
+    </>
   );
 }

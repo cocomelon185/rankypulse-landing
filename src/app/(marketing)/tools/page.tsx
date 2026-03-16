@@ -4,13 +4,13 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-    title: { absolute: "Free SEO Tools | RankyPulse" },
+    title: { absolute: "Free SEO Tools | Audit, Analyze & Fix | RankyPulse" },
     description:
         "Use our free SEO tools: site audit, meta tag checker, keyword research, backlink analyzer, and more. Start with a free site crawl — no signup required.",
     alternates: { canonical: "/tools" },
     robots: { index: true, follow: true },
     openGraph: {
-        title: "Free SEO Tools | RankyPulse",
+        title: "Free SEO Tools | Audit, Analyze & Fix | RankyPulse",
         description: "Audit your site, check SEO optimization, analyze competitors, track rankings, and research keywords with our suite of free and Pro tools.",
         url: "/tools",
         siteName: "RankyPulse",
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     },
     twitter: {
         card: "summary_large_image",
-        title: "Free SEO Tools | RankyPulse",
+        title: "Free SEO Tools | Audit, Analyze & Fix | RankyPulse",
         description: "Everything for SEO success: free site audits, meta tag analysis, rank tracking, backlink insights, and competitive intelligence.",
     },
 };

@@ -3,12 +3,12 @@ import { Suspense } from "react";
 import AuditResultsClientPage from "@/app/(app)/audit/results/AuditResultsClientPage";
 
 export const metadata: Metadata = {
-  title: { absolute: "Audit Results | RankyPulse" },
+  title: { absolute: "SEO Audit Results | Site Analysis | RankyPulse" },
   description: "Review your comprehensive SEO audit results with detailed issue analysis and actionable recommendations to improve your site's search performance.",
   alternates: { canonical: "/audit/results" },
   robots: { index: true, follow: true },
   openGraph: {
-    title: "Audit Results | RankyPulse",
+    title: "SEO Audit Results | Site Analysis | RankyPulse",
     description: "Get your SEO audit score, see critical issues ranked by impact, and implement verified fixes to boost organic traffic.",
     url: "/audit/results",
     siteName: "RankyPulse",

@@ -20,7 +20,7 @@ export const BLOG_POSTS: BlogPost[] = [
     readingMinutes: 10,
     publishedAt: '2026-03-10',
     pullQuote: "A site SEO audit without a fix plan is just a to-do list. The goal is to find issues, prioritise by traffic impact, and fix them in order.",
-    excerpt: "Running a site SEO audit sounds daunting, but it breaks down into seven concrete checks. This guide walks through each one — what to look for, what good looks like, and how to fix the most common problems.",
+    excerpt: "A site SEO audit breaks down into seven concrete checks. This guide covers what to look for, what good looks like, and how to fix the most common problems fast.",
     featured: false,
     content: `
 A site SEO audit is a systematic review of every factor that affects how well your website ranks in search engines. Done right, it tells you exactly what is costing you traffic and what to fix first.
@@ -266,7 +266,7 @@ Start with the top three issues the audit surfaces. Fix those. Re-run the audit.
     readingMinutes: 7,
     publishedAt: '2026-03-06',
     pullQuote: "The best SEO analysis tool is not the one with the most features. It is the one that tells you clearly what to fix next.",
-    excerpt: "An SEO analysis tool shows you where your website stands in search — and more importantly, what is holding it back. Here is how to use one effectively and what metrics actually matter.",
+    excerpt: "An SEO analysis tool shows where your website stands in search and what's holding it back. Here's how to use one effectively and what metrics actually matter.",
     featured: false,
     content: `
 An SEO analysis tool is software that evaluates your website's performance in search engines. It looks at technical health, content quality, keyword rankings, backlinks, and competitive positioning — and tells you what needs to improve.
@@ -374,7 +374,7 @@ It is free to start, requires no signup for the initial audit, and is designed t
     readingMinutes: 6,
     publishedAt: '2026-03-04',
     pullQuote: "The best free SEO audit is the one that tells you what to fix, not just what is wrong. Data without direction is just noise.",
-    excerpt: "Free SEO audits have a bad reputation — most are shallow lead-gen forms designed to upsell you. But a genuinely free audit is possible, and it covers the same ground as tools costing hundreds per month.",
+    excerpt: "Free SEO audits have a bad reputation. Most are shallow lead-gen forms. A genuinely free audit covers the same ground as tools costing hundreds per month.",
     featured: false,
     content: `
 There is a persistent myth in the SEO world that a good audit has to be expensive. That myth is kept alive by agencies selling £2,000 audit packages and SaaS tools with $200/month price tags.
@@ -498,7 +498,7 @@ The goal is not perfection. The goal is continuous improvement — every month, 
     readingMinutes: 7,
     publishedAt: '2026-03-02',
     pullQuote: "Most teams do not need more data. They need fewer issues — picked correctly, fixed quickly. A good website audit tool does the prioritising for you.",
-    excerpt: "Choosing a website audit tool is harder than it should be. Bloated platforms, complex pricing, confusing reports. This guide cuts through it: what to look for, what to ignore, and which tool fits which situation.",
+    excerpt: "Choosing a website audit tool shouldn't be hard. This guide cuts through the noise: what to look for, what to ignore, and which tool fits your situation.",
     featured: false,
     content: `
 There are more website audit tools on the market than ever. Ahrefs, SEMrush, Moz, Screaming Frog, Sitebulb, RankyPulse, and dozens more all claim to be the best way to audit your website.
@@ -636,7 +636,7 @@ Run your first audit. See what it surfaces. If you outgrow it, you will know exa
     readingMinutes: 12,
     publishedAt: '2026-03-01',
     pullQuote: "You don't need to outsmart the algorithm. You just need to build a page that makes the algorithm's job perfectly effortless.",
-    excerpt: "What does a perfectly optimized page actually look like under the hood? We break down the exact HTML, structure, and content hierarchy required to rank in 2026. Bookmark this for your next build.",
+    excerpt: "What does a perfectly optimized page look like under the hood? We break down the HTML, structure, and content hierarchy required to rank in 2026. Bookmark it.",
     featured: true,
     content: `
       Every day, we see founders and marketers struggle to piece together on-page SEO from dozens of different fragmented articles. "Keywords here," "H1s there," "LSI somewhere."

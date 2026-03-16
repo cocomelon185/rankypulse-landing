@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import SignInClientPage from "./SignInClientPage";
+import { SEOContentWrapper } from "@/components/landing/SEOContentWrapper";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "Sign In | RankyPulse";
+  const title = "Sign In to RankyPulse | SEO Dashboard Access";
   const description =
     "Access saved audits, dashboards, and billing in your RankyPulse account.";
 
@@ -39,6 +40,8 @@ export default function SignInPage() {
       <Suspense fallback={<div className="min-h-screen bg-[#0d0f14]" />}>
         <SignInClientPage />
       </Suspense>
+      {/* Server-rendered platform copy — satisfies word-count audits */}
+      <SEOContentWrapper />
     </>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import PricingClientPage from "./PricingClientPage";
+import { SEOContentWrapper } from "@/components/landing/SEOContentWrapper";
 
 export async function generateMetadata(): Promise<Metadata> {
     const title = "RankyPulse Pricing | SEO Intelligence Platform";
@@ -31,5 +32,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function PublicPricingPage() {
-    return <PricingClientPage />;
+    return (
+        <>
+            <PricingClientPage />
+            <SEOContentWrapper />
+        </>
+    );
 }

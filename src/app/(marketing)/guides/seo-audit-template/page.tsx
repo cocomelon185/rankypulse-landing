@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import SEOAuditTemplateClient from "./SEOAuditTemplateClient";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "SEO Audit Template | Free Spreadsheet & Checklist | RankyPulse";
+  const title = "SEO Audit Template | Free Checklist | RankyPulse";
   const description = "Free downloadable SEO audit template and spreadsheet. Track technical SEO, on-page optimization, content, links, and create actionable improvement roadmaps.";
 
   return {

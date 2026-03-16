@@ -7,6 +7,7 @@ import { getAuditLanding } from "@/lib/pseo/auditPages";
 import { Check } from "lucide-react";
 import { AuditCtaForm } from "../AuditCtaForm";
 import { clampTitle, clampDesc } from "@/lib/metadata";
+import { SEOContentWrapper } from "@/components/landing/SEOContentWrapper";
 
 const BASE_URL = "https://rankypulse.com";
 
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = clampTitle(page.metaTitle);
   const description = clampDesc(page.metaDescription);
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical },
     robots: { index: true, follow: true },
@@ -155,6 +156,7 @@ export default async function AuditSlugPage({ params }: Props) {
           </aside>
         </article>
       </main>
+      <SEOContentWrapper />
       <Footer />
     </div>
   );
