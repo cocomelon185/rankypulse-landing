@@ -132,6 +132,83 @@ export default function ToolsPage() {
                             Run Free Audit ↗
                         </Link>
                     </div>
+
+                    {/* About section */}
+                    <div className="mt-20 space-y-10">
+                        <div>
+                            <h2 className="text-2xl font-bold text-white mb-4">Why use RankyPulse SEO tools?</h2>
+                            <p className="text-gray-400 leading-relaxed">
+                                Most SEO tools are built for agencies managing dozens of clients. RankyPulse is built for site
+                                owners and small teams who need clear answers fast — not 300-point spreadsheets. Every tool in
+                                this suite is designed to surface the issues that actually affect your rankings, and give you
+                                plain-English guidance on how to fix them.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <h3 className="text-lg font-semibold text-white mb-2">Free Site Audit — no signup required</h3>
+                                <p className="text-gray-400 text-sm leading-relaxed">
+                                    Enter any domain and get a full technical SEO report in under 30 seconds. The audit checks
+                                    crawlability, title tags, meta descriptions, page speed, internal links, canonical tags, and
+                                    schema markup. Issues are ranked by impact so you know exactly what to fix first.
+                                </p>
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-semibold text-white mb-2">Meta Tag Checker</h3>
+                                <p className="text-gray-400 text-sm leading-relaxed">
+                                    Your title tag and meta description are your ad copy in Google search results. This tool
+                                    checks their length, uniqueness, and keyword alignment — giving you a quick pass/fail for
+                                    every page. Fix thin or duplicate meta tags to improve click-through rates immediately.
+                                </p>
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-semibold text-white mb-2">Rank Tracking (Pro)</h3>
+                                <p className="text-gray-400 text-sm leading-relaxed">
+                                    Track daily keyword rankings for desktop and mobile. See which pages are climbing, which are
+                                    dropping, and how algorithm updates affect your visibility. Integrated directly with the audit
+                                    data so you can connect ranking changes to specific technical issues.
+                                </p>
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-semibold text-white mb-2">Competitor Analysis (Pro)</h3>
+                                <p className="text-gray-400 text-sm leading-relaxed">
+                                    Compare your domain against up to five competitors across keyword rankings, backlink profiles,
+                                    and content gaps. Find keywords your competitors rank for that you do not — then use
+                                    RankyPulse to audit and improve the pages most likely to close that gap.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h2 className="text-xl font-bold text-white mb-4">Frequently asked questions</h2>
+                            <div className="space-y-4">
+                                <div>
+                                    <h3 className="text-white font-semibold mb-1">Are the free tools actually free?</h3>
+                                    <p className="text-gray-400 text-sm">
+                                        Yes. The Site Audit and Meta Tag Checker are completely free with no account required.
+                                        Pro tools (Rank Tracking, Keyword Research, Backlink Analyzer, Competitor Analysis) require
+                                        a RankyPulse Pro subscription.
+                                    </p>
+                                </div>
+                                <div>
+                                    <h3 className="text-white font-semibold mb-1">How often is the audit data updated?</h3>
+                                    <p className="text-gray-400 text-sm">
+                                        The free audit crawls your site in real time whenever you run it. Pro users can schedule
+                                        weekly or monthly automated audits and receive email alerts when new issues appear.
+                                    </p>
+                                </div>
+                                <div>
+                                    <h3 className="text-white font-semibold mb-1">Do I need technical SEO knowledge to use these tools?</h3>
+                                    <p className="text-gray-400 text-sm">
+                                        No. Every issue RankyPulse flags comes with a plain-English explanation and a step-by-step
+                                        fix guide. You do not need to understand HTTP status codes or robots.txt syntax — we
+                                        explain exactly what the problem is and what you need to do.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
             <LandingFooter />

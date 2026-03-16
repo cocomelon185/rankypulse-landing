@@ -16,7 +16,9 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = BLOG_POSTS.find(p => p.slug === slug);
   if (!post) return {};
-  const title = clampTitle(`${post.title} | RankyPulse`);
+  const suffix = ' | RankyPulse';
+  const fullTitle = `${post.title}${suffix}`;
+  const title = fullTitle.length <= 60 ? fullTitle : clampTitle(post.title, 60);
   const description = clampDesc(post.excerpt);
   return {
     title: { absolute: title },

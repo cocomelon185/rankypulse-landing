@@ -20,7 +20,7 @@ export const BLOG_POSTS: BlogPost[] = [
     readingMinutes: 10,
     publishedAt: '2026-03-10',
     pullQuote: "A site SEO audit without a fix plan is just a to-do list. The goal is to find issues, prioritise by traffic impact, and fix them in order.",
-    excerpt: "A site SEO audit breaks down into seven concrete checks. This guide covers what to look for, what good looks like, and how to fix the most common problems fast.",
+    excerpt: "A site SEO audit breaks down into seven concrete checks. This guide covers what to look for, what good looks like, and how to fix the most common problems.",
     featured: false,
     content: `
 A site SEO audit is a systematic review of every factor that affects how well your website ranks in search engines. Done right, it tells you exactly what is costing you traffic and what to fix first.
@@ -152,7 +152,7 @@ Set a monthly reminder. Run RankyPulse. Fix the top three issues. Repeat. Over s
     readingMinutes: 8,
     publishedAt: '2026-03-08',
     pullQuote: "The fastest way to improve your rankings is not to publish more content. It is to check what is already broken and fix it.",
-    excerpt: "Not sure how to check your website's SEO? Start with these 10 factors. Each one is measurable, actionable, and directly tied to how much organic traffic you get.",
+    excerpt: "Not sure how to check your website's SEO? Start with these 10 factors. Each is measurable, actionable, and directly tied to how much organic traffic you get.",
     featured: false,
     content: `
 Knowing how to check your website's SEO is one of the most valuable skills any founder, marketer, or developer can have. Most of the traffic you are missing is not because you need more content — it is because something specific and fixable is holding your existing pages back.
@@ -368,7 +368,7 @@ It is free to start, requires no signup for the initial audit, and is designed t
   },
   {
     slug: 'free-seo-audit-guide',
-    title: 'Free SEO Audit: How to Audit Your Website at Zero Cost in 2026',
+    title: 'Free SEO Audit: Audit Any Website at Zero Cost (2026)',
     subtitle: 'You do not need to spend hundreds on SEO software to get a thorough audit. Here is how to do it for free.',
     category: 'Strategy',
     readingMinutes: 6,
@@ -630,13 +630,13 @@ Run your first audit. See what it surfaces. If you outgrow it, you will know exa
   },
   {
     slug: 'anatomy-of-a-perfect-seo-page-2026',
-    title: 'The Anatomy of a Perfect Page: A Visual Guide to On-Page SEO (2026 Edition)',
+    title: 'On-Page SEO Anatomy: Perfect Page Blueprint 2026',
     subtitle: 'Stop guessing what Google wants. Here is the exact blueprint for a page built to rank.',
     category: 'Strategy',
     readingMinutes: 12,
     publishedAt: '2026-03-01',
     pullQuote: "You don't need to outsmart the algorithm. You just need to build a page that makes the algorithm's job perfectly effortless.",
-    excerpt: "What does a perfectly optimized page look like under the hood? We break down the HTML, structure, and content hierarchy required to rank in 2026. Bookmark it.",
+    excerpt: "What does a perfectly optimized page look like under the hood? We break down the HTML, structure, and content hierarchy required to rank in 2026.",
     featured: true,
     content: `
       Every day, we see founders and marketers struggle to piece together on-page SEO from dozens of different fragmented articles. "Keywords here," "H1s there," "LSI somewhere."
@@ -713,7 +713,7 @@ Run your first audit. See what it surfaces. If you outgrow it, you will know exa
     readingMinutes: 9,
     publishedAt: '2026-03-03',
     pullQuote: "Crawling is reading. Indexing is filing. Ranking is retrieving. Most SEO problems happen in the reading phase, long before you ever have a chance to rank.",
-    excerpt: "You can't fix what you don't understand. We break down the exact sequence of events that happens when Googlebot visits your site—from DNS lookup to the Caffeine Index. Essential knowledge for anyone managing a website.",
+    excerpt: "You can't fix what you don't understand. We break down how Googlebot visits your site — from DNS lookup to the Caffeine Index. Essential reading for site owners.",
     featured: false,
     content: `
       Search Engine Optimization is often treated like dark magic. We make an offering of keywords to the algorithm and pray for traffic.
@@ -777,7 +777,7 @@ Run your first audit. See what it surfaces. If you outgrow it, you will know exa
     readingMinutes: 7,
     publishedAt: '2026-03-05',
     pullQuote: "Perfect SEO is an illusion sold by audit tools. Profitable SEO is knowing which warnings to ignore entirely.",
-    excerpt: "Run an SEO audit and you'll get 100+ warnings. Most of them don't matter. We break down the Pareto principle of SEO: the 20% of technical actions that drive 80% of your organic traffic growth.",
+    excerpt: "Run an SEO audit and you'll get 100+ warnings. Most don't matter. We break down the 20% of technical actions that drive 80% of your organic traffic growth.",
     featured: false,
     content: `
       If you run any website through an automated SEO tool (even ours), you will likely be staring at a dashboard flashing red with dozens of "Errors" and "Warnings."
@@ -996,7 +996,7 @@ Run your first audit. See what it surfaces. If you outgrow it, you will know exa
   },
   {
     slug: 'title-tag-optimization',
-    title: 'Title tags: the 60-character decision that determines your ranking',
+    title: 'Title Tag Optimization: The 60-Character Rule',
     subtitle: "Why most title tags are either too long, too short, or targeting the wrong thing",
     category: 'Technical SEO',
     readingMinutes: 6,
@@ -1124,13 +1124,13 @@ http://yoursite.com → https://yoursite.com → https://www.yoursite.com
   },
   {
     slug: 'schema-markup-beginners-guide',
-    title: "Schema markup: the 20-minute fix that makes Google understand your site",
+    title: "Schema Markup Guide: Help Google Understand Your Site",
     subtitle: 'How structured data unlocks rich results — and why most sites skip it',
     category: 'Technical SEO',
     readingMinutes: 6,
     publishedAt: '2026-01-24',
     pullQuote: "Rich results (star ratings, FAQs, sitelinks) are free upgrades in Google's search results. Schema is the key.",
-    excerpt: "Schema markup tells Google what your content means, not just what it says. It unlocks star ratings, FAQ snippets, and sitelinks in search results — for free.",
+    excerpt: "Schema markup tells Google what your content means, not just what it says. It unlocks star ratings, FAQ snippets, and sitelinks — for free.",
     featured: false,
     content: `
       Schema markup is structured data you add to your HTML that tells Google
@@ -1177,7 +1177,7 @@ http://yoursite.com → https://yoursite.com → https://www.yoursite.com
   },
   {
     slug: 'robots-txt-and-sitemap-guide',
-    title: 'robots.txt and sitemaps: the two files Google reads before anything else',
+    title: 'robots.txt & Sitemap: The Essential SEO Guide',
     subtitle: "Get these wrong and Google might not index your site correctly — or at all",
     category: 'Technical SEO',
     readingMinutes: 5,
