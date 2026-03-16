@@ -3,7 +3,9 @@ import { AppShell } from "@/components/layout/AppShell";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://rankypulse.com"),
-  robots: { index: false, follow: false },
+  // No global robots block — each page controls its own robots setting.
+  // Tool pages (rank-tracking, backlinks, keywords, competitors) are index:true.
+  // Private pages (dashboard, settings, action-center) keep robots:false in their own page.tsx.
   openGraph: {
     siteName: "RankyPulse",
     type: "website",
