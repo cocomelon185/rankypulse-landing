@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { AppNavbar } from "@/components/layout/Navbar";
 
 export const metadata: Metadata = {
+  title: { absolute: "RankyPulse — Free SEO Audit & Fix Tool" },
+  description:
+    "Get a free SEO audit in 30 seconds. Find every issue hurting your traffic and get step-by-step fix guides. No signup required.",
   alternates: { canonical: "https://rankypulse.com" },
 };
 import { Hero } from "@/components/landing/Hero";

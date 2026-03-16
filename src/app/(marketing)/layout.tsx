@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     template: "%s | RankyPulse",
   },
   description:
-    "Get a free site SEO audit in 30 seconds. RankyPulse is a website audit tool that finds every issue costing you traffic and shows you how to fix each one. No signup required.",
+    "Get a free SEO audit in 30 seconds. Find every issue hurting your traffic and get step-by-step fix guides. No signup required.",
   keywords: [
     "free SEO audit",
     "SEO audit tool",

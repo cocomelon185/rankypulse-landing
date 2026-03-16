@@ -1,5 +1,5 @@
 /**
- * Metadata length helpers
+ * Metadata length helpers + constructMetadata factory
  * ─────────────────────────────────────────────────────────────────────────────
  * Google's recommended limits:
  *   Title:       50–60 chars (hard truncated at ~600px display width)
@@ -8,6 +8,7 @@
  * Both helpers truncate at the last full word boundary and append an ellipsis
  * so output never ends mid-word.
  */
+import type { Metadata } from "next";
 
 /**
  * Clamp a page title to `max` characters (default 60).
@@ -34,4 +35,61 @@ export function clampTitle(title: string, max = 60): string {
 export function clampDesc(desc: string, max = 160): string {
   if (desc.length <= max) return desc;
   return desc.slice(0, max - 1).replace(/\s+\S*$/, "").trimEnd() + "…";
+}
+
+interface ConstructMetadataProps {
+  title?: string;
+  description?: string;
+  image?: string;
+  canonical?: string;
+  noIndex?: boolean;
+}
+
+/**
+ * Centralised metadata factory.
+ * Automatically clamps title to 60 chars and description to 160 chars,
+ * sets OG/Twitter tags, and optionally marks a page as noindex.
+ *
+ * @example
+ * export const metadata = constructMetadata({
+ *   title: "How to Do an SEO Audit | RankyPulse",
+ *   description: "Step-by-step guide...",
+ *   canonical: "https://rankypulse.com/guides/how-to-do-seo-audit",
+ * });
+ */
+export function constructMetadata({
+  title = "RankyPulse | AI-Powered SEO Audit Tool",
+  description = "Evolve your SEO with automated audits, AI fix assistants, and 30-day growth roadmaps.",
+  image = "/og.jpg",
+  canonical,
+  noIndex = false,
+}: ConstructMetadataProps = {}): Metadata {
+  const optimizedTitle = clampTitle(title);
+  const optimizedDescription = clampDesc(description);
+
+  return {
+    title: {
+      default: optimizedTitle,
+      template: "%s | RankyPulse",
+    },
+    description: optimizedDescription,
+    metadataBase: new URL("https://rankypulse.com"),
+    ...(canonical && { alternates: { canonical } }),
+    openGraph: {
+      title: optimizedTitle,
+      description: optimizedDescription,
+      images: [{ url: image, width: 1200, height: 630 }],
+      siteName: "RankyPulse",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: optimizedTitle,
+      description: optimizedDescription,
+      images: [image],
+      creator: "@rankypulse",
+    },
+    icons: "/favicon.ico",
+    ...(noIndex && { robots: { index: false, follow: false } }),
+  };
 }
