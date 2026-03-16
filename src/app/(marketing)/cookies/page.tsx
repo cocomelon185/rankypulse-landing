@@ -67,8 +67,8 @@ export default function CookiesPage() {
                         </p>
                     </div>
                 </section>
+                <SEOContentWrapper />
             </div>
         </div>
-        <SEOContentWrapper />
     );
 }
