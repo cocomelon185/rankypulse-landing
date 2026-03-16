@@ -6,7 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = "Free and affordable SEO for nonprofits. Increase donor awareness, volunteer recruitment, and mission impact through search visibility.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/seo-audit-for-nonprofits" },
     robots: { index: true, follow: true },

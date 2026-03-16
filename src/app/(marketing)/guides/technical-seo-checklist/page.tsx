@@ -3,10 +3,10 @@ import TechnicalSEOChecklistClient from "./TechnicalSEOChecklistClient";
 
 export async function generateMetadata(): Promise<Metadata> {
   const title = "Technical SEO Checklist | 2024 Guide | RankyPulse";
-  const description = "Complete technical SEO checklist covering site speed, mobile-friendliness, XML sitemaps, robots.txt, structured data, and more. Ensure your website's technical foundation is SEO-ready.";
+  const description = "Technical SEO checklist: site speed, mobile, XML sitemaps, robots.txt, structured data, and more. Ensure your site's technical foundation is SEO-ready.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/guides/technical-seo-checklist" },
     robots: { index: true, follow: true },

@@ -6,7 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = "Small business SEO audit with realistic, high-ROI tactics. Get visible in local search and attract local customers.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/seo-audit-for-small-business" },
     robots: { index: true, follow: true },

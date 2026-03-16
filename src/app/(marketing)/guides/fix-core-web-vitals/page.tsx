@@ -6,7 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = "Step-by-step guide to fixing Core Web Vitals (LCP, FID, CLS). Improve page speed, interactivity, and visual stability to boost rankings and user experience.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/guides/fix-core-web-vitals" },
     robots: { index: true, follow: true },

@@ -7,7 +7,7 @@ export async function generateMetadata(): Promise<Metadata> {
     "Have a question or feedback? Send us a message — we usually reply within 1 business day.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "/contact" },
     robots: { index: true, follow: true },

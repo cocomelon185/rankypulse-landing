@@ -6,7 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = "Check and validate meta tags, title tags, and Open Graph tags. Get instant feedback on SEO and social sharing optimization.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/meta-tag-checker" },
     robots: { index: true, follow: true },

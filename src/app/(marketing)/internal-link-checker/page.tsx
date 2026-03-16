@@ -6,7 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = "Find broken links, orphaned pages, and linking opportunities. Analyze internal link structure to improve crawlability and authority.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/internal-link-checker" },
     robots: { index: true, follow: true },

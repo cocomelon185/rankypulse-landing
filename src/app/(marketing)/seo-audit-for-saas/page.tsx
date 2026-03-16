@@ -6,7 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = "SaaS SEO strategy focused on free trial signups and product-led growth. Rank for high-value keywords and attract qualified users.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/seo-audit-for-saas" },
     robots: { index: true, follow: true },

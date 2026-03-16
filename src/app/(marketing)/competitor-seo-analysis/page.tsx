@@ -6,7 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = "Analyze competitors' SEO strategies, compare keyword rankings, and identify content gaps. Discover untapped ranking opportunities.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/competitor-seo-analysis" },
     robots: { index: true, follow: true },

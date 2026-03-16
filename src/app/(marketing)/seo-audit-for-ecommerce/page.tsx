@@ -6,7 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = "E-commerce SEO audit covering product pages, category optimization, technical SEO, and content strategy to boost sales.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/seo-audit-for-ecommerce" },
     robots: { index: true, follow: true },

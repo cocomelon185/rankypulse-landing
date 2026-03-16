@@ -6,7 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = "Check 301 redirects, find redirect chains, and validate health. Preserve SEO value and prevent crawl budget waste.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/redirect-checker" },
     robots: { index: true, follow: true },

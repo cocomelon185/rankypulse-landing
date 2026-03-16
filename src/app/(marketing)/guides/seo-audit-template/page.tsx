@@ -6,7 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = "Free downloadable SEO audit template and spreadsheet. Track technical SEO, on-page optimization, content, links, and create actionable improvement roadmaps.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/guides/seo-audit-template" },
     robots: { index: true, follow: true },

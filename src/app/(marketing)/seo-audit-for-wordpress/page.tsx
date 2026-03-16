@@ -6,7 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = "WordPress SEO audit with plugin recommendations, performance optimization, and site structure improvements. Fix technical SEO issues in your WordPress site.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/seo-audit-for-wordpress" },
     robots: { index: true, follow: true },

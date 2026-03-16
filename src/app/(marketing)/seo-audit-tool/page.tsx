@@ -3,10 +3,10 @@ import SEOAuditToolClient from "./SEOAuditToolClient";
 
 export async function generateMetadata(): Promise<Metadata> {
   const title = "Free SEO Audit Tool | Complete Website Analysis | RankyPulse";
-  const description = "Get a complete SEO audit in seconds. Analyze your website's technical SEO, on-page issues, core web vitals, and more. Identify actionable fixes to improve rankings.";
+  const description = "Get a complete SEO audit in seconds. Analyze technical SEO, on-page issues, core web vitals, and more. Find actionable fixes to improve your rankings.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/seo-audit-tool" },
     robots: { index: true, follow: true },

@@ -6,7 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = "Technical SEO audit to identify crawlability, indexation, and site structure issues. Get actionable recommendations.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/technical-seo-audit" },
     robots: { index: true, follow: true },
