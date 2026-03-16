@@ -108,17 +108,28 @@ export function BlogPost({ post }: { post: BlogPostType }) {
               );
             }
 
-            // Normal paragraph (may contain **bold** spans)
+            // Normal paragraph (may contain **bold** spans and `inline code`)
+            // IMPORTANT: Escape HTML first to prevent <meta>, <link> etc. in blog content
+            // from being injected into the DOM (causes noindex / multiple canonicals bugs).
+            const escaped = trimmed
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;');
+            // Convert `inline code` to <code> tags
+            const withCode = escaped.replace(
+              /`([^`]+)`/g,
+              '<code class="font-[\'DM_Mono\'] text-xs text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">$1</code>'
+            );
+            // Convert **bold** to <strong> tags
+            const withBold = withCode.replace(
+              /\*\*([^*]+)\*\*/g,
+              '<strong class="text-white font-semibold">$1</strong>'
+            );
             return (
               <p
                 key={i}
                 className="font-['DM_Sans'] text-gray-300 leading-relaxed text-base mb-6"
-                dangerouslySetInnerHTML={{
-                  __html: trimmed.replace(
-                    /\*\*([^*]+)\*\*/g,
-                    '<strong class="text-white font-semibold">$1</strong>'
-                  ),
-                }}
+                dangerouslySetInnerHTML={{ __html: withBold }}
               />
             );
           })}

@@ -499,16 +499,28 @@ export async function GET(req: NextRequest) {
         }, { onConflict: "job_id,url", ignoreDuplicates: false });
 
         // 7. Add new links to queue (upsert to skip duplicates)
+        // Skip auth-required paths (/app/*, /api/*) — the crawler can't authenticate,
+        // so these pages redirect to /auth/signin causing false canonical mismatch,
+        // keyword cannibalization, and blocked-by-robots issues.
+        const SKIP_CRAWL_PREFIXES = ["/app/", "/api/"];
         if (internalLinks.length > 0) {
-            const linksToInsert = internalLinks.slice(0, 50).map((l) => ({
-                job_id: jobId,
-                url: l,
-                status: "pending",
-            }));
-            await supabaseAdmin.from("crawl_queue").upsert(linksToInsert, {
-                onConflict: "job_id,url",
-                ignoreDuplicates: true,
+            const crawlableLinks = internalLinks.filter(link => {
+                try {
+                    const pathname = new URL(link).pathname;
+                    return !SKIP_CRAWL_PREFIXES.some(p => pathname.startsWith(p));
+                } catch { return true; }
             });
+            if (crawlableLinks.length > 0) {
+                const linksToInsert = crawlableLinks.slice(0, 50).map((l) => ({
+                    job_id: jobId,
+                    url: l,
+                    status: "pending",
+                }));
+                await supabaseAdmin.from("crawl_queue").upsert(linksToInsert, {
+                    onConflict: "job_id,url",
+                    ignoreDuplicates: true,
+                });
+            }
         }
 
         // 8. Mark done, increment counter
