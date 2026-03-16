@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import Anthropic from "@anthropic-ai/sdk";
 
-export const maxDuration = 30; // Allow 30s for Claude XML generation on Vercel
+export const maxDuration = 45; // Allow 45s — now fetches live HTML + uses smarter models
 
 // ── XML parser ────────────────────────────────────────────────────────────────
 
@@ -25,109 +25,187 @@ function parseFixXml(text: string) {
 
 // ── System prompt (instructs Claude to always return XML) ─────────────────────
 
-const SYSTEM_PROMPT = `You are a Lead SEO Engineer. Output ONLY the XML tags below — no greetings, no explanations, no markdown outside the tags. Start your response immediately with <analysis>.
+const SYSTEM_PROMPT = `You are a Lead SEO Engineer. You will receive REAL crawl data and live HTML from the affected page. Use this data to provide a SPECIFIC, surgical fix — NOT generic advice.
+
+Output ONLY the XML tags below — no greetings, no explanations, no markdown outside the tags. Start your response immediately with <analysis>.
 
 Format:
-<analysis>2 sentences explaining WHY this is a critical SEO failure, citing Google's specific guidelines (e.g., Mobile-First Indexing, HTTPS as a ranking signal, PageSpeed Insights thresholds).</analysis>
-<code_block_primary>Ready-to-paste code fix. Include inline comments. The code MUST match the site's architecture from the user message. Do NOT provide React/Next.js code for Legacy HTML sites. Do NOT provide raw HTML for Next.js sites.</code_block_primary>
-<steps>1. [File to open or location]
-2. [Where to paste the code]
+<analysis>2 sentences explaining WHY this is a critical SEO failure, citing Google's specific guidelines. Reference the ACTUAL values found in the crawl data.</analysis>
+<code_block_primary>Ready-to-paste code fix based on the ACTUAL HTML structure observed. Include inline comments. The code MUST match the site's architecture. Do NOT provide React/Next.js code for Legacy HTML sites. Do NOT provide raw HTML for Next.js sites.</code_block_primary>
+<steps>1. [Exact file to open based on the architecture]
+2. [Where to paste the code — reference actual elements found in the HTML]
 3. [How to deploy and verify]</steps>
-<verification>One single curl command OR a browser console snippet to confirm the fix is live. One line only.</verification>
+<verification>One single curl command OR a browser console snippet to confirm the fix is live. Use the ACTUAL affected URL.</verification>
 <score_impact>+X to +Y points — one short reason why.</score_impact>`;
 
-// ── Issue-specific user prompts ───────────────────────────────────────────────
+// ── Smart model routing ──────────────────────────────────────────────────────
+
+const COMPLEX_ISSUES = new Set([
+  "canonical_mismatch", "multiple_canonicals", "duplicate_canonical",
+  "keyword_cannibalization", "redirect_chain", "http_pages",
+  "robots_txt_blocked", "slow_page",
+]);
+
+function selectModel(issueId: string): string {
+  return COMPLEX_ISSUES.has(issueId)
+    ? "claude-opus-4-0-20250514"     // Complex: use Opus for deep reasoning
+    : "claude-sonnet-4-20250514";     // Simple: Sonnet for fast, reliable fixes
+}
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface PageCrawlData {
+  url: string;
+  title: string;
+  metaDescription: string;
+  canonicalUrl: string | null;
+  h1Text: string | null;
+  wordCount: number | null;
+  issues: { id: string; msg: string }[];
+}
 
 interface PromptCtx {
   domain: string;
   title: string;
   affectedPageUrls: string[];
   techStack: string;
+  // Real data from crawl
+  issueMessages: string[];
+  pageMetadata: PageCrawlData[];
+  liveHtmlHead: string;
 }
 
 type PromptFn = (ctx: PromptCtx) => string;
 
+// ── Helper: format real page context block ────────────────────────────────────
+
+function formatPageContext(ctx: PromptCtx): string {
+  const sections: string[] = [];
+
+  if (ctx.issueMessages.length > 0) {
+    sections.push(`ACTUAL ISSUE DATA FROM CRAWL:\n${ctx.issueMessages.slice(0, 5).join("\n")}`);
+  }
+
+  if (ctx.pageMetadata.length > 0) {
+    const pageLines = ctx.pageMetadata.slice(0, 5).map(p => {
+      const parts = [`URL: ${p.url}`];
+      if (p.title) parts.push(`  Title: "${p.title}"`);
+      if (p.metaDescription) parts.push(`  Description: "${p.metaDescription}"`);
+      if (p.canonicalUrl) parts.push(`  Canonical found: ${p.canonicalUrl}`);
+      if (p.h1Text) parts.push(`  H1: "${p.h1Text}"`);
+      if (p.wordCount != null) parts.push(`  Word count: ${p.wordCount}`);
+      return parts.join("\n");
+    });
+    sections.push(`PAGE METADATA FROM CRAWL:\n${pageLines.join("\n\n")}`);
+  }
+
+  if (ctx.liveHtmlHead) {
+    sections.push(`LIVE <head> SECTION OF FIRST AFFECTED PAGE:\n${ctx.liveHtmlHead}`);
+  }
+
+  return sections.length > 0
+    ? "\n\n--- REAL PAGE DATA ---\n" + sections.join("\n\n") + "\n--- END REAL DATA ---\n\n"
+    : "";
+}
+
+// ── Issue-specific user prompts (now with real data) ──────────────────────────
+
 const PROMPTS: Record<string, PromptFn> = {
-  no_meta_description: ({ domain, techStack }) =>
-    `Site: ${domain}\nArchitecture: ${techStack}\nIssue: Missing meta description on all or most pages.\n\nWrite a compelling 150-160 character meta description for ${domain}. Then provide the implementation showing where to add it in a ${techStack} project. Include a template they can reuse per page.`,
+  no_meta_description: (ctx) =>
+    `Site: ${ctx.domain}\nArchitecture: ${ctx.techStack}\nIssue: Missing meta description.${formatPageContext(ctx)}Write a compelling 150-160 character meta description for each affected page based on its actual title and content above. Provide the implementation for ${ctx.techStack}.`,
 
-  no_title: ({ affectedPageUrls, techStack }) =>
-    `Site: ${affectedPageUrls[0] ?? "this page"}\nArchitecture: ${techStack}\nIssue: Missing title tag.\n\nWrite an SEO-optimized title tag (under 60 chars, primary keyword first, brand at end). Show exactly how to add it in a ${techStack} project.`,
+  no_title: (ctx) =>
+    `Site: ${ctx.affectedPageUrls[0] ?? "this page"}\nArchitecture: ${ctx.techStack}\nIssue: Missing title tag.${formatPageContext(ctx)}Write an SEO-optimized title tag (under 60 chars, primary keyword first, brand at end). Base it on the page's actual content shown above. Show exactly how to add it in a ${ctx.techStack} project.`,
 
-  no_h1: ({ affectedPageUrls, techStack }) =>
-    `Site: ${affectedPageUrls[0] ?? "this page"}\nArchitecture: ${techStack}\nIssue: Missing H1 heading.\n\nWrite an SEO-optimized H1 (under 70 chars). Show where and how to add it in a ${techStack} project.`,
+  no_h1: (ctx) =>
+    `Site: ${ctx.affectedPageUrls[0] ?? "this page"}\nArchitecture: ${ctx.techStack}\nIssue: Missing H1 heading.${formatPageContext(ctx)}Write an SEO-optimized H1 (under 70 chars) based on the page's actual title and content above. Show where and how to add it in a ${ctx.techStack} project.`,
 
-  duplicate_title: ({ affectedPageUrls, techStack }) => {
-    const pages = affectedPageUrls.slice(0, 3).join(", ");
-    return `Site: affected pages: ${pages}\nArchitecture: ${techStack}\nIssue: Duplicate title tags across pages.\n\nSuggest a unique, SEO-optimized title for each page (under 60 chars, format: "Keyword | Brand"). Show how to implement dynamic titles in ${techStack}.`;
+  duplicate_title: (ctx) => {
+    const pages = ctx.affectedPageUrls.slice(0, 3).join(", ");
+    return `Site: affected pages: ${pages}\nArchitecture: ${ctx.techStack}\nIssue: Duplicate title tags across pages.${formatPageContext(ctx)}Based on the ACTUAL titles shown above, suggest a unique, SEO-optimized title for each page (under 60 chars). Show how to implement in ${ctx.techStack}.`;
   },
 
-  duplicate_meta_description: ({ affectedPageUrls, techStack }) => {
-    const pages = affectedPageUrls.slice(0, 3).join(", ");
-    return `Site: affected pages: ${pages}\nArchitecture: ${techStack}\nIssue: Duplicate meta descriptions.\n\nWrite a unique 150-160 char meta description for each page. Show how to implement dynamic meta descriptions in ${techStack}.`;
+  duplicate_meta_description: (ctx) => {
+    const pages = ctx.affectedPageUrls.slice(0, 3).join(", ");
+    return `Site: affected pages: ${pages}\nArchitecture: ${ctx.techStack}\nIssue: Duplicate meta descriptions.${formatPageContext(ctx)}Based on the ACTUAL descriptions shown above, write a unique 150-160 char meta description for each page. Show how to implement in ${ctx.techStack}.`;
   },
 
-  images_missing_alt: ({ domain, techStack }) =>
-    `Site: ${domain}\nArchitecture: ${techStack}\nIssue: Images missing alt text.\n\nProvide 3 examples of SEO-optimized alt text (under 125 chars each). Show how to audit and fix missing alt attributes in a ${techStack} codebase.`,
+  images_missing_alt: (ctx) =>
+    `Site: ${ctx.domain}\nArchitecture: ${ctx.techStack}\nIssue: Images missing alt text.${formatPageContext(ctx)}Provide 3 examples of SEO-optimized alt text (under 125 chars each). Show how to audit and fix missing alt attributes in a ${ctx.techStack} codebase.`,
 
-  internal_linking: ({ domain, affectedPageUrls, techStack }) => {
-    const pages = affectedPageUrls.slice(0, 5).join(", ");
-    return `Site: ${domain}\nArchitecture: ${techStack}\nIssue: Poor internal linking — these pages need links: ${pages}.\n\nSuggest 3 specific internal link opportunities with anchor text. Show how to implement internal links correctly in ${techStack}.`;
+  internal_linking: (ctx) => {
+    const pages = ctx.affectedPageUrls.slice(0, 5).join(", ");
+    return `Site: ${ctx.domain}\nArchitecture: ${ctx.techStack}\nIssue: Poor internal linking — these pages need links: ${pages}.${formatPageContext(ctx)}Based on the page titles and content shown above, suggest 3 specific internal link opportunities with contextual anchor text. Show how to implement in ${ctx.techStack}.`;
   },
 
-  broken_links: ({ domain, techStack }) =>
-    `Site: ${domain}\nArchitecture: ${techStack}\nIssue: Broken internal links detected.\n\nProvide a step-by-step plan to find, fix, and redirect broken links in a ${techStack} site.`,
+  broken_links: (ctx) =>
+    `Site: ${ctx.domain}\nArchitecture: ${ctx.techStack}\nIssue: Broken internal links detected.${formatPageContext(ctx)}Based on the ACTUAL broken link data above, provide the specific fix for each broken link. Show how to update or redirect them in ${ctx.techStack}.`,
 
-  orphan_page: ({ affectedPageUrls, techStack }) => {
-    const pages = affectedPageUrls.slice(0, 3).join(", ");
-    return `Site: orphaned pages: ${pages}\nArchitecture: ${techStack}\nIssue: These pages have no internal links pointing to them.\n\nSuggest 3 specific places in the site to add links to these pages, with anchor text. Show how to add them in ${techStack}.`;
+  orphan_page: (ctx) => {
+    const pages = ctx.affectedPageUrls.slice(0, 3).join(", ");
+    return `Site: orphaned pages: ${pages}\nArchitecture: ${ctx.techStack}\nIssue: These pages have no internal links pointing to them.${formatPageContext(ctx)}Based on the page titles above, suggest 3 specific places in the site to add links to these pages, with contextual anchor text. Show how to add them in ${ctx.techStack}.`;
   },
 
-  slow_page: ({ domain, techStack }) =>
-    `Site: ${domain}\nArchitecture: ${techStack}\nIssue: Poor page speed score.\n\nProvide the top 5 most impactful technical fixes to improve page speed for a ${techStack} site. Be specific and actionable.`,
+  slow_page: (ctx) =>
+    `Site: ${ctx.domain}\nArchitecture: ${ctx.techStack}\nIssue: Poor page speed score.${formatPageContext(ctx)}Based on the page size and word count data above, provide the top 5 most impactful technical fixes to improve page speed for this specific ${ctx.techStack} site.`,
 
-  no_canonical: ({ affectedPageUrls, techStack }) => {
-    const isNextJs = /next\.?js/i.test(techStack);
+  no_canonical: (ctx) => {
+    const isNextJs = /next\.?js/i.test(ctx.techStack);
     return isNextJs
-      ? `Site: ${affectedPageUrls[0] ?? "this page"}\nArchitecture: ${techStack} (App Router)\nIssue: Missing canonical tag.\n\nThis is a Next.js App Router project using src/app/. The ONLY correct approach:\n1. Set metadataBase in the root layout.tsx so Next.js auto-derives canonicals:\n   export const metadata: Metadata = { metadataBase: new URL("https://yourdomain.com") }\n2. For pages needing a custom canonical, use alternates in generateMetadata:\n   alternates: { canonical: "/your-page-path" }\n\nDO NOT use <link rel="canonical"> in a head.tsx file — these override generateMetadata and create duplicate tags.\nDO NOT use pages/_app.js or useRouter from next/router — those are legacy Pages Router patterns and will break an App Router project.`
-      : `Site: ${affectedPageUrls[0] ?? "this page"}\nArchitecture: ${techStack}\nIssue: Missing canonical tag.\n\nWrite the correct canonical tag for this page. Show how to add canonical tags in ${techStack}.`;
+      ? `Site: ${ctx.affectedPageUrls[0] ?? "this page"}\nArchitecture: ${ctx.techStack} (App Router)\nIssue: Missing canonical tag.${formatPageContext(ctx)}This is a Next.js App Router project. Based on the ACTUAL page data above, provide the correct canonical fix:\n1. Set metadataBase in root layout.tsx\n2. Use alternates.canonical in each page's metadata\n\nDO NOT use head.tsx files or client-side DOM injection.`
+      : `Site: ${ctx.affectedPageUrls[0] ?? "this page"}\nArchitecture: ${ctx.techStack}\nIssue: Missing canonical tag.${formatPageContext(ctx)}Write the correct canonical tag for this page based on its actual URL. Show how to add it in ${ctx.techStack}.`;
   },
 
-  multiple_canonical: ({ domain, affectedPageUrls, techStack }) => {
-    const isNextJs = /next\.?js/i.test(techStack);
-    const pages = affectedPageUrls.slice(0, 3).join(", ");
+  multiple_canonical: (ctx) => {
+    const isNextJs = /next\.?js/i.test(ctx.techStack);
+    const pages = ctx.affectedPageUrls.slice(0, 3).join(", ");
     return isNextJs
-      ? `Site: ${domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${techStack} (App Router)\nIssue: Multiple or conflicting canonical tags detected — pages have more than one <link rel="canonical">.\n\nThis is a Next.js App Router project. Root cause is almost always a legacy head.tsx file that hardcodes a canonical, coexisting with generateMetadata. Fix:\n1. Delete any head.tsx files in src/app/ (these are a Next.js 13 legacy pattern that conflicts with generateMetadata).\n2. Ensure only ONE canonical source: generateMetadata with alternates.canonical.\n3. Confirm metadataBase is set in layout.tsx:\n   export const metadata: Metadata = { metadataBase: new URL("https://${domain}") }\n\nDO NOT generate pages/_app.js, useRouter, or any client-side <link> injection — those are Next.js Pages Router patterns and are NOT valid in App Router.\nDO NOT write React useEffect code that injects canonical tags into the DOM — Googlebot may not execute it.`
-      : `Site: ${domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${techStack}\nIssue: Multiple or conflicting canonical tags on the same page.\n\nIdentify and remove the duplicate canonical source. Provide the corrected implementation for ${techStack}.`;
+      ? `Site: ${ctx.domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${ctx.techStack} (App Router)\nIssue: Multiple canonical tags detected.${formatPageContext(ctx)}Based on the ACTUAL canonical tags found in the HTML above, identify the duplicate source and fix it. Common cause: legacy head.tsx conflicting with generateMetadata.\n\nDO NOT use Pages Router patterns or client-side DOM injection.`
+      : `Site: ${ctx.domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${ctx.techStack}\nIssue: Multiple canonical tags.${formatPageContext(ctx)}Based on the ACTUAL HTML above, identify and remove the duplicate canonical source.`;
   },
 
-  duplicate_canonical: ({ domain, affectedPageUrls, techStack }) => {
-    const isNextJs = /next\.?js/i.test(techStack);
-    const pages = affectedPageUrls.slice(0, 3).join(", ");
+  duplicate_canonical: (ctx) => {
+    const isNextJs = /next\.?js/i.test(ctx.techStack);
+    const pages = ctx.affectedPageUrls.slice(0, 3).join(", ");
     return isNextJs
-      ? `Site: ${domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${techStack} (App Router)\nIssue: Duplicate canonical tags — the same page emits two or more <link rel="canonical"> elements.\n\nThis is a Next.js App Router project. The fix:\n1. Search for and delete any head.tsx files under src/app/ — they conflict with generateMetadata.\n2. Use a single canonical source: alternates.canonical in generateMetadata.\n3. Set metadataBase in root layout.tsx: new URL("https://${domain}")\n\nDO NOT generate pages/_app.js, useRouter, or client-side DOM injection code. Those are Pages Router patterns that do not work in App Router.`
-      : `Site: ${domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${techStack}\nIssue: Duplicate canonical tags.\n\nFind and eliminate the duplicate source. Show the corrected canonical implementation for ${techStack}.`;
+      ? `Site: ${ctx.domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${ctx.techStack} (App Router)\nIssue: Duplicate canonical tags.${formatPageContext(ctx)}Based on the ACTUAL HTML <head> above, identify which source is creating the duplicate and fix it.`
+      : `Site: ${ctx.domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${ctx.techStack}\nIssue: Duplicate canonical tags.${formatPageContext(ctx)}Find and eliminate the duplicate source based on the HTML above.`;
   },
 
-  canonical_mismatch: ({ domain, affectedPageUrls, techStack }) => {
-    const isNextJs = /next\.?js/i.test(techStack);
-    const pages = affectedPageUrls.slice(0, 3).join(", ");
+  canonical_mismatch: (ctx) => {
+    const isNextJs = /next\.?js/i.test(ctx.techStack);
+    const pages = ctx.affectedPageUrls.slice(0, 3).join(", ");
     return isNextJs
-      ? `Site: ${domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${techStack} (App Router)\nIssue: Canonical URL mismatch — the canonical tag points to a different URL than the page's actual URL.\n\nThis is a Next.js App Router project. Common causes:\n- A root head.tsx hardcoding the homepage URL as canonical for ALL pages.\n- Incorrect alternates.canonical values in generateMetadata.\n- www vs non-www mismatch when metadataBase is not set.\n\nFix:\n1. Delete any head.tsx files in src/app/ — they override generateMetadata globally.\n2. Set metadataBase once in root layout.tsx: new URL("https://${domain}")\n3. Per-page overrides: alternates: { canonical: "/exact-page-path" } in generateMetadata.\n\nDO NOT use pages/_app.js, useRouter, or client-side canonical injection — wrong router, Googlebot may not execute JS canonical tags.`
-      : `Site: ${domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${techStack}\nIssue: Canonical URL mismatch — canonicals point to wrong URLs.\n\nProvide the corrected canonical implementation for ${techStack} that ensures each page's canonical matches its actual URL.`;
+      ? `Site: ${ctx.domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${ctx.techStack} (App Router)\nIssue: Canonical URL mismatch — the canonical tag points to a different URL than the page's actual URL.${formatPageContext(ctx)}Based on the ACTUAL canonical values found above, identify the root cause and provide a SPECIFIC fix. Common causes:\n- Layout-level canonical overriding child pages\n- Incorrect alternates.canonical values\n- www vs non-www mismatch\n\nDO NOT provide generic advice — use the real data above.`
+      : `Site: ${ctx.domain}\nAffected pages: ${pages || "multiple pages"}\nArchitecture: ${ctx.techStack}\nIssue: Canonical URL mismatch.${formatPageContext(ctx)}Based on the ACTUAL canonical values above, provide the corrected implementation.`;
   },
 
-  no_schema: ({ domain, techStack }) =>
-    `Site: ${domain}\nArchitecture: ${techStack}\nIssue: No structured data (JSON-LD).\n\nWrite a complete Organization JSON-LD schema for ${domain}. Show where to add it in a ${techStack} project.`,
+  no_schema: (ctx) =>
+    `Site: ${ctx.domain}\nArchitecture: ${ctx.techStack}\nIssue: No structured data (JSON-LD).${formatPageContext(ctx)}Write a complete Organization JSON-LD schema for ${ctx.domain}. Show where to add it in a ${ctx.techStack} project.`,
 
-  no_viewport: ({ domain, techStack }) =>
-    `Site: ${domain}\nArchitecture: ${techStack}\nIssue: Missing viewport meta tag — site is not mobile-friendly.\n\nProvide the exact viewport meta tag fix. Since this is a ${techStack} site, show exactly which file to edit and where to paste the tag. This is critical for Google's Mobile-First Indexing.`,
+  no_viewport: (ctx) =>
+    `Site: ${ctx.domain}\nArchitecture: ${ctx.techStack}\nIssue: Missing viewport meta tag — site is not mobile-friendly.${formatPageContext(ctx)}Provide the exact viewport meta tag fix. Show exactly which file to edit based on the architecture.`,
 
-  http_pages: ({ domain, techStack }) =>
-    `Site: ${domain}\nArchitecture: ${techStack}\nIssue: Site serving pages over HTTP (not HTTPS).\n\nProvide a step-by-step HTTPS migration plan appropriate for a ${techStack} site. Cover SSL certificate setup, redirect rules, and mixed content fixes.`,
+  http_pages: (ctx) =>
+    `Site: ${ctx.domain}\nArchitecture: ${ctx.techStack}\nIssue: Site serving pages over HTTP (not HTTPS).${formatPageContext(ctx)}Provide a step-by-step HTTPS migration plan for this ${ctx.techStack} site.`,
 
-  _default: ({ title, domain, techStack }) =>
-    `Site: ${domain}\nArchitecture: ${techStack}\nIssue: ${title}\n\nProvide a specific, surgical SEO fix for this issue. Tailor the code and steps to the ${techStack} environment.`,
+  low_word_count: (ctx) =>
+    `Site: ${ctx.affectedPageUrls[0] ?? "this page"}\nArchitecture: ${ctx.techStack}\nIssue: Thin content — page has fewer than 300 words.${formatPageContext(ctx)}Based on the page's actual title and description above, suggest specific content to add that would improve topical depth and SEO value. Provide at least 3 content sections with headings.`,
+
+  title_too_long: (ctx) =>
+    `Site: ${ctx.affectedPageUrls[0] ?? "this page"}\nArchitecture: ${ctx.techStack}\nIssue: Title tag is too long (over 60 characters).${formatPageContext(ctx)}Based on the ACTUAL title shown above, rewrite it to under 60 characters while keeping the primary keyword. Show how to update it in ${ctx.techStack}.`,
+
+  title_too_short: (ctx) =>
+    `Site: ${ctx.affectedPageUrls[0] ?? "this page"}\nArchitecture: ${ctx.techStack}\nIssue: Title tag is too short (under 30 characters).${formatPageContext(ctx)}Based on the ACTUAL title shown above, expand it to 50-60 characters with relevant keywords. Show how to update in ${ctx.techStack}.`,
+
+  meta_desc_too_long: (ctx) =>
+    `Site: ${ctx.affectedPageUrls[0] ?? "this page"}\nArchitecture: ${ctx.techStack}\nIssue: Meta description is too long (over 160 characters).${formatPageContext(ctx)}Based on the ACTUAL description shown above, rewrite it to 150-160 characters. Show how to update in ${ctx.techStack}.`,
+
+  meta_desc_too_short: (ctx) =>
+    `Site: ${ctx.affectedPageUrls[0] ?? "this page"}\nArchitecture: ${ctx.techStack}\nIssue: Meta description is too short (under 70 characters).${formatPageContext(ctx)}Based on the ACTUAL description shown above, expand it to 150-160 characters. Show how to update in ${ctx.techStack}.`,
+
+  _default: (ctx) =>
+    `Site: ${ctx.domain}\nArchitecture: ${ctx.techStack}\nIssue: ${ctx.title}${formatPageContext(ctx)}Provide a specific, surgical SEO fix for this issue based on the ACTUAL page data above. Tailor the code to the ${ctx.techStack} environment.`,
 };
 
 function buildPrompt(issueId: string, ctx: PromptCtx): string {
@@ -179,7 +257,6 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (cached) {
-      // Return structured data if available (new format), otherwise plain suggestion (old format)
       const structured = (cached.metadata as Record<string, unknown> | null)?.structured as Record<string, string> | undefined;
       if (structured?.code) {
         return NextResponse.json({
@@ -197,7 +274,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // ── 2. Fetch tech stack from the most recent crawl of this domain ─────────
+  // ── 2a. Fetch tech stack from the most recent crawl ─────────────────────
   const { data: stackRow } = await supabaseAdmin
     .from("audit_pages")
     .select("metadata")
@@ -208,29 +285,81 @@ export async function POST(req: NextRequest) {
   const techStack: string =
     (stackRow?.metadata as Record<string, string> | null)?.tech_stack ?? "Standard HTML/CSS";
 
-  // ── 3. Build Claude prompt ────────────────────────────────────────────────
-  const ctx: PromptCtx = { domain, title, affectedPageUrls, techStack };
+  // ── 2b. Fetch REAL crawl data for affected pages ────────────────────────
+  let pageMetadata: PageCrawlData[] = [];
+  let issueMessages: string[] = [];
+  try {
+    const { data: affectedPages } = await supabaseAdmin
+      .from("audit_pages")
+      .select("url, metadata, issues")
+      .in("url", affectedPageUrls.slice(0, 5))
+      .order("created_at", { ascending: false });
+
+    pageMetadata = (affectedPages ?? []).map(p => {
+      const meta = p.metadata as Record<string, unknown> | null;
+      return {
+        url: p.url,
+        title: (meta?.title as string) ?? "",
+        metaDescription: (meta?.meta_description as string) ?? "",
+        canonicalUrl: (meta?.canonical_url as string) ?? null,
+        h1Text: (meta?.h1_text as string) ?? null,
+        wordCount: (meta?.word_count as number) ?? null,
+        issues: ((p.issues as Array<{ id: string; msg: string }>) ?? [])
+          .map(i => ({ id: i.id, msg: i.msg })),
+      };
+    });
+
+    issueMessages = pageMetadata
+      .flatMap(p => p.issues.filter(i => i.id === issueId).map(i => i.msg));
+  } catch { /* non-critical — continue without crawl data */ }
+
+  // ── 2c. Fetch LIVE HTML <head> of first affected page ───────────────────
+  let liveHtmlHead = "";
+  try {
+    const firstUrl = affectedPageUrls[0];
+    if (firstUrl?.startsWith("http")) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(firstUrl, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; RankyPulse/1.0)" },
+        signal: controller.signal,
+        redirect: "follow",
+      });
+      clearTimeout(timer);
+      if (res.ok) {
+        const fullHtml = await res.text();
+        const headMatch = fullHtml.match(/<head[\s>][\s\S]*?<\/head>/i);
+        liveHtmlHead = (headMatch?.[0] ?? "").slice(0, 2000); // Cap at 2KB
+      }
+    }
+  } catch { /* non-critical — continue without live HTML */ }
+
+  // ── 3. Build Claude prompt with REAL data ───────────────────────────────
+  const ctx: PromptCtx = {
+    domain, title, affectedPageUrls, techStack,
+    issueMessages, pageMetadata, liveHtmlHead,
+  };
   const userPrompt = buildPrompt(issueId, ctx);
 
-  // ── 4. Call Anthropic API ─────────────────────────────────────────────────
+  // ── 4. Call Anthropic API (smart model routing) ─────────────────────────
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "ai_unavailable" }, { status: 503 });
   }
 
   let rawSuggestion: string;
-  const model = "claude-3-haiku-20240307";
+  const model = selectModel(issueId);
 
   try {
     const client = new Anthropic({ apiKey });
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30_000);
+    const timeout = setTimeout(() => controller.abort(), 40_000);
 
     const message = await client.messages.create(
       {
         model,
-        max_tokens: 900,
+        max_tokens: 2000,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userPrompt }],
       },
@@ -263,6 +392,8 @@ export async function POST(req: NextRequest) {
         issueTitle: title,
         model,
         techStack,
+        hasLiveHtml: !!liveHtmlHead,
+        pagesWithCrawlData: pageMetadata.length,
         structured: parsed,
       },
     })

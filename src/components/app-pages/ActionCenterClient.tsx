@@ -167,6 +167,10 @@ export function ActionCenterClient() {
         verification: string; scoreImpact: string; suggestion: string;
     } | null>(null);
 
+    // Verify Fix state
+    const [verifyState, setVerifyState] = useState<"idle" | "loading" | "resolved" | "not_resolved" | "partial" | "error">("idle");
+    const [verifyDetails, setVerifyDetails] = useState<{ url: string; resolved: boolean; detail: string }[]>([]);
+
     // Reset AI fix state when selected task changes
     useEffect(() => {
         setAiFixState("idle");
@@ -175,15 +179,17 @@ export function ActionCenterClient() {
         setAiFixTrace(0);
         setAiFixTab("code");
         setAiFixStructured(null);
+        setVerifyState("idle");
+        setVerifyDetails([]);
     }, [selectedTask]);
 
     // ── Generate AI fix ──────────────────────────────────────────────────────
 
     const AI_TRACE_STEPS = [
-        "🔍 Scanning page source for issues…",
-        "🏗️ Identifying site architecture…",
-        "🧪 Crafting surgical code fix…",
-        "✅ Verifying fix against SEO best practices…",
+        "🔍 Fetching live page HTML…",
+        "📊 Analyzing crawl data for affected pages…",
+        "🧪 Generating page-specific fix…",
+        "✅ Formatting code for your tech stack…",
     ];
 
     const generateAiFix = async (task: Task, force = false) => {
@@ -280,6 +286,33 @@ export function ActionCenterClient() {
     }, []);
 
     // ── Persist task toggle ──────────────────────────────────────────────────
+
+    const verifyFix = async (task: Task) => {
+        setVerifyState("loading");
+        setVerifyDetails([]);
+        try {
+            const res = await fetch("/api/action-center/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    issueId: task.issueId,
+                    affectedPageUrls: task.affectedPageUrls.slice(0, 3),
+                }),
+            });
+            if (!res.ok) throw new Error("Verification failed");
+            const data = await res.json();
+            if (data.resolved) {
+                setVerifyState("resolved");
+            } else if (data.partial) {
+                setVerifyState("partial");
+            } else {
+                setVerifyState("not_resolved");
+            }
+            setVerifyDetails(data.results ?? []);
+        } catch {
+            setVerifyState("error");
+        }
+    };
 
     const toggleDone = async (task: Task) => {
         if (!domain) return;
@@ -1127,8 +1160,82 @@ export function ActionCenterClient() {
                                             )}
                                         </div>
 
+                                        {/* VERIFY FIX RESULT */}
+                                        {verifyState !== "idle" && (
+                                            <div className="rounded-lg p-3 text-xs" style={{
+                                                background: verifyState === "resolved" ? "rgba(0,200,83,0.08)"
+                                                    : verifyState === "loading" ? "rgba(139,155,180,0.08)"
+                                                    : "rgba(239,68,68,0.08)",
+                                                border: `1px solid ${verifyState === "resolved" ? "#00C85333" : verifyState === "loading" ? "#1E2940" : "#F8717133"}`,
+                                            }}>
+                                                {verifyState === "loading" && (
+                                                    <div className="flex items-center gap-2" style={{ color: "#8B9BB4" }}>
+                                                        <Loader2 size={13} className="animate-spin" />
+                                                        Verifying fix on live page…
+                                                    </div>
+                                                )}
+                                                {verifyState === "resolved" && (
+                                                    <div className="flex items-center gap-2" style={{ color: "#00C853" }}>
+                                                        <Check size={13} />
+                                                        <span className="font-semibold">Issue resolved!</span>
+                                                    </div>
+                                                )}
+                                                {verifyState === "not_resolved" && (
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1.5" style={{ color: "#F87171" }}>
+                                                            <X size={13} />
+                                                            <span className="font-semibold">Issue still present</span>
+                                                        </div>
+                                                        {verifyDetails.map((r, i) => (
+                                                            <p key={i} style={{ color: "#8B9BB4" }} className="ml-5 mt-0.5 truncate">
+                                                                {r.url.replace(/^https?:\/\//, "")} — {r.detail}
+                                                            </p>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {verifyState === "partial" && (
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1.5" style={{ color: "#FBBF24" }}>
+                                                            <AlertTriangle size={13} />
+                                                            <span className="font-semibold">Partially resolved</span>
+                                                        </div>
+                                                        {verifyDetails.map((r, i) => (
+                                                            <p key={i} className="ml-5 mt-0.5 truncate" style={{ color: r.resolved ? "#00C853" : "#F87171" }}>
+                                                                {r.resolved ? "✓" : "✗"} {r.url.replace(/^https?:\/\//, "")}
+                                                            </p>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {verifyState === "error" && (
+                                                    <div className="flex items-center gap-2" style={{ color: "#F87171" }}>
+                                                        <AlertCircle size={13} />
+                                                        Verification failed — try again later
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
                                         {/* ACTION BUTTONS */}
                                         <div className="flex gap-2.5 pt-1">
+                                            <button onClick={() => verifyFix(selectedTaskData)}
+                                                disabled={verifyState === "loading" || selectedTaskData.status === "done"}
+                                                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition hover:opacity-90 disabled:opacity-60"
+                                                style={{
+                                                    background: verifyState === "resolved"
+                                                        ? "rgba(0,200,83,0.12)"
+                                                        : "rgba(99,102,241,0.1)",
+                                                    color: verifyState === "resolved" ? "#00C853" : "#818CF8",
+                                                    border: `1px solid ${verifyState === "resolved" ? "#00C85333" : "#818CF833"}`,
+                                                }}>
+                                                {verifyState === "loading" ? (
+                                                    <Loader2 size={13} className="animate-spin" />
+                                                ) : verifyState === "resolved" ? (
+                                                    <Check size={13} />
+                                                ) : (
+                                                    <Shield size={13} />
+                                                )}
+                                                {verifyState === "resolved" ? "Verified" : "Verify Fix"}
+                                            </button>
                                             <button onClick={() => toggleDone(selectedTaskData)}
                                                 disabled={saving === selectedTaskData.id}
                                                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-60"

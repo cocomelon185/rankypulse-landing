@@ -45,13 +45,13 @@ function auditPageCompact(
     html: string,
     psi: Record<string, unknown> | null,
     brokenLinks: string[]
-): { score: number; issues: CompactIssue[]; techStack: string } {
+): { score: number; issues: CompactIssue[]; techStack: string; extraMeta: { canonical_url: string | null; h1_text: string | null; robots_directive: string; word_count: number; html_size_kb: number } } {
     const issues: CompactIssue[] = [];
     let score = 100;
 
     if (!html) {
         // Can't audit — return minimal score with no issues if PSI failed too
-        return { score: psi ? 50 : 30, issues, techStack: "Standard HTML/CSS" };
+        return { score: psi ? 50 : 30, issues, techStack: "Standard HTML/CSS", extraMeta: { canonical_url: null, h1_text: null, robots_directive: "index", word_count: 0, html_size_kb: 0 } };
     }
 
     // Meta description
@@ -96,6 +96,7 @@ function auditPageCompact(
 
     // H1
     const h1Count = (html.match(/<h1[\s>]/gi) ?? []).length;
+    const h1Text = html.match(/<h1[^>]*>([^<]+)/i)?.[1]?.trim() ?? null;
     if (h1Count === 0) {
         score -= 5;
         issues.push({ id: "no_h1", sev: "MED", msg: "Missing H1 heading" });
@@ -106,15 +107,16 @@ function auditPageCompact(
 
     // Canonical
     const hasCanonical = /<link\s[^>]*rel=["']canonical["']/i.test(html);
+    let canonHref: string | null = null;
     if (!hasCanonical) {
         score -= 3;
         issues.push({ id: "no_canonical", sev: "LOW", msg: "Missing canonical tag" });
     } else {
         // Canonical mismatch — canonical exists but points to a different URL
-        const canonHref = (
+        canonHref = (
             html.match(/<link\s[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["']/i) ??
             html.match(/<link\s[^>]*href=["']([^"']+)["'][^>]*rel=["']canonical["']/i)
-        )?.[1]?.trim();
+        )?.[1]?.trim() ?? null;
         if (canonHref) {
             const norm = (u: string) => u.replace(/\/$/, "");
             if (norm(canonHref) !== norm(pageUrl)) {
@@ -218,7 +220,18 @@ function auditPageCompact(
     }
 
     const techStack = getTechStackHint(html);
-    return { score: Math.max(20, score), issues, techStack };
+    return {
+        score: Math.max(20, score),
+        issues,
+        techStack,
+        extraMeta: {
+            canonical_url: canonHref,
+            h1_text: h1Text,
+            robots_directive: isNoindex ? "noindex" : "index",
+            word_count: wordCount,
+            html_size_kb: Math.round(htmlBytes / 1024),
+        },
+    };
 }
 
 export async function GET(req: NextRequest) {
@@ -428,7 +441,7 @@ export async function GET(req: NextRequest) {
         }
 
         // 5. Run compact audit
-        const { score, issues, techStack } = auditPageCompact(cleanDomain, targetUrl, html, psi, brokenLinks);
+        const { score, issues, techStack, extraMeta } = auditPageCompact(cleanDomain, targetUrl, html, psi, brokenLinks);
 
         // 5b. Detect redirect chain (≥2 hops = chain of 3+ URLs)
         if (redirectChain.length >= 3) {
@@ -481,6 +494,7 @@ export async function GET(req: NextRequest) {
                 is_root: isRoot,
                 psi_available: !!psi,
                 tech_stack: techStack,
+                ...extraMeta,
             },
         }, { onConflict: "job_id,url", ignoreDuplicates: false });
 
