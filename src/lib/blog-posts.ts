@@ -1866,7 +1866,7 @@ Run a free audit, get your fix list, and work through it systematically. Most si
   },
   {
     slug: 'why-website-has-no-traffic',
-    title: 'Why Does My Website Have No Traffic? (The Real Reasons)',
+    title: 'Why Does My Website Have No Traffic? (5 Real Causes + Fixes)',
     subtitle: 'Being live and being found are two completely different things — here is why your site is invisible.',
     category: 'Strategy',
     readingMinutes: 7,
@@ -1918,11 +1918,16 @@ A brand-new domain starts with zero authority. If you are competing for keywords
 **The honest truth:** most sites with no traffic have all five problems simultaneously. Start with keyword research (it costs nothing and affects everything), then fix content depth, then build internal links. Do those three things consistently for 6 months and traffic will come.
 
 Run a [free RankyPulse audit](/audit) to identify the specific technical issues that may also be holding your site back.
+
+**Related reading:**
+- [Technical SEO Checklist 2026: Everything Google Checks](/blog/technical-seo-checklist)
+- [On-Page SEO Checklist 2026: 20 Elements That Move Rankings](/blog/on-page-seo-checklist)
+- [See a live example: Free SEO Audit for Shopify.com](/report/shopify.com)
     `,
   },
   {
     slug: 'how-to-rank-new-website',
-    title: 'How to Rank a Brand New Website on Google (Step-by-Step)',
+    title: 'How to Rank a Brand New Website on Google: 6-Step Plan That Works',
     subtitle: 'New domains start at zero authority. Here is the exact sequence to build rankings from scratch.',
     category: 'Strategy',
     readingMinutes: 9,
@@ -2003,11 +2008,16 @@ Track rankings weekly using Google Search Console → Performance. Look for:
 - Month 12: Competitive on mid-difficulty terms
 
 SEO is slow to start and fast to compound. Consistent execution over 12 months produces results that paid advertising cannot buy. Start today with a [free technical audit](/audit) to make sure your foundation is clean.
+
+**Related reading:**
+- [Why Does My Website Have No Traffic? 5 Real Causes + Fixes](/blog/why-website-has-no-traffic)
+- [10 SEO Mistakes That Kill Rankings (And How to Fix Them Fast)](/blog/seo-mistakes-beginners-make)
+- [See a real example: Free SEO Audit for WordPress.com](/report/wordpress.com)
     `,
   },
   {
     slug: 'google-not-indexing-pages',
-    title: 'Google Not Indexing Your Pages? Here Is Why (and How to Fix It)',
+    title: 'Google Not Indexing Your Pages? 6 Causes + Exact Fixes (2026)',
     subtitle: 'Submitting to Google does not guarantee indexing. Here are the 6 real reasons pages stay out of search.',
     category: 'Technical SEO',
     readingMinutes: 7,
@@ -2039,7 +2049,7 @@ This is the most common cause. Google will not index pages it considers low-qual
 
 Check two things:
 1. Visit yoursite.com/robots.txt and confirm the page URL is not in a Disallow rule
-2. View the page source (Ctrl+U) and search for "noindex" — if you find `<meta name="robots" content="noindex">`, remove it
+2. View the page source (Ctrl+U) and search for "noindex" — if you find a robots meta tag with content="noindex", remove it
 
 Both of these block indexing completely.
 
@@ -2069,11 +2079,16 @@ New pages on new domains sometimes take 3–8 weeks to be indexed, even after re
 Use Google Search Console URL Inspection on the unindexed page. It will show you exactly what Google sees — including crawl status, robots.txt check, noindex detection, and the last crawl attempt. This single tool will identify the cause in 90% of cases.
 
 Run a [free RankyPulse audit](/audit) to identify crawlability issues across your entire site at once.
+
+**Related reading:**
+- [Technical SEO Checklist 2026: Everything Google Checks](/blog/technical-seo-checklist)
+- [robots.txt & Sitemap: The Essential SEO Guide](/blog/robots-txt-and-sitemap-guide)
+- [See how indexing looks on a real site: GitHub SEO Audit](/report/github.com)
     `,
   },
   {
     slug: 'on-page-seo-checklist',
-    title: 'On-Page SEO Checklist: Every Element That Affects Rankings',
+    title: 'On-Page SEO Checklist 2026: 20 Elements That Move Rankings',
     subtitle: 'A complete, prioritized checklist of every on-page SEO factor — with what to actually do for each.',
     category: 'Technical SEO',
     readingMinutes: 8,
@@ -2163,6 +2178,11 @@ Run through it for your most important pages first — homepage, pricing page, t
 You do not need to achieve 100% on every page. Prioritize the pages that matter most to your business. Tier 1 items on your top 5 pages will move the needle faster than all tiers on all pages.
 
 Use [RankyPulse](/audit) to automatically check most of these items across your entire site at once.
+
+**Related reading:**
+- [Technical SEO Checklist 2026: Everything Google Checks](/blog/technical-seo-checklist)
+- [How to Fix a Slow Website: 6 Fixes That Improve SEO Fast](/blog/how-to-fix-slow-website)
+- [See on-page SEO in practice: Canva SEO Audit](/report/canva.com)
     `,
   },
   {
@@ -2197,7 +2217,7 @@ This checklist covers every technical factor that affects rankings in 2026.
 ## Indexability
 
 **Meta Robots**
-- [ ] No pages have `noindex` that should be indexed
+- [ ] No pages have a noindex tag that should be indexed
 - [ ] Staging/dev environments are noindexed or blocked via robots.txt
 - [ ] Search result pages (/?s=query) are noindexed
 
@@ -2261,11 +2281,16 @@ This checklist covers every technical factor that affects rankings in 2026.
 Running through this checklist manually for a large site takes hours. Use [RankyPulse's free audit](/audit) to automatically check most of these items across every page of your site in one pass — it surfaces issues sorted by severity so you know exactly where to start.
 
 Fix Tier 1 issues (crawlability and indexability) first — they block everything else. Tier 2 (speed) second. Structured data third. A clean technical foundation lets your content compete at its full potential.
+
+**Related reading:**
+- [On-Page SEO Checklist 2026: 20 Elements That Move Rankings](/blog/on-page-seo-checklist)
+- [Google Not Indexing Your Pages? 6 Causes + Exact Fixes](/blog/google-not-indexing-pages)
+- [See technical SEO at enterprise scale: Cloudflare SEO Audit](/report/cloudflare.com)
     `,
   },
   {
     slug: 'seo-mistakes-beginners-make',
-    title: '10 SEO Mistakes Beginners Make (And How to Avoid Them)',
+    title: '10 SEO Mistakes That Kill Rankings (And How to Fix Them Fast)',
     subtitle: 'The most common SEO errors that waste months of effort — and the fixes that actually work.',
     category: 'Strategy',
     readingMinutes: 7,
@@ -2337,11 +2362,16 @@ Publishing a page and forgetting it is not SEO. Rankings decay as competitors pu
 **Fix:** Set a quarterly calendar reminder to review your top 10 pages. Update statistics, add new sections, improve internal links, and re-request indexing. Freshness compounds.
 
 **The common thread:** most of these mistakes are strategic, not technical. A [free audit](/audit) will catch the technical errors — but strategy is something you build through consistent, patient execution.
+
+**Related reading:**
+- [How to Rank a Brand New Website on Google: 6-Step Plan That Works](/blog/how-to-rank-new-website)
+- [Why Are My Keywords Not Ranking? 6 Reasons + Fixes That Work](/blog/why-keywords-not-ranking)
+- [See what good SEO looks like: Ahrefs SEO Audit](/report/ahrefs.com)
     `,
   },
   {
     slug: 'how-to-fix-slow-website',
-    title: 'How to Fix a Slow Website: The Complete Speed Optimization Guide',
+    title: 'How to Fix a Slow Website: 6 Fixes That Improve SEO Fast',
     subtitle: 'Page speed affects rankings, bounce rate, and conversion rate simultaneously. Here is the complete fix.',
     category: 'Technical SEO',
     readingMinutes: 10,
@@ -2440,11 +2470,16 @@ After implementing each change:
 3. Monitor bounce rate in your analytics — speed improvements usually reduce it within days
 
 Run a [free RankyPulse audit](/audit) to check your Core Web Vitals alongside all other technical SEO issues in one pass.
+
+**Related reading:**
+- [Your LCP is 4.2 seconds. Here's how to fix it in an afternoon.](/blog/lcp-fix-guide)
+- [5 page speed fixes you can ship before lunch](/blog/page-speed-quick-wins)
+- [See speed performance in action: Vercel SEO Audit](/report/vercel.com)
     `,
   },
   {
     slug: 'why-keywords-not-ranking',
-    title: 'Why Are My Keywords Not Ranking? (6 Real Reasons)',
+    title: 'Why Are My Keywords Not Ranking? 6 Reasons + Fixes That Work',
     subtitle: 'You are publishing content and targeting keywords — but nothing is ranking. Here is the diagnostic.',
     category: 'Strategy',
     readingMinutes: 7,
@@ -2517,11 +2552,16 @@ New domains and new pages can take 3–6 months to achieve stable rankings — e
 **The fastest diagnostic approach:** Google Search Console → Performance → filter by the landing page URL → look at queries. This tells you what queries your page is triggering impressions for, and where you are ranking (average position). Pages with impressions but no clicks need a title/description fix. Pages with zero impressions need content or authority work.
 
 Use [RankyPulse](/audit) to identify technical barriers that may be suppressing rankings alongside these strategic issues.
+
+**Related reading:**
+- [Why Does My Website Have No Traffic? 5 Real Causes + Fixes](/blog/why-website-has-no-traffic)
+- [Internal linking is free SEO. Almost nobody does it right.](/blog/internal-linking-strategy)
+- [See ranking strategy in action: Backlinko SEO Audit](/report/backlinko.com)
     `,
   },
   {
     slug: 'how-to-increase-website-traffic',
-    title: 'How to Increase Website Traffic: 8 Strategies That Actually Work',
+    title: 'How to Increase Website Traffic: 8 Strategies That Compound Over Time',
     subtitle: 'Not vanity metrics — practical, compounding strategies for sustainable organic traffic growth.',
     category: 'Strategy',
     readingMinutes: 9,
@@ -2592,6 +2632,11 @@ For every new post, share it in 2–3 relevant communities: Reddit threads, Slac
 These strategies reinforce each other. Better technical SEO gets content indexed faster. Internal links distribute authority from content that is ranking. Topical clusters help all related posts rank. Backlinks multiply the value of everything else. Start with Strategy 1, then layer the others over 6–12 months.
 
 The sites with the most traffic did not get there quickly — they got there by consistently executing these fundamentals without stopping.
+
+**Related reading:**
+- [How to Rank a Brand New Website on Google: 6-Step Plan That Works](/blog/how-to-rank-new-website)
+- [10 SEO Mistakes That Kill Rankings (And How to Fix Them Fast)](/blog/seo-mistakes-beginners-make)
+- [See a content-driven SEO example: HubSpot SEO Audit](/report/hubspot.com)
     `,
   },
 ];

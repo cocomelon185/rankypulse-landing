@@ -82,8 +82,11 @@ export function BlogPost({ post }: { post: BlogPostType }) {
             const trimmed = block.trim();
             if (!trimmed) return null;
 
-            // Code / HTML block
-            if (trimmed.startsWith('<')) {
+            // Code / HTML block (fenced ``` or raw <tag>)
+            if (trimmed.startsWith('```') || trimmed.startsWith('<')) {
+              const code = trimmed.startsWith('```')
+                ? trimmed.replace(/^```[^\n]*\n?/, '').replace(/\n?```$/, '')
+                : trimmed;
               return (
                 <div
                   key={i}
@@ -91,48 +94,116 @@ export function BlogPost({ post }: { post: BlogPostType }) {
                     bg-emerald-500/5 border border-emerald-500/15
                     rounded-xl px-4 py-3 mb-6 whitespace-pre-wrap"
                 >
-                  {trimmed}
+                  {code}
                 </div>
               );
             }
 
-            // Bold heading (entire block is **...**)
-            if (/^\*\*[^*]+\*\*$/.test(trimmed)) {
+            // H2 heading (## text)
+            if (trimmed.startsWith('## ')) {
+              return (
+                <h2
+                  key={i}
+                  className="font-['Fraunces'] text-2xl font-bold text-white mt-12 mb-4"
+                >
+                  {trimmed.slice(3)}
+                </h2>
+              );
+            }
+
+            // H3 heading (### text or **entire block**)
+            if (trimmed.startsWith('### ') || /^\*\*[^*]+\*\*$/.test(trimmed)) {
+              const text = trimmed.startsWith('### ')
+                ? trimmed.slice(4)
+                : trimmed.replace(/\*\*/g, '');
               return (
                 <h3
                   key={i}
                   className="font-['Fraunces'] text-xl font-bold text-white mt-10 mb-4"
                 >
-                  {trimmed.replace(/\*\*/g, '')}
+                  {text}
                 </h3>
               );
             }
 
-            // Normal paragraph (may contain **bold** spans and `inline code`)
+            // Bullet list (lines starting with - or *)
+            if (/^[-*] /.test(trimmed) || trimmed.split('\n').every(l => /^[-*] /.test(l.trim()) || l.trim() === '')) {
+              const items = trimmed.split('\n').filter(l => /^[-*] /.test(l.trim()));
+              if (items.length > 0) {
+                return (
+                  <ul key={i} className="list-none space-y-2 mb-6 pl-0">
+                    {items.map((item, j) => {
+                      const text = item.replace(/^[-*] /, '').trim();
+                      const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                      const withFormatting = escaped
+                        .replace(/`([^`]+)`/g, '<code class="font-[\'DM_Mono\'] text-xs text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">$1</code>')
+                        .replace(/\*\*([^*]+)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+                        .replace(/\[([^\]]+)\]\((\/[^)]+)\)/g, '<a href="$2" class="text-blue-400 hover:text-blue-300 underline underline-offset-2">$1</a>');
+                      return (
+                        <li key={j} className="flex gap-2.5 font-['DM_Sans'] text-gray-300 text-base">
+                          <span className="text-blue-400 mt-1 shrink-0">•</span>
+                          <span dangerouslySetInnerHTML={{ __html: withFormatting }} />
+                        </li>
+                      );
+                    })}
+                  </ul>
+                );
+              }
+            }
+
+            // Numbered list (lines starting with 1. 2. etc.)
+            if (/^\d+\. /.test(trimmed) || trimmed.split('\n').every(l => /^\d+\. /.test(l.trim()) || l.trim() === '')) {
+              const items = trimmed.split('\n').filter(l => /^\d+\. /.test(l.trim()));
+              if (items.length > 1) {
+                return (
+                  <ol key={i} className="list-none space-y-2 mb-6 pl-0">
+                    {items.map((item, j) => {
+                      const text = item.replace(/^\d+\. /, '').trim();
+                      const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                      const withFormatting = escaped
+                        .replace(/`([^`]+)`/g, '<code class="font-[\'DM_Mono\'] text-xs text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">$1</code>')
+                        .replace(/\*\*([^*]+)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+                        .replace(/\[([^\]]+)\]\((\/[^)]+)\)/g, '<a href="$2" class="text-blue-400 hover:text-blue-300 underline underline-offset-2">$1</a>');
+                      return (
+                        <li key={j} className="flex gap-2.5 font-['DM_Sans'] text-gray-300 text-base">
+                          <span className="text-blue-400 font-mono shrink-0 mt-0.5">{j + 1}.</span>
+                          <span dangerouslySetInnerHTML={{ __html: withFormatting }} />
+                        </li>
+                      );
+                    })}
+                  </ol>
+                );
+              }
+            }
+
+            // Normal paragraph — escape HTML, then apply inline formatting
             // IMPORTANT: Escape HTML first to prevent <meta>, <link> etc. in blog content
             // from being injected into the DOM (causes noindex / multiple canonicals bugs).
-            // Also escape " so that content="noindex" examples in code blocks don't match
-            // the crawler's robots noindex regex on the raw HTML.
             const escaped = trimmed
               .replace(/&/g, '&amp;')
               .replace(/</g, '&lt;')
               .replace(/>/g, '&gt;')
               .replace(/"/g, '&quot;');
-            // Convert `inline code` to <code> tags
+            // Convert `inline code` → <code>
             const withCode = escaped.replace(
               /`([^`]+)`/g,
               '<code class="font-[\'DM_Mono\'] text-xs text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">$1</code>'
             );
-            // Convert **bold** to <strong> tags
+            // Convert **bold** → <strong>
             const withBold = withCode.replace(
               /\*\*([^*]+)\*\*/g,
               '<strong class="text-white font-semibold">$1</strong>'
+            );
+            // Convert [text](/path) → <a> (internal links only — relative paths starting with /)
+            const withLinks = withBold.replace(
+              /\[([^\]]+)\]\((\/[^)]+)\)/g,
+              '<a href="$2" class="text-blue-400 hover:text-blue-300 underline underline-offset-2">$1</a>'
             );
             return (
               <p
                 key={i}
                 className="font-['DM_Sans'] text-gray-300 leading-relaxed text-base mb-6"
-                dangerouslySetInnerHTML={{ __html: withBold }}
+                dangerouslySetInnerHTML={{ __html: withLinks }}
               />
             );
           })}
