@@ -61,6 +61,42 @@ export default async function AuditDomainPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      {/* Server-rendered content — visible to Googlebot before JS loads */}
+      <div className="px-6 pt-8 pb-4 max-w-3xl">
+        <nav className="text-xs text-gray-500 mb-4">
+          <a href="/" className="hover:text-gray-300">Home</a>
+          {" › "}
+          <a href="/audit" className="hover:text-gray-300">SEO Audit</a>
+          {" › "}
+          <span className="text-gray-300">{domain} Report</span>
+        </nav>
+        <h1 className="text-2xl font-bold text-white mb-2">
+          Free SEO Audit for {domain}
+        </h1>
+        <p className="text-gray-400 text-sm mb-6">
+          This page shows the full SEO audit results for <strong className="text-gray-200">{domain}</strong> — including
+          health score, broken links, missing meta tags, page speed diagnostics, Core Web Vitals,
+          and a prioritised list of issues with step-by-step fixes.
+          Run a free audit below or{" "}
+          <a href="/audit" className="text-blue-400 hover:underline">
+            audit your own site
+          </a>.
+        </p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 text-xs text-gray-400 mb-6">
+          {[
+            "SEO Health Score",
+            "Broken Link Checker",
+            "Missing Meta Tags",
+            "Page Speed Analysis",
+            "Core Web Vitals",
+            "Prioritised Fix List",
+          ].map((feature) => (
+            <div key={feature} className="flex items-center gap-1.5">
+              <span className="text-green-400">✓</span> {feature}
+            </div>
+          ))}
+        </div>
+      </div>
       <Suspense fallback={null}>
         <AuditDomainClient domain={domain} />
       </Suspense>
