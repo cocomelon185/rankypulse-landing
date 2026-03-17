@@ -885,20 +885,32 @@ Run your first audit. See what it surfaces. If you outgrow it, you will know exa
     excerpt: "Canonical tags tell Google which version of a URL is the \"real\" one. Get it wrong and you're splitting your PageRank between two versions of the same page.",
     featured: false,
     content: `
-      A canonical tag looks like this:
+A canonical tag looks like this:
 
-<link rel="canonical" href = "https://yoursite.com/page" />
+\`<link rel="canonical" href="https://yoursite.com/page" />\`
 
-  It tells Google: "This is the real URL. If you find duplicates, credit this one."
+It tells Google: "This is the real URL. If you find duplicates, credit this one."
 
-      The problem most sites have isn't missing canonical tags — it's canonical tags
-      pointing to the wrong URL.The most common mistake: your canonical says www.yoursite.com
-      but Google indexes yoursite.com.You've just told Google that your preferred URL
-      is different from the one it's indexing. PageRank gets split. Rankings drop.
+The problem most sites have isn't missing canonical tags — it's canonical tags pointing to the wrong URL. The most common mistake: your canonical says www.yoursite.com but Google indexes yoursite.com. You've just told Google that your preferred URL is different from the one it's indexing. PageRank gets split. Rankings drop.
 
-      How to check yours: Open your homepage HTML, search for "canonical".
-      Does the href match exactly what you see in your browser's address bar?
-      If not — fix it.
+**The four canonical mistakes that kill rankings:**
+
+**1. Self-referencing canonicals that point to the wrong protocol or subdomain**
+If your page lives at https://yoursite.com/page but the canonical says http://yoursite.com/page or www.yoursite.com/page, Google treats them as different pages. You split your authority every time a link is shared.
+
+**2. Paginated pages all pointing to page 1**
+/blog?page=2 with canonical pointing to /blog is wrong. Each paginated page should either be self-canonicalized or handled with rel="next/prev" (though Google deprecated next/prev, self-canonical on paginated pages is still the safest approach).
+
+**3. Parameter URLs without canonicals**
+/product?color=red and /product?color=blue are the same product. Add a canonical pointing to /product on both. Without it, Google indexes them as separate, thin duplicate pages.
+
+**4. Canonical on the wrong protocol after migrating to HTTPS**
+The single most common post-migration mistake. If you moved from HTTP to HTTPS but forgot to update canonical tags, your new HTTPS pages are telling Google to credit the old HTTP version.
+
+**How to check yours:**
+Open your homepage HTML (Ctrl+U), search for "canonical". Does the href match exactly what you see in your browser's address bar — including https://, www or no-www? If not — fix it. One line. Immediate impact.
+
+Use [RankyPulse's free SEO audit](/audit) to scan your entire site for canonical errors at once instead of checking pages manually.
     `,
   },
   {
@@ -936,25 +948,29 @@ Run your first audit. See what it surfaces. If you outgrow it, you will know exa
     excerpt: "LCP (Largest Contentful Paint) is the most impactful Core Web Vital for rankings. Here's how to diagnose it, fix it, and verify the fix.",
     featured: false,
     content: `
-      LCP measures how long it takes for the largest visible element on your page
-      to load.Google's threshold: under 2.5 seconds is "good". Over 4 seconds is "poor".
+LCP (Largest Contentful Paint) measures how long it takes for the largest visible element on your page to load. Google's threshold: under 2.5 seconds is "good". Over 4 seconds is "poor" — and your rankings will reflect it.
 
-      The most common culprits:
+**The most common LCP culprits:**
 
-      ** 1. Hero images that aren't preloaded**
-      Add a preload link tag in your HTML head.This alone typically cuts LCP by 0.5–1.5 seconds.
+**1. Hero images that aren't preloaded**
+Add a \`<link rel="preload" as="image">\` tag in your HTML head pointing to your hero image. This tells the browser to fetch it immediately instead of discovering it later in the CSS. This one change typically cuts LCP by 0.5–1.5 seconds.
 
-      ** 2. Render - blocking JavaScript in head **
-  Move non - critical scripts to the bottom of the body, or add defer / async attributes.
+**2. Render-blocking JavaScript in the head**
+Move non-critical scripts to the bottom of the body, or add \`defer\` or \`async\` attributes. Scripts in your \`<head>\` block the browser from rendering anything until they finish downloading and executing.
 
-      ** 3. No CDN(serving assets from a single origin server) **
-  Use Cloudflare's free tier. It takes 15 minutes to set up and can cut load times in half.
+**3. No CDN (serving assets from a single origin server)**
+Use Cloudflare's free tier. It takes 15 minutes to set up and can cut load times by 40–60% for international visitors by serving your assets from a server closer to them.
 
-    ** 4. Images not in WebP format **
-      WebP is 25–35 % smaller than JPEG / PNG.Most CMS platforms can convert automatically.
+**4. Images not in WebP format**
+WebP is 25–35% smaller than JPEG/PNG at the same visual quality. Most CMS platforms can convert automatically — Cloudflare Image Resizing, Smush for WordPress, or Next.js Image component handle this.
 
-      The fastest win: add a preload link for your hero image.
-      This alone typically cuts LCP by 0.5–1.5 seconds.
+**5. Large server response times (TTFB over 600ms)**
+If your server itself is slow, no frontend optimization will fully compensate. Measure with Google PageSpeed Insights. A TTFB over 600ms often means slow database queries, no server-side caching, or a geographically distant server.
+
+**How to verify your fix worked:**
+After implementing, test with Google PageSpeed Insights (free) or run a [RankyPulse audit](/audit) which includes Core Web Vitals data. A passing LCP is under 2.5 seconds — aim for under 2.0 for a comfortable margin.
+
+LCP is the single most impactful Core Web Vital for rankings. Fixing it has a direct, measurable effect on your Google position within 2–4 weeks of Google re-crawling your pages.
     `,
   },
   {
@@ -968,30 +984,37 @@ Run your first audit. See what it surfaces. If you outgrow it, you will know exa
     excerpt: "Meta descriptions don't directly affect rankings — but they control whether anyone clicks on your result. Here's the formula that works.",
     featured: false,
     content: `
-      Meta descriptions don't directly affect Google rankings. But they control click-through rate
-      — which does affect rankings indirectly.A well - written description can double your organic
-      clicks without changing your position at all.
+Meta descriptions don't directly affect Google rankings. But they control click-through rate — which does affect rankings indirectly. A well-written description can double your organic clicks without changing your position at all.
 
-      ** The formula that works:**
-  1. Lead with the outcome the user gets, not what your page is about
-2. Include the primary keyword naturally(Google bolds it in search results)
-3. End with a low - friction call to action("See how", "Learn the fix", "Try free")
+**The formula that works:**
+1. Lead with the outcome the user gets, not what your page is about
+2. Include the primary keyword naturally (Google bolds it in search results)
+3. End with a low-friction call to action ("See how", "Learn the fix", "Try free")
 4. Keep it under 155 characters — Google truncates anything longer
 
-  ** Bad example:**
-    "Welcome to Acme Inc. We offer a wide range of software solutions for businesses of all sizes."
+**Bad example:**
+"Welcome to Acme Inc. We offer a wide range of software solutions for businesses of all sizes."
 
-    ** Good example:**
-      "Cut your site's SEO issues in half with a free 30-second audit. No signup. See exactly what's blocking your rankings."
+**Good example:**
+"Cut your site's SEO issues in half with a free 30-second audit. No signup. See exactly what's blocking your rankings."
 
-      The difference: the good version tells the user what they get, not what you sell.
+The difference: the good version tells the user what they get, not what you sell.
 
-      ** What happens without one:**
-  Google auto - generates a snippet from your page content.It usually starts with
-      navigation text or a random sentence from your hero section — rarely your best pitch.
+**What happens without one:**
+Google auto-generates a snippet from your page content. It usually starts with navigation text or a random sentence from your hero section — rarely your best pitch. This is why pages without meta descriptions routinely have CTRs 2–3x lower than pages with well-crafted ones.
 
-      Check every page.Fix the ones that are missing or auto - generated.
-      It takes 3 minutes per page and can meaningfully lift traffic within weeks.
+**When Google rewrites your meta description:**
+Google ignores your meta description and writes its own when it decides yours doesn't match the user's search query. This happens most often when:
+- Your description doesn't contain the keywords users are actually searching for
+- Your description is too short (under 70 characters) or too long (over 160)
+- Your page content doesn't match what the description promises
+
+If Google consistently rewrites yours, treat it as a signal that your description needs to better match search intent — not a reason to stop writing them.
+
+**Prioritization:**
+Fix missing and auto-generated meta descriptions on your highest-traffic pages first. Use Google Search Console → Performance → Pages to find which pages get the most impressions but the lowest CTR — those are your biggest opportunities.
+
+Check every page. Fix the ones that are missing or auto-generated. It takes 3 minutes per page and can meaningfully lift traffic within weeks.
     `,
   },
   {
@@ -1005,36 +1028,41 @@ Run your first audit. See what it surfaces. If you outgrow it, you will know exa
     excerpt: "Title tags are the #1 on-page ranking factor. Here's the exact framework for writing them — including what to do when Google rewrites yours.",
     featured: false,
     content: `
-      Title tags are the most impactful on - page SEO element you can control.
-      They appear in three places: browser tabs, search results, and social shares.
-      Get them wrong and you're leaving traffic on the table on every page of your site.
+Title tags are the most impactful on-page SEO element you can control. They appear in three places: browser tabs, search results, and social shares. Get them wrong and you're leaving traffic on the table on every page of your site.
 
-  ** The rules:**
-    - Target one primary keyword per page
-      - Put the keyword as close to the front as possible
-        - Keep the total length under 60 characters(Google truncates beyond that)
-          - Include your brand name at the end, separated by a pipe or dash
-            - Never duplicate title tags across pages
+**The rules:**
+- Target one primary keyword per page
+- Put the keyword as close to the front as possible
+- Keep the total length under 60 characters (Google truncates beyond that)
+- Include your brand name at the end, separated by a pipe or dash
+- Never duplicate title tags across pages
 
-              ** Template:**
-                Primary Keyword — Supporting Context | Brand Name
+**Template:**
+Primary Keyword — Supporting Context | Brand Name
 
-                  ** Example:**
-                    "SEO Audit Tool — Free, Instant Results | RankyPulse"
+**Example:**
+"SEO Audit Tool — Free, Instant Results | RankyPulse"
 
-                    ** The rewrite problem:**
-                      Google rewrites title tags it considers "keyword-stuffed", too long, or mismatched
-      to the page's actual content. If you see Google showing different titles than yours
-  in search results, it means your title tag isn't matching search intent well enough.
-      The fix: make sure your title tag matches exactly what the page delivers.
+**The rewrite problem:**
+Google rewrites title tags it considers "keyword-stuffed", too long, or mismatched to the page's actual content. If you see Google showing different titles than yours in search results, it means your title tag isn't matching search intent well enough. The fix: make sure your title tag matches exactly what the page delivers.
 
-      ** Common mistakes:**
-  1. Homepage title = company name only("Acme Inc") — no keyword, no context
-2. Duplicate titles across all blog posts
-3. Titles over 70 characters that get cut off mid - word
-4. Keyword stuffing("Best SEO Tool Free SEO Audit Free Website SEO Check")
+**How keyword placement affects rankings:**
+Google weights words earlier in the title tag more heavily. "Free SEO Audit Tool | RankyPulse" will rank better for "free SEO audit tool" than "RankyPulse | Free SEO Audit Tool" — even though both contain the same words. Front-load your primary keyword.
 
-      Audit every page's title tag. It's a 2 - minute fix per page with measurable results.
+**The right length:**
+60 characters is the safe limit for desktop. Mobile truncates slightly differently. Use a title tag preview tool (free ones exist online) to see exactly how your title appears before publishing.
+
+**Common mistakes:**
+1. Homepage title = company name only ("Acme Inc") — no keyword, no context
+2. Duplicate titles across all blog posts ("Blog | Acme Inc" repeated 40 times)
+3. Titles over 70 characters that get cut off mid-word
+4. Keyword stuffing ("Best SEO Tool Free SEO Audit Free Website SEO Check")
+5. Forgetting that blog post titles and HTML title tags are different — what's in your \`<title>\` tag is what Google uses, not your H1
+
+**How to audit yours:**
+Run a [free RankyPulse audit](/audit) to see all title tag issues across every page at once — missing titles, duplicates, and ones that are too long. Fix the high-traffic pages first.
+
+Audit every page's title tag. It's a 2-minute fix per page with measurable results.
     `,
   },
   {
@@ -1048,37 +1076,36 @@ Run your first audit. See what it surfaces. If you outgrow it, you will know exa
     excerpt: "Internal links pass PageRank between your pages. Done right, they can lift underperforming pages without any new content or backlinks. Here's how.",
     featured: false,
     content: `
-      When Google crawls your site, it follows links.The more links pointing to a page
-      — internal and external — the more authority that page accumulates.
+When Google crawls your site, it follows links. The more links pointing to a page — internal and external — the more authority that page accumulates.
 
-      Most sites have a PageRank problem they don't know about: authority is pooled
-      on the homepage and a few top posts, while valuable pages that could rank
-      are starved of signals because nothing links to them.
+Most sites have a PageRank problem they don't know about: authority is pooled on the homepage and a few top posts, while valuable pages that could rank are starved of signals because nothing links to them.
 
-      ** The three - step internal linking audit:**
+**The three-step internal linking audit:**
 
-      ** 1. Find your orphaned pages **
-  Pages with zero internal links pointing to them.Google finds them eventually,
-    but they rank far below their potential.Run a crawl tool or search your own site
-for pages you can't reach by clicking from the homepage.
+**1. Find your orphaned pages**
+Pages with zero internal links pointing to them. Google finds them eventually, but they rank far below their potential. Run a crawl tool or search your own site for pages you can't reach by clicking from the homepage. These are your biggest quick wins.
 
-  ** 2. Find your high - authority pages **
-    These are usually your homepage, your most - linked blog posts, and your pricing page.
-      These pages have the most authority to give away.
+**2. Find your high-authority pages**
+These are usually your homepage, your most-linked blog posts, and your pricing page. These pages have the most authority to give away. Check Google Search Console → Links → Top linked pages internally to confirm.
 
-      ** 3. Link from high - authority to underperforming **
-  Add contextual links — naturally within body copy — from your strongest pages
-      to the pages you want to rank better.Use descriptive anchor text, not "click here".
+**3. Link from high-authority to underperforming**
+Add contextual links — naturally within body copy — from your strongest pages to the pages you want to rank better. Use descriptive anchor text, not "click here".
 
-      ** Anchor text matters:**
-  "Learn more about our pricing" passes no keyword signal.
-      "See our SEO audit pricing" passes the keyword "SEO audit pricing" to the linked page.
+**Anchor text matters:**
+"Learn more about our pricing" passes no keyword signal. "See our SEO audit pricing" passes the keyword "SEO audit pricing" to the linked page. Every internal link is a ranking signal — use it intentionally.
 
-      ** How many internal links per page ?**
-  There's no hard limit. The practical rule: link when it's genuinely useful to the reader.
-      3–10 contextual links per long - form page is a reasonable range.
+**The hub-and-spoke model:**
+For blog-heavy sites, create a pillar page on a broad topic (e.g., "Complete Guide to Technical SEO") and link all related posts back to it. This concentrates authority on the pillar page, which then ranks for the competitive head term while individual posts rank for long-tail variants.
 
-      This takes an afternoon to audit and fix.The payoff compounds over months.
+**How many internal links per page?**
+There's no hard limit. The practical rule: link when it's genuinely useful to the reader. 3–10 contextual links per long-form page is a reasonable range. Sitewide navigation links (header, footer) pass minimal authority — contextual body links are significantly more powerful.
+
+**What to avoid:**
+- Exact-match anchor text on every link (looks manipulative)
+- Linking every page to the homepage (dilutes the signal)
+- Using the same anchor text for different destination pages
+
+This takes an afternoon to audit and fix. The payoff compounds over months as Google reassesses your site's internal link structure.
     `,
   },
   {
@@ -1092,34 +1119,39 @@ for pages you can't reach by clicking from the homepage.
     excerpt: "A redirect chain is when URL A redirects to URL B which redirects to URL C. Each hop loses PageRank. Here's how to find and collapse them.",
     featured: false,
     content: `
-      A redirect chain looks like this:
+A redirect chain looks like this:
 
-yoursite.com / old - page → yoursite.com / redirect - 1 → yoursite.com / final - page
+yoursite.com/old-page → yoursite.com/redirect-1 → yoursite.com/final-page
 
-      Each redirect hop leaks a small amount of PageRank.A two - hop chain loses roughly 10–15 %.
-      A three - hop chain can lose 20–25 %.Multiply that across dozens of pages and you have
-      a meaningful, invisible drag on your rankings.
+Each redirect hop leaks a small amount of PageRank. A two-hop chain loses roughly 10–15%. A three-hop chain can lose 20–25%. Multiply that across dozens of pages and you have a meaningful, invisible drag on your rankings.
 
-      ** How redirect chains happen:**
-  Most commonly: you redirect a URL, then later redirect the destination again.
-      The original redirect isn't updated to point directly to the final destination.
+**How redirect chains happen:**
+Most commonly: you redirect a URL, then later redirect the destination again. The original redirect isn't updated to point directly to the final destination. This accumulates silently over years as sites evolve, URLs get renamed, and old redirect rules are never revisited.
 
-  ** How to find them:**
-    Run your site through a crawler like Screaming Frog, or use RankyPulse's audit.
-      Look for any 301 that leads to another 301.
+**How to find them:**
+Run your site through a crawler (Screaming Frog free tier, or [RankyPulse's audit](/audit)). Look for any 301 that leads to another 301. Export the redirect report and filter for chains of 2 or more hops.
 
-  ** How to fix them:**
-    Update the first redirect to point directly to the final destination.
-      yoursite.com / old - page → yoursite.com / final - page(direct, one hop)
+**How to fix them:**
+Update the first redirect to point directly to the final destination.
 
-        ** The rule:** every redirect should resolve in a single hop.No exceptions.
+Before: yoursite.com/old-page → yoursite.com/redirect-1 → yoursite.com/final-page
+After: yoursite.com/old-page → yoursite.com/final-page (direct, one hop)
 
-      ** Bonus: check your homepage **
-  The most common redirect chain on the internet:
+The rule: every redirect should resolve in a single hop. No exceptions.
+
+**Redirect loops — the nuclear version:**
+A redirect loop is when URL A redirects to URL B which redirects back to URL A. This returns an error to both users and Googlebot. Identify loops by looking for any URL that appears as both source and destination in your redirect map.
+
+**The redirect timeout problem:**
+Google limits how many redirects it will follow before giving up. If your chain is long enough (5+ hops), Googlebot may simply stop following it — meaning the final destination page never gets crawled or indexed at all.
+
+**Bonus: check your homepage**
+The most common redirect chain on the internet:
 http://yoursite.com → https://yoursite.com → https://www.yoursite.com
 
-      If your homepage requires two hops to reach the canonical version, fix that first.
-      It affects every single page on your site.
+If your homepage requires two hops to reach the canonical version, fix that first. Since every page on your site links back to the homepage implicitly, this chain affects your entire site's authority flow.
+
+Collapse all chains to single hops. It's a configuration change in your server or CMS — not a development project.
     `,
   },
   {
@@ -1133,46 +1165,46 @@ http://yoursite.com → https://yoursite.com → https://www.yoursite.com
     excerpt: "Schema markup tells Google what your content means, not just what it says. It unlocks star ratings, FAQ snippets, and sitelinks — for free.",
     featured: false,
     content: `
-      Schema markup is structured data you add to your HTML that tells Google
-      what your content means — not just what it says.
+Schema markup is structured data you add to your HTML that tells Google what your content means — not just what it says.
 
-      Without schema: Google reads your page and guesses whether it's a product,
-      an article, a local business, or a recipe.
+Without schema: Google reads your page and guesses whether it's a product, an article, a local business, or a recipe.
 
-      With schema: you tell Google exactly what it is, and Google can show
-      enhanced "rich results" — star ratings, price ranges, FAQ dropdowns,
-  event dates, breadcrumbs — directly in search results.
+With schema: you tell Google exactly what it is, and Google can show enhanced "rich results" — star ratings, price ranges, FAQ dropdowns, event dates, breadcrumbs — directly in search results.
 
-      ** The types that matter most:**
+**The types that matter most:**
 
-      ** Organization ** — Tells Google your business name, logo, contact info, and social profiles.
-      Every site should have this.Add it to your homepage.
+**Organization** — Tells Google your business name, logo, contact info, and social profiles. Every site should have this. Add it to your homepage. It powers the knowledge panel that appears when someone searches your brand name.
 
-      ** WebSite ** — Enables the sitelinks search box that appears under your brand name in search.
+**WebSite** — Enables the sitelinks search box that appears under your brand name in search. Worth 15 minutes to implement.
 
-      ** Article / BlogPosting ** — Marks up your blog content.Helps with news carousels
-      and "Top Stories" placement.
+**Article/BlogPosting** — Marks up your blog content. Helps with news carousels and "Top Stories" placement. Adds author and publish date signals that Google uses to evaluate freshness.
 
-      ** FAQPage ** — Turns your FAQ section into expandable dropdowns directly in search results.
-      One of the highest - CTR rich result types available.
+**FAQPage** — Turns your FAQ section into expandable dropdowns directly in search results. One of the highest-CTR rich result types available — users can read answers without even clicking through to your site, which sounds bad but actually improves your CTR because the result takes up more space.
 
-      ** Product ** — Enables price, availability, and star rating display for e - commerce.
+**Product** — Enables price, availability, and star rating display for e-commerce. Non-negotiable for any product page.
 
-      ** How to add it:**
-    The easiest method: add a JSON - LD script tag to your page's HTML head.
-      It doesn't touch your visible content at all.
+**How to add it:**
+The easiest method: add a JSON-LD script tag to your page's HTML head. It doesn't touch your visible content at all.
 
-      Example for Organization:
-  {
-    "@context": "https://schema.org",
-      "@type": "Organization",
-        "name": "Your Company",
-          "url": "https://yoursite.com",
-            "logo": "https://yoursite.com/logo.png"
-  }
+\`\`\`json
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Your Company",
+  "url": "https://yoursite.com",
+  "logo": "https://yoursite.com/logo.png"
+}
+\`\`\`
 
-      Test it with Google's Rich Results Test tool after adding.
-      Most schema implementations take 20–30 minutes.The results are permanent.
+**Validation:**
+Test with Google's Rich Results Test (free, search "rich results test"). It shows whether your schema is valid and which rich result types you're eligible for. Fix any errors before submitting pages for indexing.
+
+**Common mistakes:**
+- Adding FAQPage schema to pages that don't actually have FAQ content
+- Using Microdata format instead of JSON-LD (JSON-LD is Google's preferred format)
+- Missing required fields that make the schema invalid
+
+Most schema implementations take 20–30 minutes. The results — richer search snippets and higher CTRs — are permanent.
     `,
   },
   {
@@ -1186,43 +1218,46 @@ http://yoursite.com → https://yoursite.com → https://www.yoursite.com
     excerpt: "robots.txt tells Google what to crawl. Your sitemap tells it what exists. Both are critical, both are often broken. Here's the definitive quick-fix guide.",
     featured: false,
     content: `
-  ** robots.txt: the access control file **
+**robots.txt: the access control file**
 
-    Located at yoursite.com / robots.txt — Google fetches this first, before crawling anything.
+Located at yoursite.com/robots.txt — Google fetches this first, before crawling anything.
 
-      The most dangerous mistake: accidental "Disallow: /" which blocks Google from
-      crawling your entire site.This gets deployed more often than you'd think —
-      usually when someone copies a development robots.txt to production.
+The most dangerous mistake: accidental \`Disallow: /\` which blocks Google from crawling your entire site. This gets deployed more often than you'd think — usually when someone copies a development robots.txt to production without changing it.
 
-      Check yours right now: visit yoursite.com / robots.txt in your browser.
-      If you see "Disallow: /" under "User-agent: *" — you have a critical problem.
+Check yours right now: visit yoursite.com/robots.txt in your browser. If you see \`Disallow: /\` under \`User-agent: *\` — you have a critical problem that must be fixed before anything else.
 
-      A safe baseline robots.txt:
-User - agent: *
-  Disallow: /admin/
+A safe baseline robots.txt:
+\`\`\`
+User-agent: *
+Disallow: /admin/
 Disallow: /api/
 Sitemap: https://yoursite.com/sitemap.xml
+\`\`\`
 
-      Block private pages(admin, API, staging).Allow everything else.
+Block private pages (admin, API, staging). Allow everything else.
 
-      ** XML sitemaps: your site's table of contents**
+**What NOT to block:**
+A common mistake is blocking /wp-admin/ but accidentally also blocking theme assets or plugins in subdirectories. Always test changes with Google Search Console's robots.txt tester before deploying.
 
-      Your sitemap lists every URL you want Google to index.Without one, Google
-      discovers your pages by following links — which means any page not linked
-      from somewhere might never get indexed.
+**XML sitemaps: your site's table of contents**
 
-      What your sitemap should include:
-- Every public page(homepage, product pages, blog posts, landing pages)
-  - Canonical URLs only(not paginated versions, not filter variants)
-    - Last modified dates(helps Google prioritize re - crawling updated content)
+Your sitemap lists every URL you want Google to index. Without one, Google discovers your pages by following links — which means any page not linked from somewhere might never get indexed.
 
-      What to exclude:
-- Redirected URLs
-  - Noindex pages
-    - Duplicate content
+What your sitemap should include:
+- Every public page (homepage, product pages, blog posts, landing pages)
+- Canonical URLs only (not paginated versions, not filter variants)
+- Last modified dates (helps Google prioritize re-crawling updated content)
 
-      Submit your sitemap in Google Search Console under Sitemaps.
-      Then check the "Coverage" report to see which pages Google has indexed.
+What to exclude:
+- Redirected URLs (301s should not appear in your sitemap)
+- Noindex pages (if it's noindex, it shouldn't be in your sitemap — contradictory signals confuse Google)
+- Duplicate content variants (/product?color=red and /product?sort=asc)
+
+**Sitemap size limits:**
+Each sitemap file can contain a maximum of 50,000 URLs. Large sites use a sitemap index file that references multiple individual sitemaps — one for blog posts, one for products, one for landing pages.
+
+**After submitting:**
+Submit your sitemap in Google Search Console under Sitemaps. Check the "Coverage" report weekly for the first month to see which pages Google has indexed and which have issues. Pages that are "Discovered but not indexed" usually need more internal links pointing to them.
     `,
   },
   {
@@ -1369,45 +1404,46 @@ Implement these systems to catch broken links before they impact SEO:
     excerpt: "Most SEO audits return dozens of issues. Here's the exact framework for triaging them by impact, filtering out noise, and building a realistic action plan.",
     featured: false,
     content: `
-      You run an SEO audit and get 47 issues.Congratulations — you're now paralyzed.
+You run an SEO audit and get 47 issues. Congratulations — you're now paralyzed.
 
-      This is the most common response to an audit, and it leads to one of two outcomes:
-      fixing everything superficially, or fixing nothing at all.
+This is the most common response to an audit, and it leads to one of two outcomes: fixing everything superficially, or fixing nothing at all. Here's a better framework.
 
-  Here's a better framework.
+**Step 1: Sort by impact, not by count**
 
-    ** Step 1: Sort by impact, not by count **
+Not all issues are equal. A missing canonical tag on your homepage is worth more than 50 missing alt texts on product images. Triage ruthlessly:
 
-      Not all issues are equal.A missing canonical tag on your homepage is worth
-50 missing alt texts on product images.Triage ruthlessly:
+- **Critical**: issues that directly prevent indexing or ranking (broken robots.txt, redirect chains on main pages, missing canonical, crawl errors)
+- **High**: issues that suppress rankings on important pages (missing title tags, no schema, slow LCP on key pages)
+- **Medium**: issues that improve existing rankings (meta descriptions, internal linking gaps)
+- **Low**: polish items that have marginal impact (alt text on decorative images, minor header hierarchy)
 
-- Critical: issues that directly prevent indexing or ranking(broken robots.txt,
-  redirect chains on main pages, missing canonical, crawl errors)
-  - High: issues that suppress rankings on important pages(missing title tags,
-    no schema, slow LCP on key pages)
-    - Medium: issues that improve existing rankings(meta descriptions, internal linking gaps)
-      - Low: polish items that have marginal impact(alt text on decorative images, minor header hierarchy)
+**Step 2: Filter by page importance**
 
-        ** Step 2: Filter by page importance **
+A missing meta description on your pricing page matters 100x more than one on a blog post from 2019. Weight issues by the commercial importance of the page. Your homepage, pricing page, and top product/service pages are tier 1. Everything else is tier 2 or lower.
 
-          A missing meta description on your pricing page matters 100x more than one
-      on a blog post from 2019. Weight issues by the commercial importance of the page.
+**Step 3: Build a three-item list**
 
-      ** Step 3: Build a three - item list **
+From your critical and high buckets, pick the three issues that are:
+a) on your most important pages, and
+b) fixable this week
 
-  From your critical and high buckets, pick the three issues that are:
-      a) on your most important pages, and
-      b) fixable this week
+Write those three down. Fix those three. Then re-audit.
 
-      Write those three down.Fix those three.Then re - audit.
+**Step 4: Ignore the noise**
 
-      ** Step 4: Ignore the noise **
+Some audit tools flag issues that have no meaningful impact on traffic or rankings. Common examples of low-ROI issues that get over-reported:
+- Missing alt text on purely decorative images
+- H2 before H1 on pages with custom layouts
+- "Slow" pages that are already under 3 seconds
+- Missing meta keywords (Google ignores this tag entirely)
 
-  Some audit tools flag issues that have no meaningful impact on traffic or rankings.
-      If you can't clearly explain how fixing something will lead to more clicks from Google — skip it.
+If you can't clearly explain how fixing something will lead to more clicks from Google — skip it.
 
-      SEO is a long game.Consistent, prioritized fixes compound over time.
-  Fixing 3 high - impact issues per month beats fixing 47 low - impact issues once.
+**Step 5: Track changes, not scores**
+
+After fixing, wait 4–6 weeks for Google to re-crawl your pages and update rankings. Don't re-audit and re-fix before that window. Your score will fluctuate — what you're actually tracking is organic traffic trend, not the number.
+
+SEO is a long game. Consistent, prioritized fixes compound over time. Fixing 3 high-impact issues per month beats fixing 47 low-impact issues once.
     `,
   },
   {
@@ -1421,39 +1457,30 @@ Implement these systems to catch broken links before they impact SEO:
     excerpt: "Page speed affects rankings, bounce rate, and conversion rate simultaneously. Here are 5 fixes that take under 30 minutes each and don't require a developer.",
     featured: false,
     content: `
-      Slow pages hurt in three ways simultaneously: lower rankings, higher bounce rates,
-  and lower conversion rates.A 1 - second improvement in load time has been shown
-      to increase conversions by 7 % on average.
+Slow pages hurt in three ways simultaneously: lower rankings, higher bounce rates, and lower conversion rates. A 1-second improvement in load time has been shown to increase conversions by 7% on average. Here are 5 fixes you can implement today — no developer required.
 
-      Here are 5 fixes you can implement today — no developer required.
+**1. Enable compression (5 minutes)**
+Gzip or Brotli compression reduces HTML, CSS, and JavaScript file sizes by 60–80%. If you're on a managed host (Vercel, Netlify, Cloudflare Pages), this is already on. If you're on a VPS, add \`gzip on;\` to your nginx config or enable it in Apache's .htaccess.
 
-      ** 1. Enable compression(5 minutes) **
-  Gzip or Brotli compression reduces HTML, CSS, and JavaScript file sizes by 60–80 %.
-      If you're on a managed host (Vercel, Netlify, Cloudflare Pages), this is already on.
-      If you're on a VPS, add "gzip on;" to your nginx config or enable it in Apache's.htaccess.
+**2. Serve images in WebP (20 minutes)**
+WebP is 25–35% smaller than JPEG at the same visual quality. Most CMS plugins (Smush, ShortPixel for WordPress; Cloudflare Image Resizing) convert automatically. If you're on a static site, use a build-step tool like sharp or Next.js Image component.
 
-      ** 2. Serve images in WebP(20 minutes) **
-  WebP is 25–35 % smaller than JPEG at the same visual quality.
-      Most CMS plugins(Smush, ShortPixel for WordPress; Cloudflare Image Resizing) convert automatically.
-      If you're on a static site, use a build-step tool like sharp.
+**3. Add lazy loading to images below the fold (10 minutes)**
+Add \`loading="lazy"\` to every img tag that isn't in the first visible screen. This is a single HTML attribute. It tells the browser not to load these images until the user scrolls near them. Cuts initial page weight by 30–60% on image-heavy pages.
 
-  ** 3. Add lazy loading to images below the fold(10 minutes) **
-    Add loading = "lazy" to every img tag that isn't in the first visible screen.
-      This is a single HTML attribute.It tells the browser not to load these images until
-      the user scrolls near them.Cuts initial page weight by 30–60 % on image - heavy pages.
+**4. Move third-party scripts to load asynchronously (15 minutes)**
+Analytics, chat widgets, and marketing tags that load synchronously in your HTML head block everything else from rendering. Add \`async\` or \`defer\` attribute to each script tag. Exception: scripts that must run before page paint (rare — only tracking pixels that fire immediately on load).
 
-      ** 4. Move third - party scripts to load asynchronously(15 minutes) **
-  Analytics, chat widgets, and marketing tags that load synchronously in your HTML head
-      block everything else from rendering.Add async or defer attribute to each script tag.
-  Exception: scripts that must run before page paint(rare).
+**5. Set cache headers for static assets (10 minutes)**
+Tell browsers to cache your CSS, JS, and image files for 1 year. Add \`Cache-Control: public, max-age=31536000\` to your server response headers for static files. On Vercel or Netlify, add this to your framework config or headers file.
 
-      ** 5. Set cache headers for static assets(10 minutes) **
-  Tell browsers to cache your CSS, JS, and image files for 1 year.
-      Add Cache - Control: public, max - age=31536000 to your server response headers for static files.
-      On Vercel or Netlify, add this to your framework config or headers file.
+**How to measure the impact:**
+After implementing, test with Google PageSpeed Insights (free). Run it three times and average the scores — PageSpeed scores can vary by 5–10 points naturally. Most sites see a 15–30 point score improvement from these five fixes alone.
 
-      After implementing, test with Google PageSpeed Insights.
-      Most sites see a 15–30 point score improvement from these five fixes alone.
+**Which fix to do first:**
+If your LCP is over 4 seconds, start with the preload tag for your hero image (covered in the LCP fix guide). If your Total Blocking Time is high, start with fix #4 (async scripts). If your page is simply heavy, fix #2 and #3 first.
+
+Run a [free RankyPulse audit](/audit) to see your current Core Web Vitals scores and identify which of these five fixes will have the most impact on your specific site.
     `,
   },
   {
