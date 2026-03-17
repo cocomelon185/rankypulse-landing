@@ -1864,4 +1864,734 @@ Going through your site manually to find all of the above is time-consuming and 
 Run a free audit, get your fix list, and work through it systematically. Most sites can resolve their critical technical issues within a few hours of focused work.
     `,
   },
+  {
+    slug: 'why-website-has-no-traffic',
+    title: 'Why Does My Website Have No Traffic? (The Real Reasons)',
+    subtitle: 'Being live and being found are two completely different things — here is why your site is invisible.',
+    category: 'Strategy',
+    readingMinutes: 7,
+    publishedAt: '2026-03-17',
+    pullQuote: "Most sites with zero traffic are not broken — they are simply not visible. Visibility is earned, not automatic.",
+    excerpt: "Your site is live, it loads fine, and Google has indexed it. So why is there no traffic? The answer is almost always one of these five things.",
+    featured: false,
+    content: `
+Your website is live, loads fine, and you can see it in Google. So why is organic traffic still zero?
+
+Being indexed and being ranked are two different things. Google can know your site exists without ever showing it to anyone searching. Here are the five most common reasons — and what to do about each.
+
+## 1. You Are Targeting Keywords Nobody Searches For
+
+The most common reason. You write about "our innovative cloud-first solution for enterprise synergy" and wonder why no one finds it. The answer: no one searches for those words.
+
+**Fix:** Use a free keyword tool (Google Keyword Planner, Ubersuggest, or the "People Also Ask" section in Google results) to find what your audience actually types. Then rewrite your pages around those exact phrases.
+
+The target keyword must appear in: your title tag, your H1, your first paragraph, and naturally throughout the page.
+
+## 2. Your Pages Are Too New
+
+Google doesn't rank new pages immediately. For competitive keywords, it can take 3–6 months of being indexed before a new page achieves stable rankings. This is the "Google sandbox" effect — new domains and new content are put on a slow ramp.
+
+**Fix:** Be patient with new content. Focus first on longer, more specific keywords ("how to fix LCP score on Next.js site") where competition is lower, then build toward shorter, competitive terms as your domain ages.
+
+## 3. Your Content Is Too Thin
+
+A 200-word page will almost never rank. Google's systems evaluate content depth against what competitors are publishing for the same keyword. If your page answers the question in 3 sentences but the top-ranking pages answer it in 1,500 words with examples, code, and FAQs — yours won't rank.
+
+**Fix:** For every page you want to rank, open the top 3 results for your target keyword and count their word count, subheadings, and content types (images, tables, code). Match or exceed that depth.
+
+## 4. No Other Pages Link to Yours
+
+Internal links tell Google which pages on your site are important. A page with zero internal links pointing to it is effectively invisible — Google may crawl it once and then deprioritize it indefinitely.
+
+**Fix:** Every new page you publish should have at least 3–5 internal links pointing to it from related existing pages. Go back to your older posts and add links to your new content where relevant.
+
+## 5. Your Domain Has No Authority Yet
+
+A brand-new domain starts with zero authority. If you are competing for keywords where results are dominated by sites with years of backlinks, your content won't rank regardless of quality — at least not yet.
+
+**Fix:** Build authority by:
+- Getting listed in relevant directories and resource pages
+- Publishing original data or research that other sites reference
+- Guest posting on established sites in your niche with links back to yours
+- Creating genuinely useful free tools that attract natural links
+
+**The honest truth:** most sites with no traffic have all five problems simultaneously. Start with keyword research (it costs nothing and affects everything), then fix content depth, then build internal links. Do those three things consistently for 6 months and traffic will come.
+
+Run a [free RankyPulse audit](/audit) to identify the specific technical issues that may also be holding your site back.
+    `,
+  },
+  {
+    slug: 'how-to-rank-new-website',
+    title: 'How to Rank a Brand New Website on Google (Step-by-Step)',
+    subtitle: 'New domains start at zero authority. Here is the exact sequence to build rankings from scratch.',
+    category: 'Strategy',
+    readingMinutes: 9,
+    publishedAt: '2026-03-17',
+    pullQuote: "Ranking a new site is not about shortcuts — it is about doing the right things in the right order.",
+    excerpt: "A new domain has zero authority, zero indexed pages, and zero trust signals. Here is the step-by-step process for building search rankings from scratch, in the right order.",
+    featured: false,
+    content: `
+Starting SEO on a brand-new domain feels like running uphill. Every competitor has a head start measured in years. Here is the exact sequence that works — ordered by what to do first, second, and third.
+
+## Step 1: Technical Foundation (Week 1)
+
+Before worrying about content or links, ensure Google can crawl and index your site cleanly.
+
+**Checklist:**
+- Submit your sitemap at Google Search Console → Sitemaps
+- Confirm robots.txt does not accidentally block any public pages
+- Ensure every page has a unique title tag and meta description
+- Set up canonical tags to prevent duplicate content issues
+- Verify HTTPS is working with no mixed content warnings
+- Check mobile usability (Google indexes the mobile version first)
+
+This takes 2–4 hours for a new site. Do it before publishing any content.
+
+## Step 2: Keyword Research (Week 1)
+
+Do not write a single page without a target keyword. For a new domain, avoid head terms (1–2 words) entirely — you will never rank for "SEO tools" or "marketing software" in year one.
+
+**Target this instead:** 3–5 word keyword phrases with clear intent and low competition.
+
+Examples of good new-domain targets:
+- "how to fix LCP in Next.js" (specific, technical, clear intent)
+- "free SEO audit for small business" (specific service, clear intent)
+- "meta description not showing in Google" (problem-specific, answerable)
+
+Use Google's autocomplete, People Also Ask, and free tools like Ubersuggest to find these. Build a spreadsheet of 20–30 target keywords before you start writing.
+
+## Step 3: Create 10 Strong Pages (Months 1–2)
+
+For a new site, 10 exceptional pages will outperform 100 thin pages every time.
+
+Each page should:
+- Target exactly one primary keyword
+- Have that keyword in the title tag, H1, and first paragraph
+- Be 800–1,500 words with H2 subheadings, examples, and practical detail
+- Include a clear call to action linking to your product or service
+
+Do not publish for the sake of publishing. Every page should deserve to rank.
+
+## Step 4: Internal Linking (Ongoing from Month 1)
+
+As you publish new pages, link back to them from existing pages. Every new post should have at least 3–5 internal links pointing to it.
+
+Create one "pillar" page on your most important topic — a comprehensive guide — and link all related posts to it. This concentrates authority on the page you most want to rank.
+
+## Step 5: Get Your First Backlinks (Months 2–3)
+
+New domains need backlinks from established sites to build authority. Focus on:
+
+1. **Directory listings:** Google My Business, Bing Places, industry-specific directories. Free and fast.
+2. **Partner links:** Ask suppliers, customers, or tools you integrate with to link to you.
+3. **Guest posts:** Write one high-quality guest post per month for a site in your niche.
+4. **Free tools:** Build one free tool that solves a real problem — tools attract natural links.
+
+You do not need hundreds of backlinks. For a new site in a mid-competition niche, 10–20 quality links from relevant sites will create meaningful authority.
+
+## Step 6: Measure and Iterate (Month 3+)
+
+Track rankings weekly using Google Search Console → Performance. Look for:
+- Pages that have impressions but low CTR (fix the title tag and meta description)
+- Pages ranking in positions 8–20 (refresh the content and add internal links)
+- New keyword opportunities appearing in your queries report
+
+**Realistic timeline for a new domain:**
+- Month 1–2: Indexed, first impressions, zero clicks
+- Month 3–4: First clicks on long-tail keywords
+- Month 6: Stable traffic from 10–20 keywords
+- Month 12: Competitive on mid-difficulty terms
+
+SEO is slow to start and fast to compound. Consistent execution over 12 months produces results that paid advertising cannot buy. Start today with a [free technical audit](/audit) to make sure your foundation is clean.
+    `,
+  },
+  {
+    slug: 'google-not-indexing-pages',
+    title: 'Google Not Indexing Your Pages? Here Is Why (and How to Fix It)',
+    subtitle: 'Submitting to Google does not guarantee indexing. Here are the 6 real reasons pages stay out of search.',
+    category: 'Technical SEO',
+    readingMinutes: 7,
+    publishedAt: '2026-03-17',
+    pullQuote: "Google indexes what it trusts. If your page is not indexed, Google has a reason — and it is usually fixable.",
+    excerpt: "Google Search Console shows your pages as 'Crawled but not indexed' or 'Discovered but not indexed' — but why? Here are the 6 reasons Google refuses to index pages, and the fix for each.",
+    featured: false,
+    content: `
+You check Google Search Console and see your pages sitting in "Crawled — currently not indexed" or "Discovered — currently not indexed." Requesting indexing does nothing. What is happening?
+
+Google has become significantly more selective about what it indexes. Here are the six most common reasons — and exactly what to fix.
+
+## Reason 1: Thin or Duplicate Content
+
+This is the most common cause. Google will not index pages it considers low-quality — which means pages with:
+- Under 300 words of unique content
+- Content largely identical to other pages on your site (or copied from elsewhere)
+- Content that is mostly boilerplate with only minor variations
+
+**Fix:** Expand thin pages to 500+ words of unique, useful content targeting a specific keyword. If pages are genuinely duplicate (e.g., filtered product pages), add canonical tags pointing to the primary version.
+
+## Reason 2: No Internal Links Pointing to the Page
+
+"Discovered but not indexed" almost always means Google found the page in your sitemap but considers it unimportant — because nothing on your site links to it. Pages without internal links have no authority signals to justify indexing.
+
+**Fix:** Add at least 3 contextual internal links to the page from related, already-indexed content. These are the strongest signal you can send that a page matters.
+
+## Reason 3: robots.txt or noindex Tags
+
+Check two things:
+1. Visit yoursite.com/robots.txt and confirm the page URL is not in a Disallow rule
+2. View the page source (Ctrl+U) and search for "noindex" — if you find `<meta name="robots" content="noindex">`, remove it
+
+Both of these block indexing completely.
+
+**Fix:** Remove the Disallow rule from robots.txt or remove the noindex meta tag. After fixing, use Google Search Console URL Inspection → Test Live URL to confirm the block is gone, then request indexing.
+
+## Reason 4: Soft 404
+
+A soft 404 is when your server returns a 200 OK status code but the page content is essentially empty or shows a "nothing found" message. Google treats this as a dead page.
+
+Common causes: empty search results pages, empty category pages on e-commerce sites, pages that require JavaScript to load content.
+
+**Fix:** Ensure every indexed page has meaningful content visible in the initial HTML. For pages that load content via JavaScript (client-side rendering), add server-rendered content to the initial HTML payload.
+
+## Reason 5: Slow Server Response Time
+
+If your server takes more than 2–3 seconds to respond, Googlebot may abandon the crawl before the page fully loads. Googlebot has a crawl budget, and slow pages burn it faster.
+
+**Fix:** Check your TTFB (Time to First Byte) using Google PageSpeed Insights. If it is over 600ms, investigate server-side caching, database query optimization, or upgrading your hosting.
+
+## Reason 6: Page Is Too New
+
+New pages on new domains sometimes take 3–8 weeks to be indexed, even after requesting it. Google needs to accumulate enough trust signals before committing to indexing.
+
+**Fix:** Be patient, but accelerate trust-building by getting one external link to the new page from an already-indexed, authoritative page in your niche.
+
+**The fastest diagnostic:**
+Use Google Search Console URL Inspection on the unindexed page. It will show you exactly what Google sees — including crawl status, robots.txt check, noindex detection, and the last crawl attempt. This single tool will identify the cause in 90% of cases.
+
+Run a [free RankyPulse audit](/audit) to identify crawlability issues across your entire site at once.
+    `,
+  },
+  {
+    slug: 'on-page-seo-checklist',
+    title: 'On-Page SEO Checklist: Every Element That Affects Rankings',
+    subtitle: 'A complete, prioritized checklist of every on-page SEO factor — with what to actually do for each.',
+    category: 'Technical SEO',
+    readingMinutes: 8,
+    publishedAt: '2026-03-17',
+    pullQuote: "On-page SEO is the only ranking factor you have complete control over. Use it deliberately.",
+    excerpt: "On-page SEO covers everything on your page that Google evaluates. This checklist covers all of it — title tags, headings, content, images, internal links, and schema — in priority order.",
+    featured: false,
+    content: `
+On-page SEO is the set of ranking factors you control completely — no waiting for backlinks, no algorithm guessing. Get these right on every page and you maximize the ranking potential of whatever authority you have.
+
+Here is the complete checklist, in order of impact.
+
+## Tier 1: Critical (Do These First)
+
+**Title Tag**
+- Contains the primary keyword, front-loaded within the first 30 characters
+- Under 60 characters total (longer gets truncated in search results)
+- Unique — no two pages share the same title
+- Includes brand name at the end separated by pipe or dash
+
+**Meta Description**
+- 120–155 characters
+- Contains the primary keyword naturally
+- Written as an outcome-first pitch ("Learn how to X in Y minutes")
+- Unique — not auto-generated or duplicated
+
+**H1 Tag**
+- Exactly one H1 per page
+- Contains the primary keyword
+- Matches the intent of the title tag (not identical — complementary)
+
+**Primary Keyword Placement**
+- Appears in the first 100 words of the page
+- Used 2–4 times naturally throughout (not keyword-stuffed)
+- Appears in at least one H2 subheading
+
+## Tier 2: High Impact
+
+**Content Depth**
+- Minimum 500 words for informational pages, 800+ for competitive topics
+- Covers the topic more completely than the top 3 ranking pages
+- Uses H2 and H3 subheadings to structure the content logically
+- Includes practical examples, not just definitions
+
+**URL Slug**
+- Keyword-rich and descriptive (yourdomain.com/on-page-seo-checklist, not /post-123)
+- All lowercase, words separated by hyphens
+- Short — under 60 characters where possible
+
+**Internal Links**
+- 3–8 contextual links to related pages on your site
+- Anchor text is descriptive and includes relevant keywords
+- Links to your most important pages from your most authoritative pages
+
+**Image Optimization**
+- Every image has a descriptive alt tag containing relevant keywords where natural
+- Images are compressed (WebP format preferred)
+- Hero images have a preload \`<link>\` tag in the \`<head>\` for LCP improvement
+- File names are descriptive (seo-audit-tool.webp, not IMG_4521.jpg)
+
+## Tier 3: Supporting Signals
+
+**Canonical Tag**
+- Every page has a self-referencing canonical tag pointing to its preferred URL
+- Parameter variants (/?color=red, /?sort=asc) canonical to the base URL
+
+**Structured Data (Schema)**
+- Article schema on blog posts (includes author, date, headline)
+- FAQPage schema on pages with FAQ sections
+- HowTo schema on step-by-step guide pages
+- Organization schema on homepage
+
+**Page Speed**
+- Largest Contentful Paint (LCP) under 2.5 seconds
+- First Input Delay (FID) / Interaction to Next Paint (INP) under 200ms
+- Cumulative Layout Shift (CLS) under 0.1
+
+**Content Freshness**
+- Publication date visible on page
+- "Last updated" date shown for evergreen content that has been refreshed
+- Outdated statistics and examples updated at least annually
+
+## How to Use This Checklist
+
+Run through it for your most important pages first — homepage, pricing page, top product/service pages. Then work through your blog posts starting with those that already have impressions but low click-through rates (check Google Search Console → Performance).
+
+You do not need to achieve 100% on every page. Prioritize the pages that matter most to your business. Tier 1 items on your top 5 pages will move the needle faster than all tiers on all pages.
+
+Use [RankyPulse](/audit) to automatically check most of these items across your entire site at once.
+    `,
+  },
+  {
+    slug: 'technical-seo-checklist',
+    title: 'Technical SEO Checklist 2026: Everything Google Checks',
+    subtitle: 'The complete technical SEO checklist — covering crawlability, indexing, speed, mobile, and structured data.',
+    category: 'Technical SEO',
+    readingMinutes: 9,
+    publishedAt: '2026-03-17',
+    pullQuote: "Technical SEO is the floor, not the ceiling. Get it right once and it stays right.",
+    excerpt: "Technical SEO issues silently suppress rankings without leaving obvious symptoms. This complete checklist covers every technical factor Google evaluates — from robots.txt to Core Web Vitals.",
+    featured: false,
+    content: `
+Technical SEO is the infrastructure layer beneath your content. Get it right and your content has the best chance to rank. Get it wrong and even perfect content gets suppressed.
+
+This checklist covers every technical factor that affects rankings in 2026.
+
+## Crawlability
+
+**robots.txt**
+- [ ] robots.txt file exists at yoursite.com/robots.txt
+- [ ] Does NOT contain \`Disallow: /\` (which blocks everything)
+- [ ] Blocks only private paths: /admin/, /api/, /staging/
+- [ ] Contains a Sitemap: directive pointing to your sitemap URL
+
+**Crawl Budget**
+- [ ] No redirect chains longer than 1 hop
+- [ ] No redirect loops
+- [ ] Broken internal links resolved (404s fixed or redirected)
+- [ ] Paginated pages handled correctly (self-canonical or proper pagination)
+
+## Indexability
+
+**Meta Robots**
+- [ ] No pages have `noindex` that should be indexed
+- [ ] Staging/dev environments are noindexed or blocked via robots.txt
+- [ ] Search result pages (/?s=query) are noindexed
+
+**Canonical Tags**
+- [ ] Every public page has a self-referencing canonical tag
+- [ ] HTTP and HTTPS versions: only HTTPS is canonical
+- [ ] www and non-www versions: one is canonical, the other 301-redirects
+- [ ] Filter/sort parameter URLs canonical to the base URL
+
+**XML Sitemap**
+- [ ] Sitemap exists and is submitted in Google Search Console
+- [ ] Contains only canonical, indexable URLs (no redirected or noindex pages)
+- [ ] Includes lastmod dates
+- [ ] Under 50,000 URLs (use sitemap index for larger sites)
+
+## Page Speed & Core Web Vitals
+
+**Largest Contentful Paint (LCP)**
+- [ ] Under 2.5 seconds (test with Google PageSpeed Insights)
+- [ ] Hero image has a \`<link rel="preload">\` tag
+- [ ] Hero image served in WebP format
+- [ ] CDN in place for static assets
+
+**Interaction to Next Paint (INP)**
+- [ ] Under 200ms
+- [ ] No render-blocking scripts in the \`<head>\`
+- [ ] Third-party scripts load with async or defer
+
+**Cumulative Layout Shift (CLS)**
+- [ ] Under 0.1
+- [ ] Images have explicit width and height attributes
+- [ ] Fonts use font-display: swap or optional
+- [ ] No content injected above the fold after load
+
+## Mobile
+
+- [ ] Viewport meta tag present: \`<meta name="viewport" content="width=device-width, initial-scale=1">\`
+- [ ] All content accessible on mobile (no content hidden behind hover states)
+- [ ] Tap targets at least 48x48 pixels
+- [ ] No horizontal scrolling on mobile viewports
+- [ ] Google Search Console → Mobile Usability shows 0 errors
+
+## HTTPS & Security
+
+- [ ] All pages served over HTTPS
+- [ ] No mixed content warnings (HTTP resources loaded on HTTPS pages)
+- [ ] SSL certificate valid and not expiring within 30 days
+- [ ] HSTS header set on your server
+
+## Structured Data
+
+- [ ] Organization schema on homepage
+- [ ] WebSite schema with SearchAction on homepage (enables sitelinks search box)
+- [ ] Article or BlogPosting schema on all blog posts
+- [ ] BreadcrumbList schema on all pages below the homepage
+- [ ] FAQPage schema on pages with FAQ sections
+- [ ] Product schema on product pages (e-commerce)
+
+## How to Audit
+
+Running through this checklist manually for a large site takes hours. Use [RankyPulse's free audit](/audit) to automatically check most of these items across every page of your site in one pass — it surfaces issues sorted by severity so you know exactly where to start.
+
+Fix Tier 1 issues (crawlability and indexability) first — they block everything else. Tier 2 (speed) second. Structured data third. A clean technical foundation lets your content compete at its full potential.
+    `,
+  },
+  {
+    slug: 'seo-mistakes-beginners-make',
+    title: '10 SEO Mistakes Beginners Make (And How to Avoid Them)',
+    subtitle: 'The most common SEO errors that waste months of effort — and the fixes that actually work.',
+    category: 'Strategy',
+    readingMinutes: 7,
+    publishedAt: '2026-03-17',
+    pullQuote: "Most SEO mistakes are not technical — they are strategic. You can build a technically perfect site that still gets zero traffic.",
+    excerpt: "Most SEO failures are not from doing things wrong — they are from doing the wrong things. Here are the 10 mistakes that cost beginners the most time, and how to avoid them.",
+    featured: false,
+    content: `
+Beginners often approach SEO with the right effort in the wrong direction. These are the 10 mistakes that consistently waste the most time — and what to do instead.
+
+## Mistake 1: Targeting Keywords That Are Too Competitive
+
+Trying to rank for "SEO tools" or "best laptops" on a new site is like opening a restaurant and trying to compete with McDonald's on day one.
+
+**Fix:** Target 3–5 word keyword phrases with clear intent and under 1,000 monthly searches. Win there first. Build authority. Then move to competitive terms after 6–12 months.
+
+## Mistake 2: Publishing Thin Content
+
+A 300-word blog post that barely touches the topic will never outrank a comprehensive 1,500-word guide with examples, FAQs, and practical advice.
+
+**Fix:** Before writing, search your target keyword and read the top 3 results. Your page needs to be at least as comprehensive as the best one. Match or exceed the depth.
+
+## Mistake 3: Ignoring Title Tags
+
+Default CMS titles like "Post 1 | My Site" or "Untitled Page" waste your highest-value on-page SEO element.
+
+**Fix:** Every page needs a unique title tag with the primary keyword front-loaded within 60 characters. Write it before you write the content — it keeps you focused.
+
+## Mistake 4: Skipping Internal Links
+
+New content gets published and immediately orphaned — no existing pages link to it. Google finds it in the sitemap, crawls it once, and deprioritizes it.
+
+**Fix:** Every time you publish new content, go to 3–5 existing related pages and add a contextual link to the new post. This alone can significantly accelerate indexing and rankings.
+
+## Mistake 5: Not Setting Up Google Search Console
+
+Most beginners track rankings via "googling their keyword" — which is inaccurate because Google personalizes results. Meanwhile, their actual performance data sits uncollected.
+
+**Fix:** Set up Google Search Console on day one. It is free and tells you exactly which queries are triggering impressions, what your real rankings are, and which pages have technical issues.
+
+## Mistake 6: Expecting Immediate Results
+
+SEO takes 3–6 months to show meaningful results. Beginners publish for 4 weeks, see no traffic, and conclude "SEO doesn't work."
+
+**Fix:** Set realistic expectations: months 1–2 are for indexing, months 3–4 for first clicks, months 6–12 for real traffic. Measure week-over-week impression trends, not just traffic.
+
+## Mistake 7: Duplicate Page Titles and Descriptions
+
+Every page having the same title and description confuses Google about which page to rank for which query.
+
+**Fix:** Every page must have a unique title and meta description that accurately reflects that page's specific content and target keyword.
+
+## Mistake 8: Ignoring Page Speed
+
+A slow site suppresses rankings and increases bounce rates simultaneously. Beginners focus entirely on content while Google penalizes them quietly for slow LCP scores.
+
+**Fix:** Run Google PageSpeed Insights on your homepage. If LCP is over 3 seconds, fix it before publishing more content. Speed issues compound — fix the foundation first.
+
+## Mistake 9: Building Backlinks Before Content Is Ready
+
+Getting links to thin, unfinished content is worse than no links — the links send authority to pages that then lose it to low content quality signals.
+
+**Fix:** Get your content to at least 500–800 words of genuine quality before pursuing any backlinks. Links amplify what is there — amplifying thin content amplifies its weakness.
+
+## Mistake 10: Treating SEO as a One-Time Task
+
+Publishing a page and forgetting it is not SEO. Rankings decay as competitors publish better content, search intent evolves, and freshness signals fade.
+
+**Fix:** Set a quarterly calendar reminder to review your top 10 pages. Update statistics, add new sections, improve internal links, and re-request indexing. Freshness compounds.
+
+**The common thread:** most of these mistakes are strategic, not technical. A [free audit](/audit) will catch the technical errors — but strategy is something you build through consistent, patient execution.
+    `,
+  },
+  {
+    slug: 'how-to-fix-slow-website',
+    title: 'How to Fix a Slow Website: The Complete Speed Optimization Guide',
+    subtitle: 'Page speed affects rankings, bounce rate, and conversion rate simultaneously. Here is the complete fix.',
+    category: 'Technical SEO',
+    readingMinutes: 10,
+    publishedAt: '2026-03-17',
+    pullQuote: "Every second of load time costs you users, rankings, and revenue — simultaneously.",
+    excerpt: "A slow website is not just a UX problem — it directly suppresses Google rankings and increases bounce rates. Here is the complete speed optimization guide, from diagnosis to fix.",
+    featured: false,
+    content: `
+Page speed is the only ranking factor that simultaneously affects your Google position, your bounce rate, and your conversion rate. A 1-second improvement in load time increases conversions by an average of 7%. A page that loads in 4 seconds gets ranked below a comparable page that loads in 2 seconds.
+
+Here is the complete guide — diagnosis first, then fixes in priority order.
+
+## Step 1: Diagnose the Problem
+
+Before fixing anything, measure baseline. Use these free tools:
+
+**Google PageSpeed Insights** (pagespeed.web.dev)
+Shows your Core Web Vitals scores for both mobile and desktop. The "Opportunities" section lists specific fixes with estimated impact. This is your primary diagnostic tool.
+
+**Google Search Console → Core Web Vitals**
+Shows real-user data (field data) rather than lab measurements. If your CWV report shows "Poor URLs," those pages have real users experiencing slow load times.
+
+**WebPageTest** (webpagetest.org)
+Advanced diagnostics — shows a waterfall of every resource that loads on your page. Useful for identifying specific bottlenecks.
+
+**What to look for:**
+- LCP (Largest Contentful Paint): under 2.5s is good, over 4s is poor
+- INP (Interaction to Next Paint): under 200ms is good
+- CLS (Cumulative Layout Shift): under 0.1 is good
+- TTFB (Time to First Byte): under 600ms
+
+## Step 2: Fix LCP (Biggest Ranking Impact)
+
+LCP is the single most impactful Core Web Vital for search rankings.
+
+**Identify your LCP element:** Run PageSpeed Insights and look for "LCP element" in the diagnostics. It is usually your hero image or hero text.
+
+**If LCP is an image:**
+1. Add a preload hint in your \`<head>\`: \`<link rel="preload" as="image" href="/hero.webp">\`
+2. Convert the image to WebP (25–35% smaller)
+3. Ensure the image is not lazy-loaded (remove \`loading="lazy"\` from your LCP image)
+4. Serve the image from a CDN (Cloudflare free tier takes 15 minutes to set up)
+
+**If LCP is text:**
+1. Check TTFB — if over 800ms, your server is the bottleneck
+2. Use font-display: swap or font-display: optional to prevent render-blocking fonts
+3. Move critical CSS inline rather than loading from an external file
+
+## Step 3: Fix Render-Blocking Resources
+
+Scripts and stylesheets that load in your \`<head>\` block the browser from rendering anything until they finish.
+
+**Check for render-blocking resources:** PageSpeed Insights → "Eliminate render-blocking resources" opportunity.
+
+**Fix:**
+- Add \`defer\` attribute to non-critical JavaScript: \`<script src="app.js" defer>\`
+- Add \`async\` to independent scripts (analytics, chat widgets)
+- Inline critical CSS (the CSS needed to render above-the-fold content) directly in the \`<head>\`
+- Move non-critical CSS to load after the page paints
+
+## Step 4: Optimize Images
+
+Images are typically 60–80% of a page's total weight.
+
+**Quick wins:**
+- Convert all images to WebP (use Cloudflare, Squoosh.app, or your CMS plugin)
+- Add \`loading="lazy"\` to all images below the fold
+- Set explicit width and height on all images (prevents CLS)
+- Use responsive images with \`srcset\` to serve smaller images to smaller screens
+
+## Step 5: Reduce Server Response Time
+
+If your TTFB is over 600ms, your server is slowing everything downstream.
+
+**Common causes and fixes:**
+- No server-side caching: implement Redis or page-level caching
+- Slow database queries: add indexes to frequently-queried columns
+- Unoptimized server location: use a CDN or choose a server region closer to your primary audience
+- Shared hosting: upgrade to a VPS or managed platform (Vercel, Netlify, Railway)
+
+## Step 6: Set Cache Headers
+
+Tell browsers to cache your assets so repeat visitors load pages instantly.
+
+Add to your server configuration:
+\`\`\`
+Cache-Control: public, max-age=31536000, immutable
+\`\`\`
+For CSS, JS, and image files (1-year cache — use content hashing in filenames to invalidate when files change).
+
+## Verify Your Fixes
+
+After implementing each change:
+1. Run PageSpeed Insights three times and average the scores
+2. Check Google Search Console CWV report after 28 days for real-user improvement
+3. Monitor bounce rate in your analytics — speed improvements usually reduce it within days
+
+Run a [free RankyPulse audit](/audit) to check your Core Web Vitals alongside all other technical SEO issues in one pass.
+    `,
+  },
+  {
+    slug: 'why-keywords-not-ranking',
+    title: 'Why Are My Keywords Not Ranking? (6 Real Reasons)',
+    subtitle: 'You are publishing content and targeting keywords — but nothing is ranking. Here is the diagnostic.',
+    category: 'Strategy',
+    readingMinutes: 7,
+    publishedAt: '2026-03-17',
+    pullQuote: "If your keywords are not ranking, the problem is almost never the keyword — it is the content, authority, or relevance behind it.",
+    excerpt: "You have done keyword research, published content, and waited. Still no rankings. Here are the 6 most common reasons keywords fail to rank — and the specific fix for each.",
+    featured: false,
+    content: `
+You did the keyword research. You wrote the content. You published it months ago. And the rankings never came. Here is a systematic diagnosis of why — with the fix for each case.
+
+## Reason 1: The Keyword Is Too Competitive for Your Domain
+
+New and low-authority domains cannot rank for competitive keywords, regardless of content quality. If your target keyword shows results from Wikipedia, Forbes, HubSpot, and Moz — you will not appear on page one for a long time.
+
+**Diagnosis:** Search your target keyword in Google. If every result is from a site with years of history and thousands of backlinks — move on.
+
+**Fix:** Find the long-tail variant. Instead of "link building," target "how to build backlinks for a new blog" or "link building for local businesses." Specific = less competition = rankable.
+
+## Reason 2: Your Content Does Not Match Search Intent
+
+Google ranks pages that match what users actually want when they search that keyword — not just pages that contain the keyword.
+
+For example: someone searching "SEO audit tool" wants to see tools (transactional intent). A blog post about "why SEO audits matter" will not rank for that keyword, regardless of how many times it uses the phrase.
+
+**Diagnosis:** Search your keyword and look at what the top results actually are — articles, tool pages, listicles, videos? Your content type must match.
+
+**Fix:** Align content type with search intent. Informational keywords → guides. Transactional keywords → landing pages or comparison posts. Navigational keywords → homepage or branded pages.
+
+## Reason 3: Your Page Has Thin Content
+
+A 400-word post competing against a 2,000-word comprehensive guide will lose. Google evaluates content depth against what else exists for the same query.
+
+**Diagnosis:** Search your keyword and count the approximate word count of the top 3 results. Is your page shorter? Less detailed? Missing key subtopics?
+
+**Fix:** Open the top 3 results and identify every subtopic they cover that your page does not. Add sections covering those gaps. Aim to be the most complete resource on the topic.
+
+## Reason 4: No Backlinks or Internal Links to the Page
+
+Rankings require authority signals. A page with no backlinks and no internal links has no authority — only content quality, which is necessary but not sufficient for most competitive keywords.
+
+**Diagnosis:** Check how many internal links point to the page (Google Search Console → Links). Check if any external sites link to it.
+
+**Fix:**
+- Internal: go back to 5 related pages and add contextual links to this page
+- External: promote the page in relevant communities, reach out to sites that link to similar content, or link to it from a guest post
+
+## Reason 5: Keyword Cannibalization
+
+You have multiple pages targeting the same or similar keyword — and they are competing with each other. Google struggles to pick which one to rank and often ranks neither well.
+
+**Diagnosis:** Search Google for "site:yourdomain.com keyword" and check if multiple pages appear. Also look at Google Search Console → Performance → filter by query to see if impressions are split across multiple pages.
+
+**Fix:** Choose one page as the canonical target for that keyword. Either:
+- Redirect the weaker pages to the stronger one
+- Add a canonical tag from the weaker pages to the stronger one
+- Rewrite the weaker pages to target different (related but distinct) keywords
+
+## Reason 6: Your Page Is Stuck in the Sandbox
+
+New domains and new pages can take 3–6 months to achieve stable rankings — even for keywords they should rank for. Google places new content in a "testing" phase before committing to stable positions.
+
+**Diagnosis:** Check the first date the page was indexed in Google Search Console URL Inspection. If it has been under 3 months, this may simply be timing.
+
+**Fix:** Be patient, but accelerate trust signals:
+- Get one or two external links from established sites
+- Improve the content depth
+- Add more internal links from your most authoritative pages
+- Ensure the page loads fast and has no technical issues
+
+**The fastest diagnostic approach:** Google Search Console → Performance → filter by the landing page URL → look at queries. This tells you what queries your page is triggering impressions for, and where you are ranking (average position). Pages with impressions but no clicks need a title/description fix. Pages with zero impressions need content or authority work.
+
+Use [RankyPulse](/audit) to identify technical barriers that may be suppressing rankings alongside these strategic issues.
+    `,
+  },
+  {
+    slug: 'how-to-increase-website-traffic',
+    title: 'How to Increase Website Traffic: 8 Strategies That Actually Work',
+    subtitle: 'Not vanity metrics — practical, compounding strategies for sustainable organic traffic growth.',
+    category: 'Strategy',
+    readingMinutes: 9,
+    publishedAt: '2026-03-17',
+    pullQuote: "Traffic growth is not a campaign — it is a system. Build the system and the traffic follows.",
+    excerpt: "Increasing website traffic sustainably requires more than publishing content. Here are 8 strategies that compound over time — covering SEO, content, internal links, and distribution.",
+    featured: false,
+    content: `
+There are two kinds of traffic strategies: ones that stop the moment you stop paying or posting, and ones that compound over time. This guide is about the second kind.
+
+## Strategy 1: Fix Technical SEO First
+
+You cannot fill a leaky bucket. If your site has broken robots.txt rules, missing canonical tags, slow page speed, or pages that Google cannot index — traffic growth is capped by those technical limits.
+
+**What to do:**
+Run a [free technical audit](/audit) and fix all critical issues before any other strategy. This takes one day and removes invisible suppressors from every page you publish afterward.
+
+## Strategy 2: Target Long-Tail Keywords
+
+Most sites try to rank for 1–2 word keywords and fail because the competition is insurmountable. The fastest path to real traffic is capturing hundreds of long-tail keywords (3–5 words, 50–500 monthly searches each) that collectively add up to meaningful volume.
+
+**What to do:**
+Use Google autocomplete, People Also Ask, and free tools to find 20–30 specific questions your audience asks. Write one dedicated page answering each question thoroughly. These pages rank faster, convert better, and build authority that eventually helps you rank for competitive head terms.
+
+## Strategy 3: Refresh High-Impression, Low-Click Pages
+
+Google Search Console → Performance → Pages shows every page that gets impressions in search. Pages with many impressions but low clicks (under 3% CTR) are ranking but not getting clicked — a title and meta description problem, not a content problem.
+
+**What to do:**
+Rewrite the title tag and meta description of every page with impressions but CTR under 2%. Lead with the outcome. Include the keyword. Add a reason to click. This is the highest-ROI 30 minutes in SEO.
+
+## Strategy 4: Build Topical Authority Through Content Clusters
+
+Publishing isolated posts on random topics builds no topical authority. Google rewards sites that demonstrate deep expertise on a specific topic by ranking their related content higher across the board.
+
+**What to do:**
+Pick 3–5 core topics for your site. Create a comprehensive pillar page for each (1,500–3,000 words covering the topic broadly). Then publish 8–12 supporting posts covering specific subtopics, all linking back to the pillar. This cluster structure signals topical expertise to Google.
+
+## Strategy 5: Optimize Internal Links Systematically
+
+Every page on your site that lacks internal links is ranking below its potential. Internal links pass authority from your established pages to your newer ones — it is free PageRank redistribution.
+
+**What to do:**
+Once per month, review your 5 newest posts and add 3–5 internal links from older, established pages to each. Use descriptive anchor text containing the target keyword of the destination page.
+
+## Strategy 6: Earn Backlinks Through Linkable Assets
+
+The most reliable way to earn backlinks is to create content that other sites naturally want to reference: original research, comprehensive guides, free tools, data studies, or definitive resources.
+
+**What to do:**
+Create one linkable asset per quarter. Examples: a comprehensive checklist, an original survey with published findings, a free tool that solves a real problem, or a definitive guide that becomes the standard reference for a topic in your niche.
+
+## Strategy 7: Update and Republish Old Content
+
+Traffic to older content decays as competitors publish better material, information becomes outdated, and freshness signals fade. Refreshing existing high-potential pages is often faster than creating new ones.
+
+**What to do:**
+Identify pages ranking in positions 6–20 with declining traffic. Update the content with current information, add new sections covering gaps, improve internal links, update the publication date to reflect the refresh, and re-request indexing in Google Search Console.
+
+## Strategy 8: Distribute Content to Build Initial Signals
+
+New content needs initial traffic signals — clicks, dwell time, and engagement — to show Google it is worth ranking. Organic search is slow to start; distribution kickstarts the process.
+
+**What to do:**
+For every new post, share it in 2–3 relevant communities: Reddit threads, Slack/Discord communities, LinkedIn posts, or niche forums. Do not spam — share genuinely useful content in threads where it adds value. Even 50 initial clicks can accelerate indexing and early ranking tests.
+
+**The compounding effect:**
+These strategies reinforce each other. Better technical SEO gets content indexed faster. Internal links distribute authority from content that is ranking. Topical clusters help all related posts rank. Backlinks multiply the value of everything else. Start with Strategy 1, then layer the others over 6–12 months.
+
+The sites with the most traffic did not get there quickly — they got there by consistently executing these fundamentals without stopping.
+    `,
+  },
 ];
