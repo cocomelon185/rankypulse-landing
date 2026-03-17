@@ -1,0 +1,51 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - link "RankyPulse" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img [ref=e7]
+          - generic [ref=e9]: RankyPulse
+        - heading "Welcome back" [level=1] [ref=e10]
+        - paragraph [ref=e11]: Sign in to see your audit history
+      - generic [ref=e12]:
+        - button "Continue with Google" [ref=e13]:
+          - img [ref=e14]
+          - text: Continue with Google
+        - generic [ref=e23]: OR
+        - generic [ref=e24]:
+          - textbox "Email or username" [ref=e25]
+          - textbox "Password" [ref=e26]
+          - button "Sign in with password" [ref=e27]:
+            - img [ref=e28]
+            - text: Sign in with password
+        - generic [ref=e31]:
+          - paragraph [ref=e32]:
+            - link "Forgot password?" [ref=e33] [cursor=pointer]:
+              - /url: /auth/forgot-password?callbackUrl=%2Fbilling
+            - text: ·
+            - link "Forgot username?" [ref=e34] [cursor=pointer]:
+              - /url: /auth/forgot-username?callbackUrl=%2Fbilling
+          - paragraph [ref=e35]:
+            - button "Email me a sign-in link" [ref=e36]:
+              - img [ref=e37]
+              - text: Email me a sign-in link
+        - paragraph [ref=e40]:
+          - text: Don't have an account?
+          - link "Sign up free" [ref=e41] [cursor=pointer]:
+            - /url: /auth/signup?callbackUrl=%2Fbilling
+      - paragraph [ref=e42]:
+        - text: By signing in you agree to our
+        - link "Terms" [ref=e43] [cursor=pointer]:
+          - /url: /terms
+        - text: and
+        - link "Privacy Policy" [ref=e44] [cursor=pointer]:
+          - /url: /privacy
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e50] [cursor=pointer]:
+    - img [ref=e51]
+  - alert [ref=e54]
+```

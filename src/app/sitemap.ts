@@ -46,8 +46,23 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/seo-audit-for-agencies`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/seo-audit-for-nonprofits`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/seo-audit-for-local-business`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
-    // NOTE: /audit/results, /report/*, /dashboard, /auth/*, and all app routes
-    // are intentionally excluded — they require auth or are dynamic.
+    // Programmatic SEO: public report pages for well-known domains
+    // These seed Google's index so people searching "[domain] SEO audit" can find us.
+    ...[
+      'shopify.com', 'wordpress.com', 'wix.com', 'squarespace.com', 'webflow.com',
+      'github.com', 'medium.com', 'substack.com', 'notion.so', 'hubspot.com',
+      'mailchimp.com', 'buffer.com', 'hootsuite.com', 'canva.com', 'figma.com',
+      'stripe.com', 'vercel.com', 'netlify.com', 'digitalocean.com', 'cloudflare.com',
+      'semrush.com', 'ahrefs.com', 'moz.com', 'yoast.com', 'sitebulb.com',
+      'seoptimer.com', 'woorank.com', 'ubersuggest.com', 'neilpatel.com', 'backlinko.com',
+    ].map((domain) => ({
+      url: `${BASE}/report/${domain}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    })),
+    // NOTE: /audit/results, /dashboard, /auth/*, and all app routes
+    // are intentionally excluded — they require auth or are session-specific.
     ...blogEntries,
   ];
 }

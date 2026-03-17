@@ -13,7 +13,7 @@ export default function robots(): MetadataRoute.Robots {
           "/billing",
           "/position-tracking",
           "/api/",
-          "/report/",            // dynamic audit reports — not for indexing
+          // /report/ is intentionally crawlable — programmatic SEO pages
           "/audit/results",      // result page varies per session
           "/privacy-policy",     // canonical is /privacy
           "/terms-and-conditions", // canonical is /terms

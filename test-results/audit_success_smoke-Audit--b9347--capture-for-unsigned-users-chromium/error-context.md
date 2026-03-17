@@ -1,0 +1,120 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - main [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - link "example.com" [ref=e6] [cursor=pointer]:
+          - /url: https://example.com
+        - img [ref=e7]
+        - generic [ref=e11]: Score 68
+      - button "Re-run audit" [ref=e12]:
+        - img [ref=e13]
+        - text: Re-run audit
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - generic [ref=e19]:
+          - generic [ref=e20]:
+            - paragraph [ref=e21]: Guided mode
+            - list [ref=e22]:
+              - listitem [ref=e23]: "Step 1: Fix #1"
+              - listitem [ref=e24]: "Step 2: Re-run audit"
+              - listitem [ref=e25]: "Step 3: See improvement"
+          - button "Dismiss" [ref=e26]
+        - generic [ref=e27]:
+          - paragraph [ref=e28]: Next best action
+          - heading "Canonical points to non-preferred URL" [level=1] [ref=e29]
+          - paragraph [ref=e30]: May cause duplicate indexing and split ranking signals.
+          - 'button "Fix #1 now" [ref=e31]'
+        - generic [ref=e32]:
+          - heading "Top fixes (3)" [level=2] [ref=e33]
+          - paragraph [ref=e34]: Prioritized by likely ranking impact.
+          - generic [ref=e35]:
+            - article [ref=e36]:
+              - generic [ref=e37]:
+                - generic [ref=e38]: HIGH
+                - generic [ref=e39]: Canonical
+                - generic [ref=e40]: ~15 min
+              - heading "Canonical points to non-preferred URL" [level=3] [ref=e41]
+              - paragraph [ref=e42]: Correct canonicals consolidate authority to one URL.
+              - generic [ref=e43]:
+                - 'button "Fix #1 now" [ref=e44]'
+                - button "View details" [ref=e45]
+            - article [ref=e46]:
+              - generic [ref=e47]:
+                - generic [ref=e48]: MED
+                - generic [ref=e49]: Meta
+                - generic [ref=e50]: ~8 min
+              - heading "Meta description missing" [level=3] [ref=e51]
+              - paragraph [ref=e52]: Stronger snippets can increase clicks from existing rankings.
+              - generic [ref=e53]:
+                - button "Open fix" [ref=e54]
+                - button "View details" [ref=e55]
+            - article [ref=e56]:
+              - generic [ref=e57]:
+                - generic [ref=e58]: MED
+                - generic [ref=e59]: Meta
+                - generic [ref=e60]: ~10 min
+              - heading "Title tag too long" [level=3] [ref=e61]
+              - paragraph [ref=e62]: A clearer title helps searchers choose your result.
+              - generic [ref=e63]:
+                - button "Open fix" [ref=e64]
+                - button "View details" [ref=e65]
+        - generic [ref=e66]:
+          - heading "Expected impact" [level=2] [ref=e67]
+          - paragraph [ref=e68]: You could be missing 710-2600 visits/month
+          - generic [ref=e69]:
+            - generic [ref=e70]: "Confidence: Medium"
+            - button "How we estimate this" [ref=e71]
+          - paragraph [ref=e72]: Complete the first fix to unlock your first measurable win before deciding to upgrade.
+          - button "Re-run audit" [ref=e73]
+        - generic [ref=e74]:
+          - heading "Roadmap" [level=2] [ref=e75]
+          - paragraph [ref=e76]: Preview your next actions with real task titles.
+          - list [ref=e77]:
+            - listitem [ref=e78]:
+              - generic [ref=e79]: Canonical points to non-preferred URL
+              - generic [ref=e80]: High impact
+            - listitem [ref=e81]:
+              - generic [ref=e82]: Meta description missing
+              - generic [ref=e83]: Medium impact
+            - listitem [ref=e84]:
+              - generic [ref=e85]: Title tag too long
+              - generic [ref=e86]: Medium impact
+            - listitem [ref=e87]:
+              - generic [ref=e88]: Images missing optimization signals
+              - generic [ref=e89]: Low impact
+          - generic [ref=e90]:
+            - button "Unlock remaining fixes (2)" [ref=e91]
+            - button "View competitor benchmark" [ref=e92]
+        - generic [ref=e93]: Opportunities identified · Just scanned
+      - complementary [ref=e95]:
+        - paragraph [ref=e96]: Current task
+        - 'heading "Fix #1: Canonical points to non-preferred URL" [level=3] [ref=e97]'
+        - paragraph [ref=e98]: 15 min · Correct canonicals consolidate authority to one URL.
+        - generic [ref=e100]:
+          - generic [ref=e101]:
+            - paragraph [ref=e102]: Progress
+            - paragraph [ref=e103]: 0/3 done
+          - paragraph [ref=e105]: Estimated traffic risk reduced by 0%
+        - 'button "Fix #1 now" [ref=e106]'
+        - generic [ref=e107]:
+          - link "Email report" [ref=e108] [cursor=pointer]:
+            - /url: mailto:?subject=RankyPulse%20SEO%20report&body=
+          - button "Share report" [ref=e109]
+          - button "More" [ref=e110]
+  - region "Notifications alt+T"
+  - generic [ref=e115] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e116]:
+      - img [ref=e117]
+    - generic [ref=e120]:
+      - button "Open issues overlay" [ref=e121]:
+        - generic [ref=e122]:
+          - generic [ref=e123]: "0"
+          - generic [ref=e124]: "1"
+        - generic [ref=e125]: Issue
+      - button "Collapse issues badge" [ref=e126]:
+        - img [ref=e127]
+  - alert [ref=e129]
+```

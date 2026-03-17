@@ -1456,4 +1456,385 @@ Implement these systems to catch broken links before they impact SEO:
       Most sites see a 15–30 point score improvement from these five fixes alone.
     `,
   },
+  {
+    slug: 'why-website-not-ranking',
+    title: 'Why Is My Website Not Ranking on Google? (7 Real Reasons)',
+    subtitle: 'Zero traffic despite being live? Here are the actual reasons your site is invisible — and how to fix each one.',
+    category: 'Strategy',
+    readingMinutes: 8,
+    publishedAt: '2026-03-17',
+    pullQuote: "Being indexed by Google and being ranked by Google are two completely different things. Most site owners confuse the two — and that confusion is why they stay stuck.",
+    excerpt: "Your website is live, Google has indexed it, but traffic is still zero. This is one of the most frustrating situations in SEO — and it has very specific causes. Here are the 7 real reasons your site is not ranking, and exactly what to do about each one.",
+    featured: true,
+    content: `
+Your website is live. You submitted it to Google Search Console. It is indexed. And yet — zero traffic.
+
+This is not unusual, especially in the first few months of a new site. But "it takes time" is not a complete answer. There are specific, diagnosable reasons why a site fails to rank, and most of them are fixable.
+
+Here are the seven most common reasons websites get zero organic traffic, along with what to do about each one.
+
+### 1. You Are Targeting Keywords That Are Too Competitive
+
+This is the most common mistake new sites make.
+
+If your site is brand new and you are targeting "SEO audit tool" or "best project management software," you are competing against companies with thousands of backlinks and years of authority. Google will not rank a new site for those terms — it simply does not trust you enough yet.
+
+**What to do:** Target long-tail keywords. Instead of "SEO tool," target "SEO audit tool for freelancers" or "how to find broken links on my website." These phrases get fewer searches but have almost no competition. A top 3 ranking for a 200-search-per-month keyword beats page 8 for a 50,000-search-per-month keyword every time.
+
+### 2. Your Pages Do Not Match Search Intent
+
+Google's job is to show users the most relevant result for what they searched. If your page does not match what the user actually wants, Google will not rank it — even if it targets the right keyword.
+
+Search intent has four types: informational (how to, what is), navigational (find a specific site), commercial (best X, compare X vs Y), and transactional (buy, sign up, get started).
+
+**What to do:** Search your target keyword yourself. Look at the top 5 results. What format are they? Blog posts? Product pages? Tool pages? Lists? Match that format. If all top results are "10 tips" articles and you have a product page, your page will not rank for that term.
+
+### 3. You Have No Backlinks
+
+Backlinks are votes of trust. Google uses them as a major ranking signal. A page with zero external links pointing to it is essentially invisible to Google's authority scoring system.
+
+This is the hardest part of SEO to speed up — but it is not impossible for a new site.
+
+**What to do:** Start with these three tactics:
+- Post genuinely useful content on Reddit, Hacker News, or Indie Hackers with a link back to a relevant page on your site
+- Find bloggers in your niche and offer to write a guest post or be quoted as an expert
+- Build free tools or resources that people naturally link to (calculators, templates, checklists)
+
+Even 10-15 quality backlinks from relevant sites can move the needle significantly for a new domain.
+
+### 4. Your Content Is Too Thin
+
+Google's quality guidelines penalise "thin content" — pages with very little useful information. If your blog posts are 200-word summaries or your landing pages have five sentences of copy, Google will not consider them worth ranking.
+
+**What to do:** Aim for at least 800-1,200 words on any page you want to rank. But do not pad — every paragraph should add genuine value. A well-structured 900-word post that answers a question completely will outrank a 2,000-word post full of repetition.
+
+Use headings, bullet points, and examples. Pages that are easy to read and scan perform better in search.
+
+### 5. You Have Technical SEO Errors
+
+Technical problems can prevent Google from properly crawling and indexing your pages. Common issues include:
+
+- Pages blocked by robots.txt or marked with noindex meta tags
+- Broken internal links leading to 404 errors
+- Missing or duplicate title tags and meta descriptions
+- No canonical tags causing duplicate content issues
+- Slow page speed (especially on mobile)
+- No sitemap submitted to Google Search Console
+
+**What to do:** Run a technical SEO audit on your site. Tools like RankyPulse will scan your entire site and produce a prioritised list of every issue — broken links, missing tags, slow pages, crawl errors — with instructions on how to fix them. Most technical errors can be fixed in a few hours.
+
+### 6. Google Has Not Had Enough Time
+
+New websites start with zero trust. Google's algorithm takes time to understand what a site is about and whether it deserves to rank. This is sometimes called the "Google Sandbox" — an informal period where new sites get limited visibility even for terms they should rank for.
+
+**What to do:** Be consistent. Publish new content regularly (even once a week). Build links steadily over time. Submit your sitemap to Google Search Console and use the URL Inspection tool to request indexing of important pages. Most sites start seeing movement in search after 3-6 months of consistent effort.
+
+### 7. Your Site Has No Clear Topic Focus
+
+Google tries to understand what a website is an authority on. If your site covers personal finance, fitness tips, and software reviews all in the same blog, Google cannot figure out what you are an expert in — and will rank you for nothing.
+
+**What to do:** Pick one topic area and go deep. Create multiple pieces of content around the same cluster of keywords. If you have a tool for SEO audits, write about technical SEO, on-page SEO, link building, and Core Web Vitals. Topical authority compounds over time — the more relevant content you have on a topic, the more Google trusts your entire site.
+
+---
+
+### The Fastest Way to Find Your Specific Problem
+
+The reasons above cover 95% of cases. But every site is different — what is holding yours back depends on your specific technical setup, your content, and your link profile.
+
+The fastest way to find out exactly what is wrong is to run a free audit. [RankyPulse](https://rankypulse.com/audit) scans your entire site for technical errors, on-page issues, broken links, and speed problems, and gives you a prioritised fix list in minutes.
+
+Stop guessing. Find out exactly what Google sees — and fix it.
+    `,
+  },
+  {
+    slug: 'seo-audit-checklist-2026',
+    title: 'The Complete Free SEO Audit Checklist for 2026',
+    subtitle: 'A practical, step-by-step checklist covering every factor that affects how your site ranks — with clear instructions on what to check and fix.',
+    category: 'Technical SEO',
+    readingMinutes: 9,
+    publishedAt: '2026-03-17',
+    pullQuote: "An SEO audit is only useful if it leads to action. Use this checklist to find issues, prioritise by impact, and fix them in order — not all at once.",
+    excerpt: "This free SEO audit checklist covers five core areas: technical SEO, on-page optimisation, content quality, link profile, and page performance. Work through each section to find exactly what is stopping your site from ranking.",
+    featured: false,
+    content: `
+An SEO audit is the process of reviewing every factor that affects how your website ranks in Google. Done properly, it tells you exactly what is broken, what is missing, and what to fix first to get the most traffic improvement.
+
+This checklist covers the five core areas of a thorough SEO audit. Work through each section in order — technical issues should always be fixed first, since they can prevent Google from even seeing your other content.
+
+---
+
+### Section 1: Technical SEO Checklist
+
+Technical SEO is the foundation. If Google cannot crawl and index your pages correctly, nothing else matters.
+
+**Indexing**
+- [ ] Confirm site is indexed: search \`site:yourdomain.com\` in Google
+- [ ] Check Google Search Console for any crawl errors or coverage issues
+- [ ] Verify no important pages are accidentally blocked by robots.txt
+- [ ] Check that no important pages have a \`noindex\` meta tag
+- [ ] Submit an XML sitemap to Google Search Console
+
+**Site Structure**
+- [ ] All pages are reachable within 3 clicks from the homepage
+- [ ] No orphan pages (pages with no internal links pointing to them)
+- [ ] No redirect chains (A → B → C instead of A → C directly)
+- [ ] No broken internal links (404 errors)
+- [ ] Consistent URL structure (no mixed /category/post and /post formats)
+
+**HTTPS and Security**
+- [ ] Site is fully on HTTPS (not HTTP)
+- [ ] No mixed content warnings (HTTP resources on HTTPS pages)
+- [ ] HTTP URLs redirect permanently (301) to HTTPS equivalents
+
+**Mobile**
+- [ ] Site passes Google's Mobile-Friendly Test
+- [ ] Viewport meta tag is present on all pages
+- [ ] Text is readable without zooming on a 375px screen
+- [ ] Touch targets (buttons, links) are at least 48px × 48px
+
+---
+
+### Section 2: On-Page SEO Checklist
+
+Once Google can crawl your site, each page needs to be properly optimised for its target keyword.
+
+**Title Tags**
+- [ ] Every page has a unique title tag
+- [ ] Title tags are 50–60 characters long
+- [ ] Target keyword appears naturally in the title
+- [ ] Titles are descriptive and compelling (not just the page name)
+
+**Meta Descriptions**
+- [ ] Every page has a unique meta description
+- [ ] Descriptions are 140–160 characters long
+- [ ] Descriptions include the target keyword and a clear value proposition
+- [ ] No meta descriptions are duplicated across pages
+
+**Headings**
+- [ ] Every page has exactly one H1 tag
+- [ ] H1 contains or closely matches the target keyword
+- [ ] Headings (H2, H3) are used to structure the content logically
+- [ ] No heading tags used purely for styling
+
+**Canonical Tags**
+- [ ] Every page has a canonical tag pointing to the preferred URL
+- [ ] Paginated pages (page 2, page 3) have correct canonical handling
+- [ ] No self-referencing canonical issues
+
+**Images**
+- [ ] All images have descriptive alt text
+- [ ] Image file names are descriptive (not DSC_4821.jpg)
+- [ ] Images are compressed (no uncompressed PNGs above 100KB)
+- [ ] Use modern formats (WebP) where possible
+
+---
+
+### Section 3: Content Quality Checklist
+
+Content quality is increasingly important as Google gets better at understanding whether a page genuinely helps users.
+
+- [ ] Each page targets one primary keyword (not 10 keywords stuffed in)
+- [ ] Content matches the search intent for the target keyword (informational / transactional / commercial)
+- [ ] Pages are at least 800 words for informational keywords
+- [ ] No duplicate content across your own pages
+- [ ] Content is original — not copied or lightly reworded from competitors
+- [ ] Pages include relevant internal links to related content
+- [ ] Pages are updated at least once a year for freshness signals
+- [ ] No keyword stuffing — keywords appear naturally in context
+
+---
+
+### Section 4: Link Profile Checklist
+
+Links from other websites signal trust and authority to Google.
+
+**Internal Links**
+- [ ] Important pages receive internal links from multiple other pages
+- [ ] Anchor text for internal links is descriptive (not "click here")
+- [ ] No pages with zero internal links (orphan pages)
+
+**External Backlinks**
+- [ ] Check backlink profile in Google Search Console or a tool like Ahrefs
+- [ ] No toxic or spammy backlinks pointing to your site (disavow if needed)
+- [ ] You have at least some links from relevant, authoritative sites in your niche
+- [ ] Guest posting or link-building activity is ongoing (not a one-time effort)
+
+---
+
+### Section 5: Page Performance Checklist
+
+Page speed is a confirmed Google ranking factor, especially for mobile searches.
+
+**Core Web Vitals**
+- [ ] LCP (Largest Contentful Paint) is under 2.5 seconds
+- [ ] CLS (Cumulative Layout Shift) is under 0.1
+- [ ] INP (Interaction to Next Paint) is under 200 milliseconds
+- [ ] Run Google PageSpeed Insights and fix any "Opportunities" listed
+
+**General Speed**
+- [ ] Time to First Byte (TTFB) is under 600ms
+- [ ] JavaScript is minified and deferred where possible
+- [ ] CSS is minified and critical CSS is inlined
+- [ ] Static assets (images, CSS, JS) are served with long cache headers
+- [ ] Consider a CDN if serving a global audience
+
+---
+
+### How to Use This Checklist
+
+Work through each section top to bottom. Mark each item as pass, fail, or not applicable. For each failure, note the fix required.
+
+Prioritise in this order:
+1. Fix anything blocking indexing (Section 1 first)
+2. Fix on-page issues on your highest-traffic pages (Section 2)
+3. Address content quality on pages that are ranking but not converting (Section 3)
+4. Build links to your most important pages (Section 4)
+5. Fix performance issues — especially Core Web Vitals (Section 5)
+
+**Skip the manual work.** [RankyPulse](https://rankypulse.com/audit) runs this entire checklist automatically across every page of your site in minutes — and produces a prioritised fix list sorted by traffic impact. Free, no login required for the first audit.
+    `,
+  },
+  {
+    slug: 'how-to-fix-technical-seo-errors',
+    title: 'How to Fix Technical SEO Errors: A Step-by-Step Guide',
+    subtitle: 'The most common technical SEO errors explained — what they are, why they hurt your rankings, and exactly how to fix each one.',
+    category: 'Technical SEO',
+    readingMinutes: 10,
+    publishedAt: '2026-03-17',
+    pullQuote: "Technical SEO errors are not abstract — each one has a specific cause, a measurable impact on traffic, and a concrete fix. The hardest part is finding them. Once you have the list, fixing them is straightforward.",
+    excerpt: "Technical SEO errors prevent Google from properly crawling, indexing, and ranking your pages. This guide covers the 8 most common errors — missing title tags, broken links, slow pages, no canonical, and more — with step-by-step instructions to fix each one.",
+    featured: false,
+    content: `
+Technical SEO errors are problems with your website's code, structure, or configuration that make it harder for Google to crawl, index, and rank your pages. Unlike content issues (which require writing), most technical errors are configuration fixes — once you identify them, they can usually be resolved in hours.
+
+This guide covers the 8 most common technical SEO errors, explains why each one hurts your rankings, and shows you exactly how to fix it.
+
+---
+
+### Error 1: Missing or Duplicate Title Tags
+
+**What it is:** A title tag is the HTML \`<title>\` element — it is what appears in Google's search results as the blue clickable headline. Every page should have a unique title that describes the page's content.
+
+**Why it hurts:** Pages without title tags get a generic or auto-generated title from Google, which is almost always worse than a written one. Duplicate titles confuse Google about which page is more relevant for a given keyword.
+
+**How to fix it:**
+1. Audit all pages for missing titles (use RankyPulse or Screaming Frog)
+2. Write a unique title for each page: 50-60 characters, include the primary keyword, make it compelling
+3. Format: \`Primary Keyword — Secondary Descriptor | Brand Name\`
+4. Avoid: all-caps, keyword stuffing, titles over 60 characters (they get cut off)
+
+---
+
+### Error 2: Missing Meta Descriptions
+
+**What it is:** The meta description is the short paragraph that appears under your title in Google search results. It does not directly affect rankings, but it does affect click-through rate — which indirectly affects rankings.
+
+**Why it hurts:** Without a meta description, Google auto-generates one by pulling random text from your page. This is almost always less compelling than a well-written description.
+
+**How to fix it:**
+1. Identify all pages missing meta descriptions
+2. Write unique descriptions for each: 140-160 characters
+3. Include the target keyword naturally
+4. Add a clear value proposition or call to action: "Learn how to...", "Get your free..."
+5. Do not duplicate descriptions — each page needs its own
+
+---
+
+### Error 3: Broken Links (404 Errors)
+
+**What it is:** A broken link is any link that leads to a page returning a 404 "not found" error. This can be an internal link (from your own site to another of your pages) or an external link (from your site to another website).
+
+**Why it hurts:** Broken internal links waste Google's crawl budget — the bot hits a dead end instead of discovering your content. They also give users a poor experience, which increases bounce rate.
+
+**How to fix it:**
+1. Run a full crawl of your site to find all 404 errors
+2. For internal broken links: update the link to point to the correct URL, or remove the link if the destination page no longer exists
+3. For external broken links: either update the URL to a working equivalent, or remove the link
+4. If you have deleted pages that once had traffic: set up 301 redirects from the old URL to the most relevant existing page
+
+---
+
+### Error 4: Slow Page Speed
+
+**What it is:** Page speed refers to how quickly your pages load for users. Google measures this through Core Web Vitals: LCP (loading), CLS (visual stability), and INP (interactivity).
+
+**Why it hurts:** Page speed is a confirmed ranking factor. Slow pages also increase bounce rate — users leave before the page finishes loading.
+
+**How to fix it:**
+1. Run your site through Google PageSpeed Insights
+2. Work through the "Opportunities" section in order of estimated savings
+3. Most impactful fixes:
+   - Compress and resize images (use WebP format)
+   - Remove unused JavaScript and CSS
+   - Enable lazy loading for images below the fold
+   - Use a CDN for static assets
+   - Reduce server response time (TTFB under 600ms)
+
+---
+
+### Error 5: Missing Canonical Tags
+
+**What it is:** A canonical tag (\`<link rel="canonical">\`) tells Google which version of a page is the "official" one. This prevents duplicate content issues when the same content is accessible via multiple URLs.
+
+**Why it hurts:** Without canonicals, Google may split ranking signals between multiple versions of the same page (with/without trailing slash, HTTP vs HTTPS, www vs non-www, URL parameters). This dilutes your page's authority.
+
+**How to fix it:**
+1. Add a self-referencing canonical tag to every page
+2. Ensure the canonical points to the exact URL you want Google to rank (consistent HTTPS, consistent www/non-www, no trailing slash vs trailing slash)
+3. For paginated content (/page/2, /page/3): use canonical on page 1 pointing to itself, and ensure pages 2+ are not accidentally excluded from indexing
+
+---
+
+### Error 6: Mobile Usability Issues
+
+**What it is:** Google uses mobile-first indexing — it primarily uses the mobile version of your site for indexing and ranking, even if most of your visitors use desktop.
+
+**Why it hurts:** Pages that are not mobile-friendly rank lower on mobile searches, and since Google uses the mobile version as its primary index, this affects desktop rankings too.
+
+**How to fix it:**
+1. Test your site with Google's Mobile-Friendly Test
+2. Ensure every page has a viewport meta tag: \`<meta name="viewport" content="width=device-width, initial-scale=1">\`
+3. Use responsive CSS (not fixed-width layouts)
+4. Make touch targets (buttons, links) at least 48px × 48px
+5. Ensure text is readable at 375px width without horizontal scrolling
+
+---
+
+### Error 7: No Schema Markup
+
+**What it is:** Schema markup (also called structured data) is code you add to your pages to help Google understand the content — whether it is a product, article, FAQ, review, recipe, or software application. It can also trigger rich results in search (star ratings, FAQ dropdowns, etc.).
+
+**Why it hurts:** Without schema, Google makes its best guess about your content. With schema, you explicitly tell Google what it is — which can improve how your listing looks in search results and increase click-through rate.
+
+**How to fix it:**
+1. Identify the right schema type for each page: Article for blog posts, Product for product pages, SoftwareApplication for tools, FAQPage for FAQ sections
+2. Add JSON-LD schema in a \`<script type="application/ld+json">\` tag in the \`<head>\` of each relevant page
+3. Test with Google's Rich Results Test tool
+4. Submit pages with new schema to Google Search Console for re-indexing
+
+---
+
+### Error 8: Redirect Chains
+
+**What it is:** A redirect chain happens when URL A redirects to URL B, which redirects to URL C. Each hop in the chain adds latency and dilutes the "link equity" passed along.
+
+**Why it hurts:** Google recommends limiting redirects to a single hop. Chains slow down crawling and reduce the authority transferred through the redirect.
+
+**How to fix it:**
+1. Audit your site for redirect chains (any redirect that goes through more than one hop)
+2. Update all links and redirects to point directly to the final destination URL
+3. In your web server or platform config: change any redirect that currently goes A→B→C to go A→C directly
+4. Check that old redirects are not pointing to pages that have since been redirected again
+
+---
+
+### How to Find All Your Technical Errors at Once
+
+Going through your site manually to find all of the above is time-consuming and error-prone. A single tool run will surface all of them in one pass.
+
+[RankyPulse](https://rankypulse.com/audit) crawls your entire site and produces a complete list of every technical SEO error — broken links, missing titles, no canonical, speed issues, mobile problems, and more — sorted by severity so you know what to fix first.
+
+Run a free audit, get your fix list, and work through it systematically. Most sites can resolve their critical technical issues within a few hours of focused work.
+    `,
+  },
 ];
