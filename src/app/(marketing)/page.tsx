@@ -7,6 +7,7 @@ import { AuditPreviewSection } from "@/components/landing/AuditPreviewSection";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { Testimonials } from "@/components/landing/Testimonials";
 import { ComparisonTable } from "@/components/landing/ComparisonTable";
+import { SampleReports } from "@/components/landing/SampleReports";
 import { PricingTeaser } from "@/components/landing/PricingTeaser";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { LandingFooter } from "@/components/landing/LandingFooter";
@@ -59,6 +60,7 @@ export default function HomePage() {
         <HowItWorks />
         <Testimonials />
         <ComparisonTable />
+        <SampleReports />
         <PricingTeaser />
         <FinalCTA />
         <LandingFooter />
