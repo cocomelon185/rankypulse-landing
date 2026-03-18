@@ -5,6 +5,20 @@ module.exports = {
   // Ensures all URLs are canonical — no trailing-slash variants
   trailingSlash: false,
 
+  // Compress all responses (Brotli/gzip) — reduces page transfer size by ~30%
+  compress: true,
+
+  // Optimize images automatically
+  images: {
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
+  },
+
+  // Experimental: enable optimistic client navigation
+  experimental: {
+    optimisticClientCache: true,
+  },
+
   async headers() {
     return [
       {

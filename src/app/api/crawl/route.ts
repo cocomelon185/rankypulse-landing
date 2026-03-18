@@ -2,6 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'edge';
 
+// ── 30-minute result cache (per edge function instance) ──────────
+interface CachedResult { data: Record<string, unknown>; expiresAt: number }
+const resultCache = new Map<string, CachedResult>();
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+function getCached(domain: string): Record<string, unknown> | null {
+  const entry = resultCache.get(domain);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) { resultCache.delete(domain); return null; }
+  return entry.data;
+}
+
+function setCached(domain: string, data: Record<string, unknown>) {
+  // Evict old entries when cache grows large
+  if (resultCache.size > 200) {
+    const now = Date.now();
+    for (const [k, v] of resultCache) {
+      if (now > v.expiresAt) resultCache.delete(k);
+    }
+  }
+  resultCache.set(domain, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
 // ── Rate limiting ────────────────────────────────────────────────
 const rateMap = new Map<string, { count: number; resetAt: number }>();
 
@@ -23,8 +46,6 @@ function checkRateLimit(ip: string): boolean {
 }
 
 // ── THE KEY FIX: timeout via Promise.race ────────────────────────
-// AbortSignal.timeout() does NOT work reliably in Vercel Edge.
-// This approach works everywhere.
 export function withTimeout<T>(
   promise: Promise<T>,
   ms: number,
@@ -65,18 +86,18 @@ export async function fetchHTML(domain: string): Promise<string> {
       if (!res.ok) continue;
       if (!(res.headers.get('content-type') ?? '').includes('text/html')) continue;
 
-      // Read max 150KB
+      // Read max 100KB (reduced from 150KB for speed)
       const reader = res.body?.getReader();
       if (!reader) continue;
 
       const chunks: Uint8Array[] = [];
       let bytes = 0;
 
-      while (bytes < 150_000) {
+      while (bytes < 100_000) {
         const readResult = await Promise.race([
           reader.read(),
           new Promise<{ done: true; value: undefined }>(resolve =>
-            setTimeout(() => resolve({ done: true, value: undefined }), 5000)
+            setTimeout(() => resolve({ done: true, value: undefined }), 4000)
           ),
         ]);
 
@@ -98,7 +119,7 @@ export async function fetchHTML(domain: string): Promise<string> {
   return '';
 }
 
-// ── Fetch PSI (20s max, returns null on failure) ─────────────────
+// ── Fetch PSI (10s max — reduced from 22s) ──────────────────────
 export async function fetchPSI(domain: string): Promise<Record<string, unknown> | null> {
   const key = process.env.GOOGLE_PSI_KEY ?? '';
   const url = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed` +
@@ -106,7 +127,7 @@ export async function fetchPSI(domain: string): Promise<Record<string, unknown> 
 
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 19000);
+    const timer = setTimeout(() => controller.abort(), 9500);
 
     const res = await Promise.race([
       fetch(url, {
@@ -114,7 +135,7 @@ export async function fetchPSI(domain: string): Promise<Record<string, unknown> 
         headers: { 'Accept': 'application/json' },
       }),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('psi-timeout')), 19000)
+        setTimeout(() => reject(new Error('psi-timeout')), 9500)
       ),
     ]).finally(() => clearTimeout(timer)) as Response;
 
@@ -160,12 +181,12 @@ export function extractInternalLinks(html: string, domain: string): string[] {
 
 export async function checkBrokenLinks(links: string[]): Promise<string[]> {
   const broken: string[] = [];
-  const toCheck = links.slice(0, 8); // check up to 8 links
+  const toCheck = links.slice(0, 5); // check up to 5 links in parallel
 
   await Promise.all(toCheck.map(async (url) => {
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 3500);
+      const timer = setTimeout(() => controller.abort(), 2500); // reduced from 3.5s
       const res = await fetch(url, {
         method: 'HEAD',
         signal: controller.signal,
@@ -534,6 +555,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid domain' }, { status: 400 });
   }
 
+  // Return cached result if available (saves 5-25 seconds on repeat audits)
+  const cached = getCached(cleanDomain);
+  if (cached) {
+    return NextResponse.json({ ...cached, _cached: true });
+  }
+
   // Rate limit
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
   if (!checkRateLimit(ip)) {
@@ -544,13 +571,25 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Run HTML fetch and PSI in parallel.
-    // Each has its own internal timeout via Promise.race.
-    // withTimeout adds an outer safety net.
-    const [html, psi] = await Promise.all([
-      withTimeout(fetchHTML(cleanDomain), 10000, ''),
-      withTimeout(fetchPSI(cleanDomain), 22000, null),
-    ]);
+    // ── Phase 1: Fetch HTML with a short timeout ─────────────────
+    const htmlPromise = withTimeout(fetchHTML(cleanDomain), 9000, '');
+    const psiPromise = withTimeout(fetchPSI(cleanDomain), 10000, null); // was 22s — now 10s
+
+    // Start HTML fetch and PSI in parallel.
+    // As soon as HTML arrives, kick off broken links check so it
+    // runs concurrently with PSI instead of waiting for PSI to finish.
+    let brokenLinksPromise: Promise<string[]> = Promise.resolve([]);
+
+    const html = await htmlPromise;
+
+    if (html) {
+      const internalLinks = extractInternalLinks(html, cleanDomain);
+      // Start broken link check immediately — runs in parallel with PSI
+      brokenLinksPromise = withTimeout(checkBrokenLinks(internalLinks), 3000, []);
+    }
+
+    // Now wait for PSI and broken links to complete concurrently
+    const [psi, brokenLinks] = await Promise.all([psiPromise, brokenLinksPromise]);
 
     // Both failed = unreachable
     if (!html && !psi) {
@@ -562,14 +601,11 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    let brokenLinks: string[] = [];
-    if (html) {
-      const internalLinks = extractInternalLinks(html, cleanDomain);
-      // Run the check but don't hold up the main process for more than a few seconds
-      brokenLinks = await withTimeout(checkBrokenLinks(internalLinks), 4500, []);
-    }
-
     const auditData = buildAuditData(cleanDomain, html, psi, brokenLinks);
+
+    // Cache the result for 30 minutes
+    setCached(cleanDomain, auditData as unknown as Record<string, unknown>);
+
     return NextResponse.json(auditData);
 
   } catch {

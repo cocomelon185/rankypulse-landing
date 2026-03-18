@@ -289,14 +289,14 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ done: true, message: "Reached page limit", progress: 100, crawled: job.pages_crawled });
         }
 
-        // 2. Fetch the next pending URL
+        // 2. Fetch the next 2 pending URLs (batch processing for 2× speed)
         const { data: queueItems } = await supabaseAdmin
             .from("crawl_queue")
             .select("*")
             .eq("job_id", jobId)
             .eq("status", "pending")
             .order("id", { ascending: true })
-            .limit(1);
+            .limit(2);
 
         if (!queueItems || queueItems.length === 0) {
             await supabaseAdmin.from("crawl_jobs")
@@ -344,7 +344,7 @@ export async function GET(req: NextRequest) {
             // Fetch with manual redirect tracking so we can detect redirect chains
             const fetchHTMLPromise = async (): Promise<string> => {
                 const controller = new AbortController();
-                const timer = setTimeout(() => controller.abort(), 12000);
+                const timer = setTimeout(() => controller.abort(), 8000);
                 let currentUrl = targetUrl;
                 redirectChain = [targetUrl];
                 try {
@@ -374,8 +374,8 @@ export async function GET(req: NextRequest) {
             };
 
             [html, psi] = await Promise.all([
-                withTimeout(fetchHTMLPromise(), 13000, ""),
-                isRoot ? withTimeout(fetchPSI(cleanDomain), 15000, null) : Promise.resolve(null),
+                withTimeout(fetchHTMLPromise(), 9000, ""),
+                isRoot ? withTimeout(fetchPSI(cleanDomain), 10000, null) : Promise.resolve(null),
             ]);
         } catch (e) {
             fetchError = e instanceof Error ? e.message : "Fetch failed";
@@ -439,7 +439,7 @@ export async function GET(req: NextRequest) {
         let brokenLinks: string[] = [];
         if (html) {
             internalLinks = extractInternalLinks(html, cleanDomain);
-            brokenLinks = await withTimeout(checkBrokenLinks(internalLinks.slice(0, 5)), 4000, []);
+            brokenLinks = await withTimeout(checkBrokenLinks(internalLinks.slice(0, 3)), 2500, []);
         }
 
         // 5. Run compact audit
