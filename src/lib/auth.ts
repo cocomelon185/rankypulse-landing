@@ -147,17 +147,14 @@ export const authOptions: NextAuthOptions = {
           clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
           authorization: {
             params: {
-              // Only request basic scopes at sign-in — no GSC scope here.
-              // GSC (webmasters.readonly) should be requested separately when
-              // the user explicitly connects Search Console in settings.
-              // Requesting it here forces a scary "4 services" consent screen
-              // on every login and is the root cause of the double-prompt UX.
+              // Only request basic scopes — no GSC scope.
+              // GSC should be requested separately via a dedicated
+              // "Connect Search Console" button in settings.
               scope: "openid email profile",
-              access_type: "offline",   // gets refresh_token on first sign-in
-              // Remove prompt: "consent" — that forced the full consent screen
-              // on EVERY login. Without it, returning users get a single quick
-              // "signing back in" confirmation instead of two screens.
-              prompt: "select_account", // only ask which account to use
+              // No access_type: "offline" — we don't need a refresh token at
+              // sign-in. Having it causes Google to show an "additional access"
+              // consent screen for accounts that previously had the GSC scope.
+              prompt: "select_account",
             },
           },
         }),
@@ -195,13 +192,6 @@ export const authOptions: NextAuthOptions = {
           token.userId = dbUser.id;
           token.role = dbUser.role;
         }
-      }
-
-      // Persist GSC tokens from the initial Google sign-in
-      if (account?.provider === "google") {
-        if (account.access_token) token.gscAccessToken = account.access_token;
-        if (account.refresh_token) token.gscRefreshToken = account.refresh_token;
-        if (account.expires_at) token.gscTokenExpiry = account.expires_at * 1000;
       }
 
       return token;
