@@ -35,8 +35,6 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function SignInPage() {
   return (
     <>
-      {/* Visible to crawlers even when JS is disabled / Suspense fallback renders */}
-      <h1 className="sr-only">Sign In to RankyPulse</h1>
       <Suspense fallback={<div className="min-h-screen bg-[#0d0f14]" />}>
         <SignInClientPage />
       </Suspense>

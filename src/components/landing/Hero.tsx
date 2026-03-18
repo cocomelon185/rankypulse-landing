@@ -177,7 +177,7 @@ export function Hero() {
           transition={{ delay: 0.15, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="h1 mb-6 leading-[1.06] text-foreground"
         >
-          The SEO Audit Tool Built for Results, Not Just Reports.
+          Find Out Why Google Isn&apos;t Ranking Your Website
         </motion.h1>
 
         {/* Subheadline */}
@@ -187,8 +187,8 @@ export function Hero() {
           transition={{ delay: 0.25, duration: 0.5 }}
           className="mx-auto mb-10 max-w-2xl text-xl leading-relaxed text-gray-600 dark:text-gray-400"
         >
-          Identify critical errors, benchmark against your niche, and unlock hidden traffic growth with AI-powered fixes.{" "}
-          <span className="text-foreground">Trusted by agencies and built for developers.</span>
+          Type your website address. We scan it, show you exactly what&apos;s broken, and give you a step-by-step fix list.{" "}
+          <span className="text-foreground">No tech skills needed. Results in 60 seconds.</span>
         </motion.p>
 
         {/* Input */}

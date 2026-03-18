@@ -18,10 +18,10 @@ const PILLARS = [
     personaColor: "bg-[#7B5CF5]/10 text-[#7B5CF5] border-[#7B5CF5]/20",
     iconBg: "bg-[#7B5CF5]/10 border-[#7B5CF5]/20",
     icon: <Building2 size={20} className="text-[#7B5CF5]" />,
-    title: "White-Label Perfection",
+    title: "Send Reports With Your Logo",
     description:
-      "Upload your logo and brand colors. Send secure, password-protected share links to clients — no RankyPulse branding in sight.",
-    highlight: "Close 3× more retainers",
+      "Put your brand on every report. Share clean, password-protected links with clients — they never see the RankyPulse name.",
+    highlight: "Win more clients with branded reports",
     highlightColor: "text-[#7B5CF5]",
   },
   {
@@ -29,10 +29,10 @@ const PILLARS = [
     personaColor: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
     iconBg: "bg-cyan-500/10 border-cyan-500/20",
     icon: <Code2 size={20} className="text-cyan-400" />,
-    title: "AI Fix Assistant",
+    title: "Get the Exact Code to Fix It",
     description:
-      "Don't just find issues. Copy/paste the exact code snippet to fix them instantly — from hreflang tags to canonical headers.",
-    highlight: "Zero Googling required",
+      "Don't just see the problem — get the ready-to-paste code that fixes it. From canonical tags to structured data, all in one click.",
+    highlight: "No Googling. Just copy and paste.",
     highlightColor: "text-cyan-400",
   },
   {
@@ -40,21 +40,21 @@ const PILLARS = [
     personaColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
     iconBg: "bg-emerald-500/10 border-emerald-500/20",
     icon: <TrendingUp size={20} className="text-emerald-400" />,
-    title: "Traffic Opportunity ROI",
+    title: "See How Many Visitors You're Losing",
     description:
-      "See exactly how much organic traffic you're leaving on the table. Projections show +15–25% growth from fixing your open issues.",
-    highlight: "ROI-first, not vanity metrics",
+      "Every issue shows a real number: how many visits per month you're missing. Fix the top 3 issues and gain hundreds of free visitors.",
+    highlight: "Real numbers, not vague advice",
     highlightColor: "text-emerald-400",
   },
   {
-    persona: "UX",
+    persona: "COMPARE",
     personaColor: "bg-[#FF642D]/10 text-[#FF642D] border-[#FF642D]/20",
     iconBg: "bg-[#FF642D]/10 border-[#FF642D]/20",
     icon: <BarChart3 size={20} className="text-[#FF642D]" />,
-    title: "Competitive Benchmarking",
+    title: "See How You Compare to Competitors",
     description:
-      "Know exactly where you stand vs. the industry average in your specific niche — ecommerce, SaaS, local, blog, or agency.",
-    highlight: "Niche-specific, not generic",
+      "Are you better or worse than similar websites in your industry? Find out instantly — then see exactly what they're doing that you're not.",
+    highlight: "Know where you stand in your niche",
     highlightColor: "text-[#FF642D]",
   },
 ];
@@ -71,15 +71,15 @@ export function FeatureGrid() {
         className="mb-16 text-center"
       >
         <p className="mb-3 font-['DM_Mono'] text-xs uppercase tracking-widest text-gray-600">
-          Built for every stakeholder
+          Works for everyone
         </p>
         <h2
           className="font-['Fraunces'] font-bold leading-tight tracking-tight text-white"
           style={{ fontSize: "clamp(28px, 4vw, 48px)" }}
         >
-          One platform.
+          Business owner, developer, or agency?
           <br />
-          <span className="italic text-[#FF642D]">Every SEO persona covered.</span>
+          <span className="italic text-[#FF642D]">RankyPulse has you covered.</span>
         </h2>
       </motion.div>
 

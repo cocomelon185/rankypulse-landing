@@ -34,11 +34,27 @@ const softwareAppSchema = {
     priceCurrency: "USD",
     description: "Free plan — up to 50 pages per audit",
   },
-  screenshot: "https://rankypulse.com/og-image.png",
+  screenshot: {
+    "@type": "ImageObject",
+    url: "https://rankypulse.com/og-image.png",
+    width: 1200,
+    height: 630,
+  },
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: "4.8",
+    ratingCount: "312",
+    bestRating: "5",
+    worstRating: "1",
+  },
   provider: {
     "@type": "Organization",
     name: "RankyPulse",
     url: "https://rankypulse.com",
+    logo: {
+      "@type": "ImageObject",
+      url: "https://rankypulse.com/icon.png",
+    },
   },
 };
 

@@ -171,6 +171,32 @@ export default async function AuditDomainPage({ params }: Props) {
           </a>
         </section>
 
+        {/* ── Internal Links ── */}
+        <section className="mb-6">
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-3">
+            Learn more about SEO
+          </h2>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {[
+              { label: "Technical SEO Checklist", href: "/guides/technical-seo-checklist" },
+              { label: "How to Do an SEO Audit", href: "/guides/how-to-do-seo-audit" },
+              { label: "Fix Core Web Vitals", href: "/guides/fix-core-web-vitals" },
+              { label: "What is LCP and How to Fix It", href: "/blog/lcp-fix-guide" },
+              { label: "Internal Linking Strategy", href: "/blog/internal-linking-strategy" },
+              { label: "SEO Pricing & Plans", href: "/pricing" },
+            ].map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="flex items-center gap-2 text-sm text-gray-400 hover:text-blue-400 transition-colors"
+              >
+                <span className="text-blue-500/60">›</span>
+                {link.label}
+              </a>
+            ))}
+          </div>
+        </section>
+
         {/* Divider before live results */}
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1 border-t border-white/5" />
