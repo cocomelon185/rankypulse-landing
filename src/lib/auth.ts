@@ -147,15 +147,17 @@ export const authOptions: NextAuthOptions = {
           clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
           authorization: {
             params: {
-              // Request GSC access alongside standard profile/email scopes
-              scope: [
-                "openid",
-                "email",
-                "profile",
-                "https://www.googleapis.com/auth/webmasters.readonly",
-              ].join(" "),
-              access_type: "offline",   // request refresh_token
-              prompt: "consent",        // always show consent to get refresh_token
+              // Only request basic scopes at sign-in — no GSC scope here.
+              // GSC (webmasters.readonly) should be requested separately when
+              // the user explicitly connects Search Console in settings.
+              // Requesting it here forces a scary "4 services" consent screen
+              // on every login and is the root cause of the double-prompt UX.
+              scope: "openid email profile",
+              access_type: "offline",   // gets refresh_token on first sign-in
+              // Remove prompt: "consent" — that forced the full consent screen
+              // on EVERY login. Without it, returning users get a single quick
+              // "signing back in" confirmation instead of two screens.
+              prompt: "select_account", // only ask which account to use
             },
           },
         }),
