@@ -55,7 +55,7 @@ export function ProofBar() {
                 "0"
               )}
             </div>
-            <div className="mt-1 font-['DM_Mono'] text-xs uppercase tracking-wider text-gray-600">
+            <div className="mt-1 font-['DM_Mono'] text-xs uppercase tracking-wider text-gray-400">
               {stat.label}
             </div>
           </div>
@@ -66,7 +66,7 @@ export function ProofBar() {
       <div className="mx-auto mb-6 max-w-2xl border-t border-white/5" />
 
       {/* Trusted by label */}
-      <p className="mb-4 text-center font-['DM_Mono'] text-xs uppercase tracking-widest text-gray-700">
+      <p className="mb-4 text-center font-['DM_Mono'] text-xs uppercase tracking-widest text-gray-400">
         Trusted by teams at
       </p>
 
@@ -80,7 +80,7 @@ export function ProofBar() {
           {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
             <span
               key={i}
-              className="flex-shrink-0 rounded-full border border-white/6 bg-white/3 px-5 py-2 font-['DM_Sans'] text-sm text-gray-500 whitespace-nowrap"
+              className="flex-shrink-0 rounded-full border border-white/6 bg-white/3 px-5 py-2 font-['DM_Sans'] text-sm text-gray-300 whitespace-nowrap"
             >
               {item}
             </span>
