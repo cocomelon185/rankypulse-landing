@@ -89,6 +89,16 @@ export default async function AuditSlugPage({ params }: Props) {
             <p className="text-lg text-gray-600">{page.intro}</p>
           </header>
 
+          {/* What is section — only shown when present */}
+          {page.whatIsSection && (
+            <section className="mb-12">
+              <h2 className="mb-4 text-xl font-semibold text-[#1B2559]">
+                What is a {page.title}?
+              </h2>
+              <p className="text-gray-700 leading-relaxed">{page.whatIsSection}</p>
+            </section>
+          )}
+
           <section className="mb-12">
             <h2 className="mb-4 text-xl font-semibold text-[#1B2559]">Why run an audit?</h2>
             <ul className="space-y-3">
@@ -103,6 +113,26 @@ export default async function AuditSlugPage({ params }: Props) {
             </ul>
           </section>
 
+          {/* How it works — only shown when present */}
+          {page.howItWorks && page.howItWorks.length > 0 && (
+            <section className="mb-12">
+              <h2 className="mb-6 text-xl font-semibold text-[#1B2559]">How it works</h2>
+              <ol className="space-y-5">
+                {page.howItWorks.map((step, i) => (
+                  <li key={i} className="flex items-start gap-4">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#4318ff] text-sm font-bold text-white">
+                      {i + 1}
+                    </span>
+                    <div>
+                      <p className="font-semibold text-[#1B2559]">{step.step}</p>
+                      <p className="mt-1 text-gray-600">{step.desc}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+
           <section className="mb-12 rounded-2xl border border-gray-200 bg-[#f8fafc] p-6 md:p-8">
             <h2 className="mb-4 text-xl font-semibold text-[#1B2559]">Run a free audit</h2>
             <p className="mb-6 text-gray-600">
@@ -112,13 +142,41 @@ export default async function AuditSlugPage({ params }: Props) {
             <AuditCtaForm />
           </section>
 
+          {/* Checklist — only shown when present */}
+          {page.checklist && page.checklist.length > 0 && (
+            <section className="mb-12">
+              <h2 className="mb-6 text-xl font-semibold text-[#1B2559]">
+                {page.title} Checklist
+              </h2>
+              <div className="space-y-8">
+                {page.checklist.map((group, gi) => (
+                  <div key={gi}>
+                    <h3 className="mb-3 text-base font-semibold text-[#4318ff]">
+                      {group.category}
+                    </h3>
+                    <ul className="space-y-2">
+                      {group.items.map((item, ii) => (
+                        <li key={ii} className="flex items-start gap-3">
+                          <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-green-50 text-green-600">
+                            <Check className="h-3 w-3" />
+                          </span>
+                          <span className="text-gray-700 text-sm">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           <section className="mb-12">
             <h2 className="mb-6 text-xl font-semibold text-[#1B2559]">Frequently asked questions</h2>
             <dl className="space-y-6">
               {page.faqs.map((faq, i) => (
                 <div key={i} className="border-b border-gray-100 pb-6 last:border-0 last:pb-0">
                   <dt className="mb-2 font-medium text-[#1B2559]">{faq.q}</dt>
-                  <dd className="text-gray-600">{faq.a}</dd>
+                  <dd className="text-gray-600 leading-relaxed">{faq.a}</dd>
                 </div>
               ))}
             </dl>

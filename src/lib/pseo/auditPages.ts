@@ -12,6 +12,9 @@ export type AuditLanding = {
   bullets: string[];
   faqs: { q: string; a: string }[];
   relatedSlugs: string[];
+  checklist?: { category: string; items: string[] }[];
+  howItWorks?: { step: string; desc: string }[];
+  whatIsSection?: string;
 };
 
 export const AUDIT_PAGES: AuditLanding[] = [
@@ -162,22 +165,145 @@ export const AUDIT_PAGES: AuditLanding[] = [
     title: "Technical SEO Audit",
     metaTitle: "Technical SEO Audit — Free Site Health Check | RankyPulse",
     metaDescription:
-      "Free technical SEO audit. Find crawl errors, indexation issues, and schema problems. Actionable fixes in seconds.",
+      "Free technical SEO audit. Find crawl errors, indexation issues, redirect chains, schema problems, and Core Web Vitals failures. Actionable fixes with copy-paste code in under 30 seconds.",
     intro:
-      "Technical SEO underpins everything. Crawl errors, broken redirects, and poor structure prevent Google from indexing and ranking your best content. A technical audit surfaces these fast.",
+      "Technical SEO is the foundation of any successful search strategy. While content and backlinks get the spotlight, technical issues silently sabotage rankings every day. Crawl errors prevent Google from discovering your pages. Redirect chains bleed link equity. Poor canonical configuration splits ranking power across duplicate URLs. Broken schema markup means you miss rich results. Core Web Vitals failures push you below faster competitors.",
+    whatIsSection:
+      "A technical SEO audit is the systematic process of evaluating every technical aspect of your website to ensure search engines can crawl, index, render, and rank your content effectively. Unlike on-page or content audits, technical audits examine the infrastructure: server configuration, site architecture, URL structure, crawl budget allocation, JavaScript rendering, mobile-friendliness, page speed, and structured data implementation. RankyPulse checks over 50 technical signals and ranks every issue by its estimated traffic impact — so you always know what to fix first. Instead of a 50-row spreadsheet, you get prioritized fixes with AI-generated instructions and copy-paste code snippets tailored to your CMS.",
     bullets: [
-      "Detect indexability issues, crawl blocks, and sitemap gaps",
-      "Surface redirect chains, broken links, and canonical conflicts",
-      "Check structured data, mobile usability, and Core Web Vitals",
+      "Detect indexability issues: noindex tags, robots.txt blocks, and sitemap gaps that hide your content from Google",
+      "Surface redirect chains, 404 errors, broken internal links, and canonical conflicts that waste link equity",
+      "Validate structured data (JSON-LD) for syntax errors, missing required fields, and rich result eligibility",
+      "Evaluate Core Web Vitals — LCP, CLS, and INP — against Google's Page Experience thresholds",
+      "Audit mobile usability: viewport configuration, tap target sizes, and responsive rendering issues",
+      "Identify crawl budget waste from thin pages, paginated URLs, and excessive URL parameters",
+      "Check HTTPS implementation: mixed content warnings, certificate validity, and HSTS header configuration",
+      "Review internal linking architecture for orphan pages and excessive crawl depth (> 3 clicks from home)",
+      "Validate XML sitemap accuracy, correct status codes, and submission in Google Search Console",
+      "Detect hreflang conflicts and missing return tags for international or multilingual sites",
+    ],
+    howItWorks: [
+      {
+        step: "Enter your URL",
+        desc: "Paste any website URL. No signup required for your first free audit.",
+      },
+      {
+        step: "We crawl like Google",
+        desc: "RankyPulse simulates Googlebot — checking headers, rendering JavaScript, and following links across your site.",
+      },
+      {
+        step: "Get your health score",
+        desc: "Receive an overall technical health score (0–100) broken down by category: crawl, speed, schema, and mobile.",
+      },
+      {
+        step: "Review issues by impact",
+        desc: "Every issue is ranked by estimated traffic impact so you fix the most important problems first.",
+      },
+      {
+        step: "Apply AI-generated fixes",
+        desc: "Each issue comes with plain-English instructions and copy-paste code snippets ready for your CMS or developer.",
+      },
+    ],
+    checklist: [
+      {
+        category: "Crawl & Indexation",
+        items: [
+          "robots.txt is accessible and not blocking key pages",
+          "XML sitemap is present, valid, and submitted to GSC",
+          "No key pages blocked by noindex or meta robots",
+          "Canonical tags are self-referential or point to preferred versions",
+          "Site architecture keeps important pages within 3 clicks of homepage",
+          "No orphan pages (pages with zero internal links pointing to them)",
+          "Crawl budget not wasted on pagination, parameters, or thin pages",
+        ],
+      },
+      {
+        category: "Redirects & URL Structure",
+        items: [
+          "No redirect chains longer than 1 hop",
+          "All 301 redirects point to the final destination directly",
+          "No soft 404s returning 200 status for missing content",
+          "HTTP redirects to HTTPS on all pages and assets",
+          "Trailing slash usage is consistent across the site",
+          "URL parameters handled via canonical or robots noindex",
+          "No redirect loops detected",
+        ],
+      },
+      {
+        category: "Page Speed & Core Web Vitals",
+        items: [
+          "LCP (Largest Contentful Paint) under 2.5 seconds",
+          "CLS (Cumulative Layout Shift) score below 0.1",
+          "INP (Interaction to Next Paint) under 200ms",
+          "TTFB (Time to First Byte) under 600ms",
+          "Images optimized with WebP/AVIF and correct dimensions",
+          "Render-blocking JavaScript deferred or asynchronous",
+          "CSS delivery optimized and unused CSS removed",
+        ],
+      },
+      {
+        category: "Structured Data & Schema",
+        items: [
+          "JSON-LD is valid and passes Google Rich Results Test",
+          "Schema type matches the page content (Article, Product, FAQ, etc.)",
+          "All required properties are present and non-empty",
+          "No conflicting or duplicate schema blocks on the same page",
+          "FAQ schema matches visible on-page questions and answers",
+          "BreadcrumbList schema matches actual navigation path",
+        ],
+      },
+      {
+        category: "Mobile & Security",
+        items: [
+          "Viewport meta tag is present on every page",
+          "No horizontal scrolling on mobile viewports",
+          "Tap targets (buttons, links) are at least 48×48px",
+          "HTTPS/SSL certificate is valid and not expiring within 30 days",
+          "No mixed content (HTTP assets on HTTPS pages)",
+          "HSTS header is present and configured correctly",
+        ],
+      },
     ],
     faqs: [
       {
-        q: "How is a technical audit different from a general SEO audit?",
-        a: "Technical audits focus on crawlability, indexability, and site structure. We cover on-page too, but prioritize issues that block Google from seeing or understanding your content.",
+        q: "How is a technical SEO audit different from a general SEO audit?",
+        a: "A technical SEO audit focuses specifically on crawlability, indexability, site architecture, page speed, mobile usability, and structured data — the infrastructure layer of SEO. A general SEO audit also covers on-page factors (meta tags, headings, content quality) and off-page factors (backlinks, authority). Technical issues are typically the most urgent because they can block Google from seeing your content entirely, regardless of how good that content is.",
       },
       {
         q: "How often should I run a technical SEO audit?",
-        a: "After major site changes, migrations, or if rankings drop unexpectedly. Quarterly checks help catch drift early.",
+        a: "We recommend running a full technical audit quarterly as a baseline. You should also run one immediately after: major site migrations or redesigns, switching CMS platforms, adding new URL structures or subdomains, noticing an unexplained drop in organic traffic, or deploying significant JavaScript framework changes. RankyPulse makes it easy to run on-demand audits in under 30 seconds, so there's no reason to wait.",
+      },
+      {
+        q: "What are the most common technical SEO issues found in audits?",
+        a: "The most frequently detected issues are: missing or misconfigured canonical tags (which create duplicate content), redirect chains with more than one hop (which bleed link equity), pages blocked by robots.txt or noindex that shouldn't be, slow LCP caused by unoptimized hero images, missing or invalid structured data that prevents rich results, broken internal links from old redirects or deleted pages, and XML sitemaps containing redirected or non-indexable URLs. Most of these are fixable within a few hours once you know they exist.",
+      },
+      {
+        q: "How does JavaScript affect technical SEO and rendering?",
+        a: "JavaScript-rendered content is harder for Google to index than server-rendered HTML. Googlebot crawls pages in two waves: a fast first pass that reads raw HTML, and a slower second pass that executes JavaScript (sometimes days or weeks later). If key content — navigation, links, product data — is only visible after JS executes, it may be indexed late or missed entirely. RankyPulse checks both the raw HTML and the rendered DOM to surface rendering gaps that could hurt your visibility.",
+      },
+      {
+        q: "What is crawl budget and why does it matter?",
+        a: "Crawl budget is the number of pages Googlebot will crawl on your site within a given time period. Larger sites with millions of pages or sites that serve many redirects, parameter URLs, and thin pages can exhaust their crawl budget before Google reaches important content. Signs of crawl budget problems include new pages taking weeks to appear in search, important pages dropping from the index, and Google Search Console showing a high number of crawled-but-not-indexed pages. RankyPulse identifies the pages that are wasting your crawl budget.",
+      },
+      {
+        q: "What is a canonical tag and when should I use it?",
+        a: "A canonical tag (rel='canonical') tells search engines which version of a URL is the 'preferred' or original one. Use canonicals when: the same content is accessible at multiple URLs (e.g., with and without trailing slash, with UTM parameters, or via HTTP and HTTPS), when syndicating content that appears elsewhere, or when paginated URLs share overlapping content with the main page. Every page should have a self-referential canonical at minimum. Misconfigured canonicals — pointing to redirected pages, non-indexable URLs, or cross-domain incorrectly — are among the most damaging technical issues we find.",
+      },
+      {
+        q: "What Core Web Vitals scores does Google consider 'good'?",
+        a: "Google defines 'Good' thresholds as: LCP (Largest Contentful Paint) under 2.5 seconds, CLS (Cumulative Layout Shift) below 0.1, and INP (Interaction to Next Paint) under 200ms. Pages that meet all three thresholds pass the Page Experience signal. 'Needs Improvement' is LCP 2.5–4s, CLS 0.1–0.25, INP 200–500ms. 'Poor' is anything above those ranges. Google uses the 75th percentile of field data from real users (via Chrome User Experience Report), not just lab scores from Lighthouse.",
+      },
+      {
+        q: "How do I fix redirect chains in my site?",
+        a: "A redirect chain occurs when URL A redirects to URL B, which then redirects to URL C. Each hop delays Googlebot and dilutes PageRank. To fix them: identify chains using RankyPulse or a crawler, then update the original redirect to point directly to the final destination URL. Also update any internal links and XML sitemap entries that still reference intermediate URLs. If you've migrated your site multiple times, chains of 3–5 hops are common and fixing them can have a noticeable positive impact on crawl efficiency and rankings.",
+      },
+      {
+        q: "Can RankyPulse fix technical SEO issues automatically?",
+        a: "RankyPulse provides AI-generated fix instructions and copy-paste code for every issue detected — including meta tag fixes, schema JSON-LD snippets, .htaccess redirect rules, and robots.txt corrections. Some issues (like adding missing canonical tags) can be applied in one click via popular CMS plugins. For custom-coded sites, we provide the exact code your developer needs. We prioritize fixes by traffic impact so you always start with the changes that will move the needle most.",
+      },
+      {
+        q: "How long does it take to see results after fixing technical SEO issues?",
+        a: "Results depend on how quickly Google re-crawls your site. Critical fixes like removing noindex from important pages or fixing canonical tags can be reflected in rankings within days once Google re-crawls those URLs. Speed improvements via Core Web Vitals take 4–8 weeks to appear in Google's field data. Redirect chain fixes typically show crawl efficiency improvements within 2–4 weeks. You can request re-crawling of specific URLs in Google Search Console to speed up the process. In our experience, most sites see measurable ranking improvements within 4–8 weeks of completing a full technical audit.",
       },
     ],
     relatedSlugs: ["indexability-audit", "site-speed-seo-audit", "core-web-vitals-audit", "wordpress-seo-audit"],

@@ -1723,145 +1723,300 @@ Prioritise in this order:
   },
   {
     slug: 'how-to-fix-technical-seo-errors',
-    title: 'How to Fix Technical SEO Errors: A Step-by-Step Guide',
-    subtitle: 'The most common technical SEO errors explained — what they are, why they hurt your rankings, and exactly how to fix each one.',
+    title: 'How to Fix Technical SEO Errors: A Complete Step-by-Step Guide',
+    subtitle: 'The 12 most common technical SEO errors explained — what they are, why they hurt your rankings, and exactly how to fix each one.',
     category: 'Technical SEO',
-    readingMinutes: 10,
+    readingMinutes: 15,
     publishedAt: '2026-03-17',
     pullQuote: "Technical SEO errors are not abstract — each one has a specific cause, a measurable impact on traffic, and a concrete fix. The hardest part is finding them. Once you have the list, fixing them is straightforward.",
-    excerpt: "Technical SEO errors prevent Google from properly crawling, indexing, and ranking your pages. This guide covers the 8 most common errors — missing title tags, broken links, slow pages, no canonical, and more — with step-by-step instructions to fix each one.",
+    excerpt: "Technical SEO errors prevent Google from properly crawling, indexing, and ranking your pages. This guide covers the 12 most common errors — missing title tags, broken links, slow pages, no canonical, crawl budget issues, and more — with step-by-step instructions to fix each one.",
     featured: false,
     content: `
-Technical SEO errors are problems with your website's code, structure, or configuration that make it harder for Google to crawl, index, and rank your pages. Unlike content issues (which require writing), most technical errors are configuration fixes — once you identify them, they can usually be resolved in hours.
+Technical SEO errors are problems with your website's code, structure, or configuration that make it harder for Google to crawl, index, and rank your pages. Unlike content issues (which require writing), most technical errors are configuration fixes — once you identify them, they can usually be resolved in a few hours.
 
-This guide covers the 8 most common technical SEO errors, explains why each one hurts your rankings, and shows you exactly how to fix it.
+The challenge is finding them all. A single site can have dozens of hidden technical problems that collectively suppress rankings across hundreds of pages. This guide covers the 12 most common technical SEO errors, explains why each one hurts your rankings, and gives you step-by-step instructions to fix it.
+
+## Why Technical SEO Errors Matter More Than Most People Think
+
+When SEOs talk about ranking factors, they often focus on content quality and backlinks. These matter — but technical issues are unique because they can prevent your content from being seen at all. A page that Google cannot crawl is a page that cannot rank, regardless of how good the content is.
+
+Technical errors also compound. A slow site with a broken sitemap and missing canonicals does not just have three problems — it has a multiplied ranking disadvantage. Fixing the technical layer first creates a foundation that makes every other SEO investment more effective.
+
+Here are the 12 errors you are most likely to find, in order of average traffic impact.
 
 ---
 
 ### Error 1: Missing or Duplicate Title Tags
 
-**What it is:** A title tag is the HTML \`<title>\` element — it is what appears in Google's search results as the blue clickable headline. Every page should have a unique title that describes the page's content.
+**What it is:** A title tag is the HTML \`<title>\` element. It appears as the blue clickable headline in Google search results. Every page needs a unique title that describes the page content and includes the target keyword.
 
-**Why it hurts:** Pages without title tags get a generic or auto-generated title from Google, which is almost always worse than a written one. Duplicate titles confuse Google about which page is more relevant for a given keyword.
+**Why it hurts:** Pages without title tags get auto-generated titles from Google — usually just the domain name or a fragment of text Google pulls from the page. These are almost always less relevant and less click-worthy than a well-written title. Duplicate titles across multiple pages confuse Google about which URL is most authoritative for a given query.
 
 **How to fix it:**
-1. Audit all pages for missing titles (use RankyPulse or Screaming Frog)
-2. Write a unique title for each page: 50-60 characters, include the primary keyword, make it compelling
-3. Format: \`Primary Keyword — Secondary Descriptor | Brand Name\`
-4. Avoid: all-caps, keyword stuffing, titles over 60 characters (they get cut off)
+1. Run a crawl to identify all pages with missing or duplicate titles
+2. Write a unique title for each page: 50–60 characters maximum
+3. Format: \`Primary Keyword — Descriptor | Brand\`
+4. Include the primary keyword as close to the beginning as possible
+5. Avoid keyword stuffing — one clear topic per title
+
+**Example fix:**
+- ❌ Before: \`Page | MyBrand\`
+- ✅ After: \`Technical SEO Audit Tool — Free Site Health Check | RankyPulse\`
 
 ---
 
-### Error 2: Missing Meta Descriptions
+### Error 2: Missing or Duplicate Meta Descriptions
 
-**What it is:** The meta description is the short paragraph that appears under your title in Google search results. It does not directly affect rankings, but it does affect click-through rate — which indirectly affects rankings.
+**What it is:** The meta description is the 140–160 character summary that appears beneath your title in search results. It does not directly affect rankings but significantly affects click-through rate (CTR).
 
-**Why it hurts:** Without a meta description, Google auto-generates one by pulling random text from your page. This is almost always less compelling than a well-written description.
+**Why it hurts:** Without a custom meta description, Google auto-generates one by pulling text from your page. This is usually generic, often mid-sentence, and rarely compelling. Low CTR signals to Google that your result is less relevant, which eventually hurts rankings.
 
 **How to fix it:**
-1. Identify all pages missing meta descriptions
-2. Write unique descriptions for each: 140-160 characters
-3. Include the target keyword naturally
-4. Add a clear value proposition or call to action: "Learn how to...", "Get your free..."
-5. Do not duplicate descriptions — each page needs its own
+1. Identify pages with missing or duplicate meta descriptions
+2. Write a unique description for each page: 140–160 characters
+3. Include the primary keyword naturally — do not force it
+4. Add a benefit statement or call to action: "Learn how to...", "Free tool. No signup."
+5. Match the description to the search intent of the page
+
+**Example fix:**
+- ❌ Before: (auto-generated) \`Technical SEO Audit RankyPulse crawls your site and finds crawl errors, indexation issues, and schema probl...\`
+- ✅ After: \`Free technical SEO audit. Find crawl errors, broken redirects, and schema issues in 30 seconds. Prioritized fixes with copy-paste code.\`
 
 ---
 
-### Error 3: Broken Links (404 Errors)
+### Error 3: Broken Internal Links (404 Errors)
 
-**What it is:** A broken link is any link that leads to a page returning a 404 "not found" error. This can be an internal link (from your own site to another of your pages) or an external link (from your site to another website).
+**What it is:** A broken link leads to a page returning a 404 "Not Found" response. Internal broken links are links from one of your pages to another of your pages that no longer exists.
 
-**Why it hurts:** Broken internal links waste Google's crawl budget — the bot hits a dead end instead of discovering your content. They also give users a poor experience, which increases bounce rate.
+**Why it hurts:** Every time Googlebot follows a broken internal link, it hits a dead end instead of discovering and indexing your content. This wastes crawl budget. It also signals poor site maintenance to Google and delivers a bad user experience — both of which can negatively affect rankings over time.
 
 **How to fix it:**
-1. Run a full crawl of your site to find all 404 errors
-2. For internal broken links: update the link to point to the correct URL, or remove the link if the destination page no longer exists
-3. For external broken links: either update the URL to a working equivalent, or remove the link
-4. If you have deleted pages that once had traffic: set up 301 redirects from the old URL to the most relevant existing page
+1. Run a full site crawl to find all pages returning 404 status codes
+2. For each broken internal link: update it to point to the correct live URL
+3. For deleted pages that once had backlinks or traffic: set up 301 redirects from the old URL to the most relevant existing page
+4. Check your XML sitemap — remove any URLs returning 404 from the sitemap
+5. Set up ongoing monitoring so new broken links are caught quickly
+
+**Pro tip:** When you delete or rename a page, always set up a 301 redirect immediately. This one habit prevents most broken link problems.
 
 ---
 
-### Error 4: Slow Page Speed
+### Error 4: Slow Page Speed and Core Web Vitals Failures
 
-**What it is:** Page speed refers to how quickly your pages load for users. Google measures this through Core Web Vitals: LCP (loading), CLS (visual stability), and INP (interactivity).
+**What it is:** Page speed is how quickly your pages load and become interactive. Google measures this through Core Web Vitals: LCP (Largest Contentful Paint — loading), CLS (Cumulative Layout Shift — visual stability), and INP (Interaction to Next Paint — interactivity).
 
-**Why it hurts:** Page speed is a confirmed ranking factor. Slow pages also increase bounce rate — users leave before the page finishes loading.
+**Why it hurts:** Page speed is a confirmed ranking factor via the Page Experience signal. Google's "Good" thresholds are LCP under 2.5 seconds, CLS below 0.1, and INP under 200ms. Pages that fail these thresholds are actively disadvantaged in rankings compared to faster competitors. Slow pages also increase bounce rate — users leave before content loads.
 
 **How to fix it:**
-1. Run your site through Google PageSpeed Insights
-2. Work through the "Opportunities" section in order of estimated savings
-3. Most impactful fixes:
-   - Compress and resize images (use WebP format)
-   - Remove unused JavaScript and CSS
-   - Enable lazy loading for images below the fold
+1. Run your key pages through Google PageSpeed Insights and note your LCP, CLS, and INP scores
+2. Address LCP first — usually caused by unoptimized hero images or render-blocking resources
+3. Common fixes in order of impact:
+   - Convert images to WebP or AVIF format and compress them
+   - Add \`loading="lazy"\` to images below the fold
+   - Defer non-critical JavaScript: \`<script defer src="...">\`
+   - Remove unused CSS and JavaScript
    - Use a CDN for static assets
-   - Reduce server response time (TTFB under 600ms)
+   - Ensure server TTFB (Time to First Byte) is under 600ms
+4. Fix CLS by setting explicit width and height on all images and iframes
+5. Retest after each change — Core Web Vitals improvements compound
 
 ---
 
-### Error 5: Missing Canonical Tags
+### Error 5: Missing or Broken Canonical Tags
 
-**What it is:** A canonical tag (\`<link rel="canonical">\`) tells Google which version of a page is the "official" one. This prevents duplicate content issues when the same content is accessible via multiple URLs.
+**What it is:** A canonical tag (\`<link rel="canonical" href="...">\`) tells Google which version of a URL is the "official" one for ranking purposes. It prevents duplicate content issues when the same content is accessible at multiple URLs.
 
-**Why it hurts:** Without canonicals, Google may split ranking signals between multiple versions of the same page (with/without trailing slash, HTTP vs HTTPS, www vs non-www, URL parameters). This dilutes your page's authority.
+**Why it hurts:** Without canonicals, Google may split ranking signals between multiple versions of the same page — with and without trailing slash, HTTP and HTTPS, www and non-www, paginated variants, URL parameters (?sort=price, ?utm_source=email). Each version competes with the others, diluting authority and causing unpredictable ranking fluctuations.
 
 **How to fix it:**
-1. Add a self-referencing canonical tag to every page
-2. Ensure the canonical points to the exact URL you want Google to rank (consistent HTTPS, consistent www/non-www, no trailing slash vs trailing slash)
-3. For paginated content (/page/2, /page/3): use canonical on page 1 pointing to itself, and ensure pages 2+ are not accidentally excluded from indexing
+1. Add a self-referencing canonical tag to every page on your site
+2. Ensure the canonical URL is the exact preferred version: HTTPS, with or without trailing slash (pick one and be consistent), preferred subdomain
+3. For pages accessible via URL parameters: the canonical should point to the clean URL
+4. For paginated content (/blog/page/2): each paginated page can have its own canonical pointing to itself — do not force all pages to point to page 1
+5. Check that your canonical URLs are not themselves redirected
+
+**Example canonical tag:**
+\`\`\`html
+<link rel="canonical" href="https://yoursite.com/blog/technical-seo-guide" />
+\`\`\`
 
 ---
 
-### Error 6: Mobile Usability Issues
+### Error 6: Mobile Usability Problems
 
-**What it is:** Google uses mobile-first indexing — it primarily uses the mobile version of your site for indexing and ranking, even if most of your visitors use desktop.
+**What it is:** Google uses mobile-first indexing — it crawls and indexes the mobile version of your site and uses that as the primary basis for rankings, even for desktop searches.
 
-**Why it hurts:** Pages that are not mobile-friendly rank lower on mobile searches, and since Google uses the mobile version as its primary index, this affects desktop rankings too.
+**Why it hurts:** If your mobile site has usability problems (small text, unclickable buttons, horizontal scrolling, content blocked by popups), Google's mobile-first crawler sees a poor experience. This affects your rankings across all devices, not just mobile.
 
 **How to fix it:**
-1. Test your site with Google's Mobile-Friendly Test
-2. Ensure every page has a viewport meta tag: \`<meta name="viewport" content="width=device-width, initial-scale=1">\`
-3. Use responsive CSS (not fixed-width layouts)
-4. Make touch targets (buttons, links) at least 48px × 48px
-5. Ensure text is readable at 375px width without horizontal scrolling
+1. Test each key page with Google's Mobile-Friendly Test
+2. Ensure the viewport meta tag is present on every page: \`<meta name="viewport" content="width=device-width, initial-scale=1">\`
+3. Use responsive CSS — never fixed-width layouts above 375px
+4. Make touch targets at least 48×48px (buttons, links, form elements)
+5. Ensure font size is at least 16px for body text on mobile
+6. Remove intrusive interstitials (full-screen popups) that appear before the user sees content
+7. Ensure all content visible on desktop is also visible on mobile — do not hide content via CSS with \`display:none\` on mobile unless it is not important for ranking
 
 ---
 
-### Error 7: No Schema Markup
+### Error 7: Missing Schema Markup (Structured Data)
 
-**What it is:** Schema markup (also called structured data) is code you add to your pages to help Google understand the content — whether it is a product, article, FAQ, review, recipe, or software application. It can also trigger rich results in search (star ratings, FAQ dropdowns, etc.).
+**What it is:** Schema markup is JSON-LD code that helps Google understand the type and structure of your content. It enables rich results in search — FAQ dropdowns, review stars, product pricing, how-to steps, and more.
 
-**Why it hurts:** Without schema, Google makes its best guess about your content. With schema, you explicitly tell Google what it is — which can improve how your listing looks in search results and increase click-through rate.
+**Why it hurts:** Without schema, Google cannot give your pages enhanced SERP features. Rich results typically get significantly higher CTR than plain blue links. An FAQ rich result, for example, can double the vertical space your result occupies in search — without changing your rank position.
 
 **How to fix it:**
-1. Identify the right schema type for each page: Article for blog posts, Product for product pages, SoftwareApplication for tools, FAQPage for FAQ sections
-2. Add JSON-LD schema in a \`<script type="application/ld+json">\` tag in the \`<head>\` of each relevant page
-3. Test with Google's Rich Results Test tool
-4. Submit pages with new schema to Google Search Console for re-indexing
+1. Identify the right schema type for each page:
+   - Blog posts: \`Article\` or \`BlogPosting\`
+   - Product pages: \`Product\` with \`Offers\`
+   - FAQ sections: \`FAQPage\`
+   - Tool/software pages: \`SoftwareApplication\`
+   - Local businesses: \`LocalBusiness\`
+2. Add JSON-LD in a \`<script type="application/ld+json">\` block in the \`<head>\`
+3. Test every schema block with Google's Rich Results Test before deploying
+4. Request re-crawling of updated pages in Google Search Console
+
+**Example FAQPage schema:**
+\`\`\`json
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [{
+    "@type": "Question",
+    "name": "How often should I run a technical SEO audit?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Run a full audit quarterly, and immediately after any major site change or migration."
+    }
+  }]
+}
+\`\`\`
 
 ---
 
 ### Error 8: Redirect Chains
 
-**What it is:** A redirect chain happens when URL A redirects to URL B, which redirects to URL C. Each hop in the chain adds latency and dilutes the "link equity" passed along.
+**What it is:** A redirect chain occurs when URL A redirects to URL B, which redirects to URL C. Instead of a single hop, crawlers must follow multiple redirects to reach the final destination.
 
-**Why it hurts:** Google recommends limiting redirects to a single hop. Chains slow down crawling and reduce the authority transferred through the redirect.
+**Why it hurts:** Google recommends keeping redirects to a single hop. Each additional hop adds latency (slowing down crawling) and dilutes the PageRank passed through the redirect. Chains are common on sites that have migrated multiple times (HTTP → HTTPS, then rebranded URLs, then a CMS switch).
 
 **How to fix it:**
-1. Audit your site for redirect chains (any redirect that goes through more than one hop)
-2. Update all links and redirects to point directly to the final destination URL
-3. In your web server or platform config: change any redirect that currently goes A→B→C to go A→C directly
-4. Check that old redirects are not pointing to pages that have since been redirected again
+1. Crawl your site to identify all redirect chains (any redirect that passes through more than one URL before reaching the destination)
+2. For each chain A→B→C, update the original redirect to go directly A→C
+3. Also update any internal links still pointing to A or B to point directly to C
+4. Update your XML sitemap — all sitemap URLs should be final destination URLs returning 200, not redirected URLs
+5. Check your backlinks if possible — reaching out to get external links updated to the final URL is worth the effort for high-authority links
 
 ---
 
-### How to Find All Your Technical Errors at Once
+### Error 9: XML Sitemap Errors
 
-Going through your site manually to find all of the above is time-consuming and error-prone. A single tool run will surface all of them in one pass.
+**What it is:** An XML sitemap is a file that lists the URLs on your site that you want Google to crawl and index. Sitemap errors include: including URLs that redirect, including URLs with noindex, including 404 URLs, or having the sitemap itself blocked by robots.txt.
 
-[RankyPulse](https://rankypulse.com/audit) crawls your entire site and produces a complete list of every technical SEO error — broken links, missing titles, no canonical, speed issues, mobile problems, and more — sorted by severity so you know what to fix first.
+**Why it hurts:** A sitemap is your direct signal to Google about which pages matter. If your sitemap includes low-quality pages, redirected URLs, or pages blocked by noindex, you are actively confusing Google's crawl prioritization and potentially sending Googlebot to irrelevant destinations.
 
-Run a free audit, get your fix list, and work through it systematically. Most sites can resolve their critical technical issues within a few hours of focused work.
+**How to fix it:**
+1. Ensure your sitemap is submitted in Google Search Console (GSC → Sitemaps)
+2. Check GSC for any sitemap errors reported
+3. Your sitemap should only include URLs that:
+   - Return a 200 status code (not redirected)
+   - Are set to \`index, follow\` (not noindex)
+   - Represent canonical versions of pages
+4. Remove pagination URLs from the sitemap unless each paginated page has unique, indexable content
+5. Keep the sitemap updated — if you delete pages, remove them from the sitemap
+
+---
+
+### Error 10: Pages Blocked by robots.txt
+
+**What it is:** The \`robots.txt\` file tells search engine crawlers which parts of your site to avoid. Errors occur when pages that should be crawled and indexed are accidentally blocked, or when important assets (CSS, JavaScript, images) are blocked from crawlers who need them to render pages properly.
+
+**Why it hurts:** Any page blocked by robots.txt cannot be crawled or indexed. This is the most severe form of technical SEO error — it completely prevents ranking, regardless of content quality or backlinks.
+
+**How to fix it:**
+1. Check your robots.txt file at \`yoursite.com/robots.txt\`
+2. Use Google Search Console's robots.txt Tester to verify that key pages are accessible
+3. Common accidental blocks to check:
+   - \`Disallow: /\` (blocks entire site — only appropriate for staging environments)
+   - Blocked CSS or JS files needed to render your pages
+   - Blocked API endpoints that serve content to the page
+4. Never block pages from robots.txt that you want indexed — use \`<meta name="robots" content="noindex">\` for individual pages you want to de-index instead
+5. Ensure your production site's robots.txt does not contain staging-environment disallow rules
+
+---
+
+### Error 11: Duplicate Content
+
+**What it is:** Duplicate content occurs when the same or very similar content is accessible at more than one URL. This can happen within a single site (internal duplication) or across different sites (cross-domain duplication).
+
+**Why it hurts:** When Google finds duplicate content, it must choose which version to rank. It often picks a different version than you intend — and the "loser" pages in this consolidation may rank poorly or not at all. Duplicate content also dilutes the authority that would otherwise concentrate in a single, strong URL.
+
+**How to fix it:**
+1. Identify duplicates: paginated URLs, printer-friendly versions, session ID URLs, HTTP/HTTPS variations, www/non-www variations
+2. For each duplicate group, designate one canonical URL and add the canonical tag to all variations
+3. Redirect all non-canonical versions to the preferred URL via 301 redirect where possible
+4. For content syndicated on other sites: add \`<link rel="canonical">\` pointing back to the original on the syndicated version
+5. For thin or near-duplicate pages: consider merging them into a single, comprehensive page
+
+---
+
+### Error 12: Missing Alt Text on Images
+
+**What it is:** Alt text (the \`alt\` attribute on \`<img>\` tags) describes an image to search engines (and screen readers). Search engines cannot "see" images — they rely on alt text to understand what the image contains and how it relates to the surrounding content.
+
+**Why it hurts:** Images without alt text are invisible to Google Image Search, missing an additional traffic channel. More importantly, for pages where images are a key content element (product photos, infographics, diagrams), missing alt text means Google does not fully understand the page's content, which can hurt relevance for related queries.
+
+**How to fix it:**
+1. Crawl your site to identify all images with empty or missing alt attributes
+2. Write descriptive alt text for each important image: describe what the image shows, naturally include a relevant keyword if appropriate
+3. For decorative images (dividers, background patterns): use an empty alt attribute (\`alt=""\`) rather than no alt attribute — this tells screen readers to skip the image
+4. Do not stuff keywords into alt text — be descriptive and natural
+5. Keep alt text under 125 characters
+
+---
+
+## How to Prioritize Technical SEO Fixes
+
+With 12 categories of errors, it can feel overwhelming. Here is a simple prioritization framework:
+
+**Fix first (crawl blockers):** robots.txt blocks, sitemap errors, 404s on key pages, redirect chains. These prevent Google from finding your content entirely.
+
+**Fix second (authority leaks):** missing canonicals, duplicate content, redirect chains. These dilute the ranking power that your pages have already earned.
+
+**Fix third (ranking factors):** page speed, Core Web Vitals, mobile usability. These directly affect your position in competitive SERPs.
+
+**Fix fourth (CTR enhancers):** title tags, meta descriptions, schema markup. These do not change your ranking but increase how many people click your result.
+
+Most sites working through this prioritization framework see measurable ranking improvements within 4–8 weeks.
+
+---
+
+## How to Find All Your Technical Errors at Once
+
+Going through your site manually to find all of the above is time-consuming and error-prone on any site with more than a few dozen pages. A single tool run will surface all of them in one pass, ranked by severity.
+
+[RankyPulse](https://rankypulse.com/audit) crawls your entire site and produces a complete list of every technical SEO error — broken links, missing titles, no canonical, speed issues, mobile problems, sitemap errors, and more — sorted by estimated traffic impact so you know exactly what to fix first. Each issue comes with AI-generated fix instructions and copy-paste code for your CMS.
+
+Run a free audit, get your prioritized fix list, and work through it systematically. Most sites can resolve their critical technical issues within a few focused hours.
+
+---
+
+## Frequently Asked Questions
+
+**How long does it take to fix technical SEO errors?**
+Most configuration fixes (canonicals, meta tags, redirects) take a few hours once you have the list. Speed improvements and schema additions can take a day or two depending on your site's complexity. The bottleneck is always finding the issues — running an automated audit solves that instantly.
+
+**How quickly will Google pick up my technical SEO fixes?**
+It depends on how often Google crawls your site. For most small to medium sites, changes are reflected within 1–2 weeks. You can speed this up by submitting updated URLs for re-crawling in Google Search Console (URL Inspection → Request Indexing). Core Web Vitals improvements appear in Google's field data reports after 28+ days.
+
+**Can I fix technical SEO errors without a developer?**
+Many technical fixes require no coding: meta tags and canonicals can be set in CMS settings (WordPress SEO plugin, Shopify admin, etc.), sitemaps can be regenerated, and robots.txt can be edited via hosting control panels. For speed improvements and schema implementation on custom-built sites, a developer will usually be needed.
+
+**What is the single highest-impact technical SEO fix?**
+For most sites, fixing missing or incorrect canonical tags has the highest impact because it affects authority distribution across the entire site. For newly launched sites, ensuring no pages are accidentally blocked by robots.txt or noindex is the most critical fix.
+
+**How often should I run a technical SEO audit?**
+Quarterly at minimum. Additionally, run an audit immediately after: any site migration, CMS upgrade, major content changes, new URL structure, or an unexplained drop in organic traffic. RankyPulse runs in under 30 seconds, so there is no reason to wait for a scheduled review if you suspect an issue.
     `,
   },
   {
