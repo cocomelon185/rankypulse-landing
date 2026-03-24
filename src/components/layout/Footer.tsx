@@ -21,8 +21,8 @@ export function Footer() {
                 </div>
 
                 <div className="flex items-center gap-6 text-sm font-medium text-[#8b91a8]">
-                    <Link href="/privacy-policy" className="hover:text-[#e8eaf0] transition-colors">Privacy Policy</Link>
-                    <Link href="/terms-and-conditions" className="hover:text-[#e8eaf0] transition-colors">Terms of Service</Link>
+                    <Link href="/privacy" className="hover:text-[#e8eaf0] transition-colors">Privacy Policy</Link>
+                    <Link href="/terms" className="hover:text-[#e8eaf0] transition-colors">Terms of Service</Link>
                     <div className="flex items-center gap-4 ml-4">
                         <Link href="https://twitter.com" target="_blank" className="hover:text-[#f97316] transition-colors"><Twitter size={18} /></Link>
                         <Link href="https://linkedin.com" target="_blank" className="hover:text-[#f97316] transition-colors"><Linkedin size={18} /></Link>
