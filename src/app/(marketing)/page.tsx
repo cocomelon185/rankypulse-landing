@@ -5,6 +5,7 @@ import { FeatureGrid } from "@/components/landing/FeatureGrid";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { Testimonials } from "@/components/landing/Testimonials";
 import { ComparisonTable } from "@/components/landing/ComparisonTable";
+import { RecentPosts } from "@/components/landing/RecentPosts";
 import { PricingTeaser } from "@/components/landing/PricingTeaser";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { LandingFooter } from "@/components/landing/LandingFooter";
@@ -21,6 +22,7 @@ export default function HomePage() {
         <HowItWorks />
         <Testimonials />
         <ComparisonTable />
+        <RecentPosts />
         <PricingTeaser />
         <FinalCTA />
         <LandingFooter />
