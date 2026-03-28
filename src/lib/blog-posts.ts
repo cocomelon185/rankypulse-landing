@@ -2794,4 +2794,962 @@ The sites with the most traffic did not get there quickly — they got there by 
 - [See a content-driven SEO example: HubSpot SEO Audit](/report/hubspot.com)
     `,
   },
+  {
+    slug: '10-common-seo-errors-fix',
+    title: '10 SEO Errors Your Website Probably Has Right Now',
+    subtitle: 'Most are invisible until they cost you traffic. Here\'s how to find and fix each one.',
+    category: 'Technical SEO',
+    readingMinutes: 10,
+    publishedAt: '2026-03-20',
+    pullQuote: "The most expensive SEO mistakes aren't dramatic blunders — they're quiet, accumulating oversights that compound silently for months.",
+    excerpt: 'These 10 technical SEO errors are found on over 60% of websites. Check if your site has them and learn exactly how to fix each one.',
+    featured: false,
+    content: `
+      We've audited thousands of websites. The same mistakes show up again and again. Most aren't intentional—they're just oversights that accumulate as sites grow and change over time.
+
+The good news: once you identify these errors, they're usually quick to fix. This guide walks you through the 10 most common SEO errors we see, shows you how to find them on your site, and tells you exactly how to fix each one.
+
+**The 10 Errors Covered**
+
+• Broken Internal Links
+
+• Missing Canonical Tags
+
+• Slow Largest Contentful Paint (LCP)
+
+• Noindex on Important Pages
+
+• Missing Image Alt Text
+
+• Duplicate Meta Descriptions
+
+• Missing Hreflang Tags (Multi-language Sites)
+
+• Orphaned Pages with No Internal Links
+
+**Automate This Process**
+
+Checking for all 10 errors manually takes hours. RankyPulse finds all of them in minutes and shows you exactly which pages need fixing.
+
+**Error #1: Broken Internal Links**
+
+**Broken Internal Links (404 Errors)**
+
+A broken internal link happens when you link to a page on your own website that no longer exists or has been moved. When users click the link, they get a 404 error page instead of the content they expected.
+
+**Why It Hurts SEO**
+
+• Wastes crawl budget on non-existent pages
+
+• Damages user experience (people hit dead ends)
+
+• Breaks the flow of link authority through your site
+
+• Can indicate a poorly maintained website to Google
+
+Use RankyPulse to scan your site. The report will show every broken link, including:
+
+• Which page contains the broken link
+
+• What URL it points to
+
+• How many pages have broken links
+
+Or check your Google Search Console → Coverage report for pages returning 404 errors.
+
+Option 1: Update the link - If the page was renamed/moved, update the link to point to the new URL.
+
+Option 2: Add a 301 redirect - If the old URL is linked from external sites too, set up a 301 redirect from the old page to the new page (in your .htaccess or through your CMS).
+
+Option 3: Delete the link - If the content no longer exists, just remove the link.
+
+**Error #2: Missing Canonical Tags**
+
+**Missing or Incorrect Canonical Tags**
+
+A canonical tag (rel="canonical") tells Google which version of a page is the "main" version when you have multiple versions of the same content. Without it, Google treats each version as a separate page, splitting your ranking authority.
+
+• Duplicate content dilutes ranking authority
+
+• Google wastes crawl budget on duplicate pages
+
+• Your preferred version might not be the one ranking
+
+• Common from URL parameters (e.g., ?utm_source=email, ?color=red, ?sort=price)
+
+Check a few product pages, category pages, or blog posts. Open the page source (Ctrl+U on Windows, Cmd+U on Mac) and search for "canonical". You should see:
+
+If it's missing, that's an error. If you have multiple versions of pages (like with filters or parameters), canonical is critical.
+
+Add a self-referencing canonical to every page:
+
+For pages with URL parameters, the canonical should point to the version without parameters (usually):
+
+If your CMS supports it, enable automatic canonical tag generation. Most modern platforms (WordPress, Shopify, etc.) have this built-in.
+
+**Error #3: Slow Largest Contentful Paint (LCP)**
+
+LCP measures how fast your main content loads. If it takes over 2.5 seconds, you have a ranking problem. This is one of Google's Core Web Vitals—a direct ranking factor.
+
+• Direct ranking factor (confirmed by Google)
+
+• Affects mobile more than desktop
+
+• Even 1-2 second slowdowns hurt rankings on competitive keywords
+
+• Signals poor user experience to Google
+
+Go to Google PageSpeed Insights (pagespeed.web.dev), enter your URL, and look for the LCP score. The metric should be under 2.5 seconds . Check mobile first—that's the priority.
+
+• Optimize images - Compress images, use WebP format, serve different sizes to different devices
+
+• Enable lazy loading - Defer off-screen images until they're needed
+
+• Minify CSS - Remove unused CSS that delays page rendering
+
+• Defer JavaScript - Load non-critical JS asynchronously
+
+• Use a CDN - Serve content from servers closer to your users
+
+• Improve server response time - Upgrade hosting or optimize your database queries
+
+**Error #4: Noindex on Important Pages**
+
+**Noindex Tag on Pages That Should Rank**
+
+The noindex meta tag tells Google not to add a page to its index. Accidentally adding this to important pages means Google won't rank them, even if they're high quality.
+
+• Pages literally won't show up in Google search results
+
+• This error is completely avoidable but happens surprisingly often
+
+• Common on staging sites that accidentally go live with noindex
+
+Open your page source and search for "noindex":
+
+This shouldn't appear on your main content pages. It's only appropriate for:
+
+• Staging/development sites
+
+• Duplicate content pages
+
+You can also check Google Search Console → Coverage report. Pages with "Excluded" status and reason "Noindex" are being blocked.
+
+Remove the noindex tag from important pages. If you intentionally used it (like on a staging site), remove it before going live. The fix is simple—just delete the line.
+
+If it was set in a CMS setting, check your publishing settings and make sure "Crawlable" or "Indexable" is enabled.
+
+**Error #5: Missing Image Alt Text**
+
+**Missing or Empty Image Alt Text**
+
+Alt text describes an image and helps both Google and visually impaired users understand what the image shows. Missing alt text means Google can't interpret the image content.
+
+• Google can't understand what your images are about
+
+• You miss out on Google Images search traffic
+
+• Affects accessibility (legal requirement in some jurisdictions)
+
+• Keywords in alt text can help with on-page SEO
+
+Scan with RankyPulse to find all images missing alt text. Or manually check:
+
+• Open a page in your browser
+
+• Right-click an image and select "Inspect"
+
+• Look for the alt attribute in the img tag
+
+Add descriptive alt text to every image:
+
+• Describes what the image shows
+
+• Includes relevant keywords naturally (don't stuff)
+
+Bad alt text: "image", "photo", "pic" (not descriptive)
+
+**Error #6: Thin Content Pages**
+
+**Thin Content (Under 300 Words)**
+
+Thin content is short, shallow pages that don't thoroughly answer the user's question. Most competitive keywords are dominated by in-depth, comprehensive content.
+
+• Thin content rarely ranks for competitive keywords
+
+• Google sees it as low-effort, low-value
+
+• Users immediately bounce (high bounce rate signals
+
+• Doesn't satisfy search intent
+
+Check your analytics or use RankyPulse. Look for pages with:
+
+• Under 300 words of content
+
+• High bounce rate but few external links
+
+• No obvious search intent alignment
+
+Expand the content. Look at what top-ranking pages cover and match or exceed that depth.
+
+• More detailed explanations of concepts
+
+• Real examples and case studies
+
+• Data, statistics, and research
+
+• Comparison tables or frameworks
+
+• Visuals (diagrams, infographics, videos)
+
+• Common questions and answers
+
+Aim for 1,500+ words for competitive topics. For less competitive topics, 700-1,000 words often suffices.
+
+**Error #7: Redirect Chains**
+
+**Redirect Chains (A→B→C)**
+
+A redirect chain happens when a URL redirects to another URL, which redirects to yet another URL. Google prefers direct redirects (one hop, not multiple).
+
+• Wastes crawl budget following multiple redirects
+
+• Slightly slower page load (each redirect takes milliseconds)
+
+• Can pass less link authority to the final page
+
+• Makes debugging more difficult
+
+RankyPulse will flag redirect chains. Or check manually:
+
+• Use a redirect checker tool (redirectionchecker.com)
+
+• Enter old URLs and see how many hops it takes to reach the final URL
+
+Update all redirects to point directly to the final destination:
+
+This requires editing your .htaccess file, server configuration, or CMS redirect settings. If you have many redirects, your developer can audit and consolidate them systematically.
+
+**Error #8: Duplicate Meta Descriptions**
+
+**Duplicate or Mis
+
+**Ready to check your site?** Run a free audit at RankyPulse — no signup required.
+    `,
+  },
+  {
+    slug: 'rankypulse-vs-screaming-frog-vs-ahrefs',
+    title: 'RankyPulse vs Screaming Frog vs Ahrefs: Which SEO Tool Is Right for You?',
+    subtitle: 'A side-by-side comparison across features, pricing, and real-world use cases.',
+    category: 'Tools',
+    readingMinutes: 8,
+    publishedAt: '2026-03-22',
+    pullQuote: "The best SEO tool isn't the one with the most features — it's the one you'll actually use consistently.",
+    excerpt: 'Detailed comparison of RankyPulse, Screaming Frog, and Ahrefs Site Audit. Features, pricing, pros and cons to help you choose the right tool in 2026.',
+    featured: false,
+    content: `
+      If you need to audit a website, you have options. The three most popular tools are RankyPulse , Screaming Frog , and Ahrefs Site Audit . Each has strengths and weaknesses. Your choice depends on your budget, technical expertise, and what you need to audit.
+
+This guide compares all three side-by-side across features, pricing, ease of use, and real-world use cases. By the end, you'll know exactly which tool is right for your situation.
+
+**What's Compared**
+
+RankyPulse: Cloud-based site crawler designed for quick, actionable audits. Beginner-friendly with automated prioritization. Free tier available.
+
+Screaming Frog: Desktop software that's the industry standard for technical SEO professionals. Powerful but requires more technical knowledge. One-time purchase with free tier.
+
+Ahrefs Site Audit: Part of the Ahrefs suite. Enterprise-grade backlink analysis + site auditing. Expensive but comprehensive. No free tier.
+
+**Want to See These Tools in Action?**
+
+Run a free audit with RankyPulse to see how modern site auditing works. Takes 5 minutes.
+
+**Feature-by-Feature Comparison**
+
+**Pricing Comparison**
+
+**RankyPulse Pricing**
+
+Free: 1 audit per month (limited to reasonable crawl size)
+
+Pro: $29/month - Unlimited audits, automated monitoring, priority support
+
+Agency: $99/month - Everything in Pro + client management, bulk audits
+
+Best for: Small businesses, freelancers, agencies on a budget
+
+**Screaming Frog Pricing**
+
+Free: First 500 URLs (unlimited features within limit)
+
+Lite License: $260/year (25,000 URLs per crawl)
+
+Business License: $910/year (Unlimited URLs, additional features)
+
+Best for: Technical SEO specialists, agencies that need powerful desktop control
+
+**Ahrefs Site Audit Pricing**
+
+Tier 1: $99/month - Basic site audit, limited crawls
+
+Tier 2: $199/month - More crawls, priority support
+
+Tier 3: $399/month - Unlimited crawls, full feature access
+
+Tier 4: $999/month - Enterprise, custom limits
+
+Best for: Agencies, enterprises, teams that need comprehensive backlink analysis
+
+**RankyPulse: Easiest for Beginners**
+
+• Sign up, enter your URL, click "Audit"
+
+• No software to install
+
+• Results prioritized automatically (you know what to fix first)
+
+• Great for: Non-technical users, quick audits, getting started with SEO
+
+**Screaming Frog: Steep Learning Curve**
+
+• Download and install desktop software
+
+• Interface is dense with options and settings
+
+• Requires understanding of crawl parameters, robots.txt, etc.
+
+• More control and flexibility once you learn it
+
+• Great for: Technical SEO professionals, people who want granular control
+
+**Ahrefs Site Audit: Moderate Learning Curve**
+
+• Cloud-based, no installation
+
+• Interface is modern and intuitive
+
+• But the full Ahrefs suite has a lot of features (you might only need Site Audit)
+
+• Great for: Teams already using Ahrefs for backlink research
+
+**Detailed Pros and Cons**
+
+• Easiest to use—no learning curve
+
+• Free tier is actually useful (1 full audit per month)
+
+• Very affordable monthly pricing
+
+• Results are automatically prioritized by impact
+
+• Cloud-based—no software to install or maintain
+
+• Fast crawls (results in minutes)
+
+• Includes Core Web Vitals monitoring
+
+• Great customer support
+
+• Perfect for SMBs, freelancers, and agencies
+
+• No backlink analysis (separate product needed)
+
+• Fewer configuration options for advanced users
+
+• Doesn't show as much granular data as Screaming Frog
+
+• Younger product (less battle-tested than competitors)
+
+Freelancers, small businesses, agencies, anyone who wants quick, actionable audit results without the learning curve. Also ideal if you want to stay on a budget.
+
+• Industry standard for technical SEO professionals
+
+• Extremely powerful and flexible
+
+• One-time purchase (cheaper over 5+ years than subscriptions)
+
+• Free tier (500 URLs) is genuinely useful
+
+• Can crawl unlimited URLs with paid license
+
+• Desktop control means it can run independently from the web
+
+• Advanced filtering and custom configurations
+
+• API available for automation
+
+• Large community and documentation
+
+• Steep learning curve for non-technical users
+
+• Interface is cluttered and overwhelming at first
+
+• Requires local installation (takes up computer resources)
+
+• No automatic prioritization—you have to interpret the data
+
+• Results can take longer to generate on very large sites
+
+• Less modern UI compared to cloud tools
+
+Technical SEO specialists, agencies with in-house developers, anyone who needs granular control over crawl parameters. If you want the cheapest option long-term, Screaming Frog is unbeatable.
+
+**Ahrefs Site Audit**
+
+• Backlink analysis integrated (major advantage)
+
+• Can identify toxic links in your profile
+
+• Competitive backlink analysis (see what sites link to competitors)
+
+• Enterprise-grade infrastructure
+
+• Modern, intuitive interface
+
+• Can handle massive sites
+
+• Excellent documentation and training
+
+• Valuable if you're already using Ahrefs for other SEO work
+
+• Most expensive option (minimum $99/month)
+
+• Over-engineered if you only need site audits
+
+• Requires buying the full Ahrefs suite (can't get Site Audit alone)
+
+• Less focused on prioritization like RankyPulse
+
+• Steeper learning curve than RankyPulse
+
+Agencies doing competitive research, enterprises needing backlink analysis, teams already committed to the Ahrefs ecosystem. Skip if you only need site audits.
+
+**Use RankyPulse If...**
+
+• You're a freelancer or small business owner who needs occasional audits
+
+• You want fast results with clear priorities (what to fix first)
+
+• You're budget-conscious (starting at $29/month)
+
+• You want no learning curve (just sign up and audit)
+
+• You need to audit multiple client sites regularly
+
+**Use Screaming Frog If...**
+
+• You're a technical SEO specialist who needs detailed control
+
+• You want to minimize long-term costs (one-time purchase)
+
+• You need to run very large crawls (millions of pages)
+
+• You're comfortable with complex software
+
+• You need automation and API access
+
+**Use Ahrefs If...**
+
+• You need backlink analysis alongside site audits
+
+• Your company has an enterprise budget
+
+• You're already paying for Ahrefs for other SEO work
+
+• You need competitive backlink research
+
+• You want an all-in-one SEO platform
+
+**Real-World Scenarios**
+
+**Scenario 1: Freelance SEO Consultant**
+
+Goal: Quickly audit 5 client sites per month, deliver clear reports
+
+Recommendation: RankyPulse Pro ($29/month)
+
+Why? RankyPulse gives you unlimited audits, automatic prioritization, and results you can explain to clients. Takes 15 minutes per site. At $29/month, it's less than you'd charge for 1 audit.
+
+**Scenario 2: In-House SEO Team at an Agency**
+
+Goal: Full control over crawls, detailed technical analysis, audit 50+ sites annually
+
+Recommendation: Screaming Frog Business License ($910/year)
+
+Why? One-time purchase is cheaper than annual subscriptions. Screaming Frog's power and flexibility is worth it for a dedicated team. Plus, you get unlimited crawls.
+
+**Scenario 3: Enterprise SaaS Company**
+
+Goal: Monitor own site, analyze competitors' backlinks, integrate with other SEO tools
+
+Recommendation: Ahrefs ($399+/month)
+
+Why? You need backlink analysis. Ahrefs is the gold standard for competitive intelligence. The Site Audit feature is excellent, but you're really paying for the full ecosystem.
+
+**Try RankyPulse Free**
+
+Not sure which tool is right? Test RankyPulse with a free audit. You'll see immediately if it fits your needs.
+
+**Quick Comparison Cheat Sheet**
+
+**The Bottom Line**
+
+All three tools are excellent for different use cases. There's no "best" tool—only the best tool for your specific situation.
+
+If you're just starting with SEO audits or you want the fastest setup and clearest priorities, RankyPulse is the clear winner. It's affordable, easy, and designed specifically for getting actionable results quickly.
+
+If you're a technical SEO professional who demands complete control, Screaming Frog is the industry standard and has been for over a decade.
+
+
+
+**Ready to check your site?** Run a free audit at RankyPulse — no signup required.
+    `,
+  },
+  {
+    slug: 'seo-audit-checklist-2026',
+    title: 'The Complete SEO Audit Checklist for 2026 (Free Template)',
+    subtitle: '50+ factors across crawlability, on-page, Core Web Vitals, and content quality.',
+    category: 'Strategy',
+    readingMinutes: 12,
+    publishedAt: '2026-03-18',
+    pullQuote: "An SEO audit isn't a one-time project. It's a systematic practice — the difference between reactive firefighting and proactive growth.",
+    excerpt: 'A complete technical SEO audit checklist covering 50+ factors. Use this free template to audit any website and fix what\'s hurting your rankings in 2026.',
+    featured: true,
+    content: `
+      **Table of Contents**
+
+• Crawlability & Indexation
+
+• Technical Performance
+
+An SEO audit isn't a one-time project—it's the foundation of a successful SEO strategy. Whether you're preparing for a major redesign, troubleshooting a traffic drop, or implementing a new SEO initiative, you need a systematic approach to identify what's working and what isn't.
+
+This checklist covers 50+ critical SEO factors across six core areas. Use it to audit your own website or a client's site, and prioritize the issues that will have the biggest impact on your rankings.
+
+**Save Time With Automated Audits**
+
+Manually checking every factor takes hours. RankyPulse automatically audits all 50+ factors in minutes and prioritizes what to fix first.
+
+**1. Crawlability & Indexation**
+
+Search engines can only rank what they can find and understand. If Google can't crawl your pages or they're blocked from indexing, no amount of optimization will help. This section covers the fundamentals.
+
+**Check robots.txt file**
+
+Visit yoursite.com/robots.txt and verify it's not accidentally blocking important pages or directories. Look for Disallow rules that might be hiding crawlable content.
+
+**Review sitemap.xml**
+
+Ensure your XML sitemap exists, is valid, and includes all important pages. Check that URLs in the sitemap actually exist and aren't returning 404 errors.
+
+**Check for noindex tags**
+
+Search your page source for meta name="robots" content="noindex" tags. These should only appear on staging sites, admin pages, and duplicate content—not on your main content pages.
+
+**Verify crawl budget isn't wasted**
+
+Check Google Search Console's Crawl Stats report. If crawl rate is unusually high, you may have duplicate content, redirect loops, or soft 404 errors wasting your budget.
+
+**Test URL parameter handling**
+
+Verify Google Search Console knows which URL parameters create unique content and which are just tracking parameters. Misconfiguration can cause duplicate content issues.
+
+**Check for crawl errors**
+
+Review Google Search Console for crawl errors. Even a handful of 500 errors can indicate server issues that hurt your SEO performance over time.
+
+On-page optimization is about making it easy for search engines and users to understand what your pages are about. These factors directly influence how well pages rank for target keywords.
+
+**Title tag optimization**
+
+Each page should have a unique, descriptive title (50-60 characters) that includes your target keyword and matches search intent. Avoid keyword stuffing and clickbait.
+
+**Meta description coverage**
+
+All pages should have unique meta descriptions (150-160 characters). While they don't directly affect rankings, they improve click-through rate from search results.
+
+**H1 tag presence**
+
+Each page should have exactly one H1 tag. It should be descriptive, include your target keyword naturally, and match the page's main purpose.
+
+**Heading hierarchy (H2-H6)**
+
+Use heading tags (H2, H3, etc.) to structure content logically. Avoid skipping levels (e.g., H1 to H3 to H2). This helps both users and search engines understand content structure.
+
+**Keyword relevance**
+
+Scan page content for your target keyword. It should appear naturally in the first 100 words, headings, and throughout the page (aim for 1-2% keyword density).
+
+All images should have descriptive alt text that describes the image and incorporates relevant keywords where appropriate. Avoid alt text like "image" or "picture".
+
+**Internal linking**
+
+Link to relevant internal pages using descriptive anchor text. Strong internal linking helps distribute page authority and establishes information hierarchy.
+
+URLs should be descriptive, use hyphens (not underscores), avoid unnecessary parameters, and include target keywords when relevant. Shorter URLs generally perform better.
+
+**3. Technical Performance**
+
+Technical SEO ensures your website is built in a way that search engines can efficiently crawl, index, and rank. Technical problems can severely limit your SEO potential.
+
+**SSL/HTTPS certificate**
+
+Your entire site should be served over HTTPS. Check for mixed content warnings (secure page loading unsecure resources) and ensure your SSL certificate is valid and up-to-date.
+
+**Mobile-friendliness**
+
+Run a mobile usability test in Google Search Console. Ensure your site is responsive, text is readable on mobile, buttons are properly sized, and there's no intrusive interstitials.
+
+**Canonical tag setup**
+
+Use canonical tags to point to the preferred version of duplicate pages. Self-referencing canonicals should be present on all pages, including those with parameters and multiple versions.
+
+**Redirect chains**
+
+Check for redirect chains (A→B→C). These waste crawl budget and can pass less authority. All old URLs should redirect directly to their final destination.
+
+**Server response time**
+
+Use a speed testing tool to check Time to First Byte (TTFB). Aim for under 600ms. Slow server response time limits how much Google can crawl.
+
+If you serve multiple languages or regions, implement hreflang tags correctly. Improper hreflang setup can cause pages to be shown in the wrong region.
+
+**Structured data markup**
+
+Implement schema.org markup (JSON-LD) for your content type. Use Google's Rich Results Test to verify implementation. Valid structured data can enable rich snippets and better CTR.
+
+**4. Core Web Vitals**
+
+Core Web Vitals are Google's key metrics for page experience. They directly affect your search ranking, especially for competitive queries. These three metrics matter most.
+
+**Largest Contentful Paint (LCP)**
+
+Measure how quickly the main content loads. Target: under 2.5 seconds. Check images are optimized, server response is fast, and CSS is not blocking rendering.
+
+**First Input Delay (FID)**
+
+Measure how long before the browser responds to user interaction. Target: under 100ms. Reduce JavaScript execution time and defer non-critical scripts.
+
+**Cumulative Layout Shift (CLS)**
+
+Measure unexpected layout shifts while loading. Target: under 0.1. Reserve space for images/ads and avoid inserting content above existing content.
+
+**Check mobile Core Web Vitals**
+
+Use Google's PageSpeed Insights to check mobile metrics. Mobile performance is critical since most searches happen on mobile devices.
+
+**Optimize images**
+
+Ensure images are properly compressed, served in modern formats (WebP), are responsive (different sizes for different devices), and use lazy loading.
+
+**Minimize render-blocking resources**
+
+Defer non-critical CSS and JavaScript, inline critical CSS, and load scripts asynchronously. Remove unused code that delays page rendering.
+
+**5. Links & Information Architecture**
+
+Your site's link structure determines how authority flows through your pages and how easily users and search engines can navigate your content.
+
+**Crawlable site structure**
+
+Every page should be reachable from the homepage within 3-4 clicks. Avoid burying important pages deep in the site structure.
+
+**Broken links audit**
+
+Scan for internal broken links (404s) and external broken links. Broken links waste crawl budget and hurt user experience. Fix or redirect them.
+
+Check Google Search Console to identify pages that aren't linked from anywhere on your site. Add internal links to important orphaned pages.
+
+**Footer and header links**
+
+Verify important pages are linked in your header/footer/navigation. These links are valuable for SEO and should point to high-priority pages.
+
+**Backlink profile audit**
+
+Review your backlinks for quality. Disavow or contact to remove obviously spammy links. Focus on building high-quality backlinks from relevant websites.
+
+**Internal link anchor text**
+
+Vary your internal link anchor text. Use descriptive anchors that include relevant keywords, but avoid over-optimized anchor text that looks unnatural.
+
+**6. Content Quality**
+
+Quality content is the foundation of modern SEO. Without it, all the technical optimization in the world won't help you rank for competitive keyword
+
+**Ready to check your site?** Run a free audit at RankyPulse — no signup required.
+    `,
+  },
+  {
+    slug: 'technical-seo-audit-30-minutes',
+    title: 'How to Run a Complete Technical SEO Audit in Under 30 Minutes',
+    subtitle: 'A step-by-step system for founders, freelancers, and marketers who need results fast.',
+    category: 'Technical SEO',
+    readingMinutes: 9,
+    publishedAt: '2026-03-15',
+    pullQuote: "You don't need a week and three enterprise tools to understand your site's SEO health. You need a system and 30 focused minutes.",
+    excerpt: 'Step-by-step guide to running a technical SEO audit in under 30 minutes. What to check, what tools to use, and how to prioritize fixes.',
+    featured: false,
+    content: `
+      **Steps in This Guide**
+
+• Set Up Your Tools (2 minutes)
+
+• Crawl Your Site (5 minutes)
+
+• Analyze Technical Issues (5 minutes)
+
+• Check Core Web Vitals (3 minutes)
+
+• Review Google Search Console (5 minutes)
+
+• Prioritize Fixes (5 minutes)
+
+Technical SEO doesn't have to be complicated or time-consuming. In the next 30 minutes, you'll have a clear picture of your website's technical health and a prioritized list of fixes that will actually impact your rankings.
+
+This guide walks you through exactly what to check, which tools to use, and what to do with your findings. Unlike lengthy SEO audits that take hours, this streamlined process focuses on the issues that matter most.
+
+**Skip to Results: Automate Your Audit**
+
+These steps can be automated. RankyPulse crawls your site and delivers a prioritized audit report in minutes instead of hours.
+
+**Step 1: Set Up Your Tools (2 minutes)**
+
+You'll need a few tools to complete this audit. The good news: most are free, and you probably already have them.
+
+**1 Tools You'll Need 2 min**
+
+Have these ready before you start:
+
+• RankyPulse (rankypulse.com) - For a complete site crawl and technical audit
+
+• Google Search Console - For indexing issues and crawl errors
+
+• Google PageSpeed Insights - For Core Web Vitals and performance
+
+• Google Chrome DevTools - Built into your browser for manual checks
+
+• A spreadsheet - Google Sheets or Excel to track findings
+
+Most of these are completely free. RankyPulse offers a free tier that covers everything you need for a single audit.
+
+**Step 2: Crawl Your Site (5 minutes)**
+
+Start by running a site crawl. This identifies technical issues systematically rather than spot-checking random pages.
+
+**2 Run Your Site Crawl 5 min**
+
+**What You're Doing**
+
+A site crawl simulates how Google sees your website. It follows links, checks page speed, validates code, and identifies errors.
+
+• Enter your website URL
+
+• Click "Start Free Audit"
+
+• Let it run (this takes 2-5 minutes depending on site size)
+
+**What to Look For**
+
+While the crawl runs, it will identify:
+
+• Broken links (404 errors)
+
+• Redirect chains and loops
+
+• Pages with missing title tags or meta descriptions
+
+• Duplicate content issues
+
+• Mobile usability problems
+
+**Once It Finishes**
+
+Export or screenshot the report. You'll see a priority score and a list of issues ranked by impact. Save this—you'll use it in Step 6.
+
+**Step 3: Analyze Technical Issues (5 minutes)**
+
+Now look at the specific technical problems the crawl found. Focus on high-priority issues first.
+
+**3 Review Crawl Results 5 min**
+
+**Critical Issues to Look For**
+
+In priority order, these are the issues that hurt your rankings the most:
+
+**1. Crawl Errors and Indexation**
+
+• Any pages returning 5xx server errors? These prevent Google from indexing.
+
+• Are important pages blocked by robots.txt? You should only block admin pages and duplicates.
+
+• Are valid pages marked with noindex tags? Check the crawl report for this.
+
+**2. Broken Links**
+
+• Count 404 errors in your crawl results. Even 5-10 broken links hurt user experience and rankings.
+
+• For critical pages (like your homepage), broken links are especially damaging.
+
+• Create a list: which pages have broken links, and where do they point?
+
+**3. Redirect Issues**
+
+• Look for redirect chains (A→B→C). These waste crawl budget.
+
+• Check for redirect loops (A→B→A). These are critical errors.
+
+• Aim for single redirects: old URL→final destination.
+
+**4. Duplicate Content**
+
+• Did the crawler find multiple versions of the same page?
+
+• This might be due to URL parameters, tracking codes, or intentional duplicates.
+
+• Use canonical tags to point to the preferred version.
+
+**5. SSL/HTTPS Issues**
+
+• Are any pages served over HTTP instead of HTTPS? Everything should be HTTPS.
+
+• Check for mixed content warnings (secure pages loading insecure resources).
+
+**Create a Priority List**
+
+Open your spreadsheet and create columns:
+
+• Number of Pages Affected
+
+• Severity (Critical/High/Medium/Low)
+
+Focus on Critical and High severity issues that affect multiple pages. Don't get bogged down in low-severity issues yet.
+
+**Step 4: Check Core Web Vitals (3 minutes)**
+
+Core Web Vitals are now a official ranking factor. Even if your site has no technical errors, poor page speed will hurt your rankings.
+
+**4 Test Page Speed 3 min**
+
+• Go to PageSpeed Insights (pagespeed.web.dev)
+
+• Enter your website's homepage URL
+
+• Look at the mobile score (this is what matters most)
+
+**What the Numbers Mean**
+
+• 90+ - Good (no action needed)
+
+• 50-89 - Needs improvement
+
+• Below 50 - Poor (fix this first)
+
+**The Three Core Web Vitals**
+
+PageSpeed Insights shows three key metrics:
+
+Largest Contentful Paint (LCP) - How fast does your main content load?
+
+• Target: Under 2.5 seconds
+
+• If slow: Optimize images, improve server response time, defer JavaScript
+
+First Input Delay (FID) - How fast does your site respond to clicks?
+
+• If slow: Reduce JavaScript execution, defer non-critical scripts
+
+Cumulative Layout Shift (CLS) - Does your page layout shift while loading?
+
+• If poor: Reserve space for images/ads, avoid inserting content above the fold
+
+**Quick Wins for Page Speed**
+
+• Compress images - Images are usually the biggest culprit. Use modern formats like WebP.
+
+• Enable caching - Tell browsers to cache static assets for 30+ days.
+
+• Minimize CSS/JS - Remove unused code and defer non-critical scripts.
+
+• Use a CDN - Serve static files from servers near your users.
+
+Note your Core Web Vitals score in your spreadsheet. If it's below 50, prioritize speed improvements alongside technical fixes.
+
+**Step 5: Review Google Search Console (5 minutes)**
+
+Google Search Console is your direct line to how Google sees your site. It shows real issues Google has found, not hypothetical problems.
+
+**5 Check Google Search Console 5 min**
+
+• Log into Google Search Console (search.google.com/search-console)
+
+• Select your property (your website)
+
+• Go to "Coverage" report (in the left menu)
+
+**Coverage Report Analysis**
+
+This shows Google's indexing status for your site:
+
+• Indexed - Pages successfully added to Google's index (good)
+
+• Crawled but not indexed - Pages Google found but didn't index (usually okay, but worth investigating)
+
+• Error - Pages with crawl issues (fix these first)
+
+• Excluded - Pages intentionally excluded (usually redirects, duplicates, or noindex pages)
+
+• Are there many errors? Click the error bar to see details.
+
+• Check "Crawled but not indexed" - are important pages there? If so, investigate why.
+
+• Look at the "Excluded" section - are important pages excluded? If yes, that's a problem.
+
+**Check for Mobile Issues**
+
+Go to "Mobile Usability" (in left menu):
+
+• Any mobile usability errors? These hurt mobile rankings.
+
+• Common issues: clickable elements too close, text too small, viewport not configured.
+
+• Click each issue to see affected pages.
+
+**Review Crawl Stats**
+
+Look for "Crawl Stats" (under Settings):
+
+• Is Google crawling your site efficiently?
+
+• If crawl rate is high (100+ pages/day) but your site is small, you may have duplicate content or redirect issues.
+
+Add any new issues from Google Search Console to your priority list. Google's data is more authoritative than any tool.
+
+**Step 6: Prioritize and Plan Fixes (5 minutes)**
+
+You've now collected data from three sources: your site crawl, Core Web Vitals, and Google Search Console. Time to prioritize what to fix.
+
+**6 Create Your Action Plan 5 min**
+
+**Prioritization Framework**
+
+Fix issues in this order:
+
+• Critical + High Impact (Fix in next 1-2 weeks) Server errors (5xx codes) Broken links on important pages Pages marked noindex that should be indexed Mobile usability issues (from GSC)
+
+• Server errors (5xx codes)
+
+• Broken links on important pages
+
+• Pages marked noindex that should be indexed
+
+• Mobile usability issues (from GSC)
+
+• Medium Priority (Fix in next 1-2 months) Redirect chains Missing canonical tags Duplicate content Core Web Vitals score below 50
+
+• 
+
+**Ready to check your site?** Run a free audit at RankyPulse — no signup required.
+    `,
+  }
 ];

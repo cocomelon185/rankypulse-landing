@@ -2,16 +2,23 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import type { BlogPost as BlogPostType } from '@/lib/blog-posts';
-import { Clock, ArrowLeft } from 'lucide-react';
+import { BLOG_POSTS, type BlogPost as BlogPostType } from '@/lib/blog-posts';
+import { Clock, ArrowLeft, ArrowRight } from 'lucide-react';
 
 export function BlogPost({ post }: { post: BlogPostType }) {
-  const ALL_POSTS = [
-    { title: "How Google Actually Crawls Your Website", href: "/blog/how-google-actually-crawls", tag: "Technical SEO", readTime: "7 min read" },
-    { title: "Google Not Indexing Your Pages? Here's Why", href: "/blog/google-not-indexing-pages", tag: "Indexing", readTime: "9 min read" },
-    { title: "How to Read an SEO Audit Report", href: "/blog/how-to-read-an-seo-audit", tag: "SEO Audits", readTime: "6 min read" },
-  ];
-  const relatedPosts = ALL_POSTS.filter(p => p.title !== post.title);
+  // Same-category posts, excluding current, up to 3
+  const related = BLOG_POSTS
+    .filter(p => p.slug !== post.slug && p.category === post.category)
+    .slice(0, 3);
+
+  // If fewer than 3 same-category, fill with posts from other categories
+  const fallback = related.length < 3
+    ? BLOG_POSTS.filter(p => p.slug !== post.slug && p.category !== post.category)
+        .slice(0, 3 - related.length)
+    : [];
+
+  const relatedPosts = [...related, ...fallback];
+
   return (
     <main className="min-h-screen bg-[#0d0f14] pt-24 pb-24 px-6">
 
@@ -235,29 +242,47 @@ export function BlogPost({ post }: { post: BlogPostType }) {
           </Link>
         </div>
 
-        {/* Keep reading */}
-        <div className="mt-16">
-          <h3 className="font-['Fraunces'] text-xl font-bold text-white mb-6">
-            Keep reading
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {relatedPosts.map((rp) => (
-              <Link
-                key={rp.href}
-                href={rp.href}
-                className="block bg-white/[0.04] border border-white/10 rounded-xl p-5 hover:bg-white/[0.07] hover:border-indigo-500/30 transition-all duration-200 group"
-              >
-                <span className="inline-block text-xs font-semibold text-indigo-400 mb-3">
-                  {rp.tag}
-                </span>
-                <p className="font-['DM_Sans'] text-sm font-semibold text-white leading-snug group-hover:text-indigo-300 transition-colors">
-                  {rp.title}
-                </p>
-                <p className="text-xs text-gray-500 mt-2">{rp.readTime}</p>
-              </Link>
-            ))}
+        {/* Related Posts */}
+        {relatedPosts.length > 0 && (
+          <div className="mt-16">
+            <div className="h-px bg-white/[0.06] mb-10" />
+            <h2 className="font-['Fraunces'] text-xl font-bold text-white mb-6">
+              Keep reading
+            </h2>
+            <div className="space-y-4">
+              {relatedPosts.map(related => (
+                <Link
+                  key={related.slug}
+                  href={`/blog/${related.slug}`}
+                  className="group flex items-start justify-between gap-4 p-5
+                    rounded-xl border border-white/[0.06] bg-white/[0.02]
+                    hover:border-indigo-500/30 hover:bg-indigo-500/[0.04]
+                    transition-all duration-200"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="font-['DM_Mono'] text-[10px] tracking-widest
+                        px-2 py-0.5 rounded-full bg-indigo-500/10
+                        border border-indigo-500/20 text-indigo-400">
+                        {related.category.toUpperCase()}
+                      </span>
+                      <span className="font-['DM_Mono'] text-[10px] text-gray-600">
+                        {related.readingMinutes} MIN
+                      </span>
+                    </div>
+                    <p className="font-['DM_Sans'] text-sm font-medium text-gray-300
+                      group-hover:text-white transition-colors leading-snug">
+                      {related.title}
+                    </p>
+                  </div>
+                  <ArrowRight size={14} className="text-gray-600 group-hover:text-indigo-400
+                    transition-colors mt-1 shrink-0" />
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
         {/* Back to blog */}
         <div className="mt-10 text-center">
           <Link

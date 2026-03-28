@@ -1,78 +1,101 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-
-const FEATURED_POSTS = [
-    {
-          title: "How Google Actually Crawls Your Website",
-          excerpt:
-            "Understand Googlebot's crawl budget, crawl frequency, and how internal linking affects which pages get indexed.",
-          href: "/blog/how-google-actually-crawls",
-          readTime: "7 min read",
-          tag: "Technical SEO",
-        },
-    {
-          title: "Google Not Indexing Your Pages? Here's Why",
-          excerpt:
-            "Diagnose and fix the most common reasons Google refuses to index your content, from noindex tags to thin content.",
-          href: "/blog/google-not-indexing-pages",
-          readTime: "9 min read",
-          tag: "Indexing",
-        },
-    {
-          title: "How to Read an SEO Audit Report",
-          excerpt:
-            "Learn how to interpret an SEO audit, prioritize issues by impact, and turn findings into an actionable fix list.",
-          href: "/blog/how-to-read-an-seo-audit",
-          readTime: "6 min read",
-          tag: "SEO Audits",
-        },
-  ];
+import Link from 'next/link';
+import { BLOG_POSTS } from '@/lib/blog-posts';
+import { Clock, ArrowRight } from 'lucide-react';
 
 export function RecentPosts() {
-    return (
-          <section className="py-16 bg-gray-50">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                  Learn SEO From Our Blog
-                </h2>
-                <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                  Practical guides to help you fix technical issues, improve rankings,
-                  and understand how Google works.
-                </p>
+  // 3 featured posts, fallback to first 3
+  const featured = BLOG_POSTS.filter(p => p.featured);
+  const posts = featured.length >= 3
+    ? featured.slice(0, 3)
+    : [...featured, ...BLOG_POSTS.filter(p => !p.featured)].slice(0, 3);
+
+  return (
+    <section className="py-24 px-6 border-t border-white/[0.06]">
+      <div className="max-w-5xl mx-auto">
+
+        {/* Header */}
+        <div className="flex items-end justify-between mb-12">
+          <div>
+            <p className="font-['DM_Mono'] text-xs tracking-widest text-[#FF642D] mb-3">
+              FROM THE BLOG
+            </p>
+            <h2
+              className="font-['Fraunces'] font-bold text-white leading-tight"
+              style={{ fontSize: 'clamp(28px, 3.5vw, 42px)' }}
+            >
+              Learn SEO that actually works
+            </h2>
+          </div>
+          <Link
+            href="/blog"
+            className="hidden md:inline-flex items-center gap-1.5 font-['DM_Sans']
+              text-sm text-gray-500 hover:text-white transition-colors shrink-0"
+          >
+            All posts
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+
+        {/* Cards */}
+        <div className="grid md:grid-cols-3 gap-6">
+          {posts.map((post, i) => (
+            <Link
+              key={post.slug}
+              href={`/blog/${post.slug}`}
+              className="group flex flex-col p-6 rounded-2xl border border-white/[0.06]
+                bg-white/[0.02] hover:border-[#FF642D]/25 hover:bg-[#FF642D]/[0.03]
+                transition-all duration-200"
+            >
+              {/* Category + read time */}
+              <div className="flex items-center gap-2 mb-4">
+                <span className="font-['DM_Mono'] text-[10px] tracking-widest
+                  px-2.5 py-1 rounded-full bg-indigo-500/10
+                  border border-indigo-500/20 text-indigo-400">
+                  {post.category.toUpperCase()}
+                </span>
+                <div className="flex items-center gap-1 text-gray-600">
+                  <Clock size={10} />
+                  <span className="font-['DM_Mono'] text-[10px]">
+                    {post.readingMinutes} MIN
+                  </span>
+                </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {FEATURED_POSTS.map((post) => (
-                              <Link
-                                key={post.href}
-                                href={post.href}
-                                className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md hover:border-purple-300 transition-all duration-200 group flex flex-col"
-                              >
-                                <span className="inline-block text-xs font-semibold text-purple-600 bg-purple-50 px-3 py-1 rounded-full mb-4 w-fit">
-                                  {post.tag}
-                                </span>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-3 group-hover:text-purple-700 transition-colors leading-snug">
-                                  {post.title}
-                                </h3>
-                                <p className="text-gray-600 text-sm mb-4 leading-relaxed flex-1">
-                                  {post.excerpt}
-                                </p>
-                                <div className="flex items-center justify-between mt-auto">
-                                  <span className="text-xs text-gray-400">{post.readTime}</span>
-                                  <ArrowRight className="w-4 h-4 text-purple-600 group-hover:translate-x-1 transition-transform" />
-                                </div>
-                              </Link>
-                            ))}
+
+              {/* Title */}
+              <h3 className="font-['Fraunces'] text-base font-bold text-gray-200
+                group-hover:text-white transition-colors leading-snug mb-3 flex-1">
+                {post.title}
+              </h3>
+
+              {/* Excerpt */}
+              <p className="font-['DM_Sans'] text-xs text-gray-500 leading-relaxed mb-5
+                line-clamp-2">
+                {post.excerpt}
+              </p>
+
+              {/* Read link */}
+              <div className="inline-flex items-center gap-1.5 font-['DM_Sans']
+                text-xs font-medium text-[#FF642D] group-hover:gap-2.5 transition-all">
+                Read article
+                <ArrowRight size={12} />
               </div>
-              <div className="text-center mt-10">
-                <Link
-                  href="/blog"
-                  className="inline-flex items-center gap-2 text-purple-600 font-semibold hover:text-purple-700 transition-colors"
-                >
-                  View all articles <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </div>
-          </section>
-        );
-  }
+            </Link>
+          ))}
+        </div>
+
+        {/* Mobile "all posts" link */}
+        <div className="mt-8 text-center md:hidden">
+          <Link
+            href="/blog"
+            className="inline-flex items-center gap-1.5 font-['DM_Sans']
+              text-sm text-gray-500 hover:text-white transition-colors"
+          >
+            View all posts
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+
+      </div>
+    </section>
+  );
+}
