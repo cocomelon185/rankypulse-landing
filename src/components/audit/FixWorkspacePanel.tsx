@@ -12,6 +12,7 @@ import { CmsSelector, getCmsSteps, type CmsType } from "@/components/audit/CmsSe
 import { VerifyFixButton } from "@/components/audit/VerifyFixButton";
 import type { FixStatus } from "@/components/audit/ProgressProof";
 import { exportAsCSV, exportAsMarkdown, downloadFile } from "@/lib/export-tasks";
+import { LiveSerpPreview } from "@/components/audit/v2/LiveSerpPreview";
 
 interface FixWorkspacePanelProps {
   currentTask: PresentedIssue | null;
@@ -293,6 +294,25 @@ export function FixWorkspacePanel({
               label={`Suggested ${currentTask.snippetSuggestion.type === "title" ? "title" : "meta description"}`}
               onCopy={() => handleSnippetCopy(currentTask.snippetSuggestion!.type)}
             />
+          )}
+
+          {/* Live SERP preview for title / meta-description issues */}
+          {currentTask.snippetSuggestion && (
+            <div className="mt-3">
+              <LiveSerpPreview
+                title={
+                  currentTask.snippetSuggestion.type === "title"
+                    ? currentTask.snippetSuggestion.suggested
+                    : (currentTask.snippetSuggestion.current ?? hostname)
+                }
+                description={
+                  currentTask.snippetSuggestion.type === "meta_description"
+                    ? currentTask.snippetSuggestion.suggested
+                    : (currentTask.snippetSuggestion.current ?? "")
+                }
+                url={`https://${hostname}`}
+              />
+            </div>
           )}
 
           <button

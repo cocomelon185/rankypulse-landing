@@ -1,0 +1,529 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e4]:
+        - link "RankyPulse" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img [ref=e6]
+          - generic [ref=e10]: RankyPulse
+        - generic [ref=e11]:
+          - link "Features" [ref=e13] [cursor=pointer]:
+            - /url: /#features
+          - button "Tools" [ref=e15]:
+            - text: Tools
+            - img [ref=e16]
+          - link "Pricing" [ref=e19] [cursor=pointer]:
+            - /url: /pricing
+          - button "Learn" [ref=e21]:
+            - text: Learn
+            - img [ref=e22]
+          - button "Solutions" [ref=e25]:
+            - text: Solutions
+            - img [ref=e26]
+        - generic [ref=e28]:
+          - link "Log in" [ref=e29] [cursor=pointer]:
+            - /url: /auth/signin
+          - link "Run Free Audit ↗" [ref=e30] [cursor=pointer]:
+            - /url: /audit
+    - generic [ref=e31]:
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e36]: Free SEO audit · No signup required
+          - heading "Find and fix SEO problems on your website in minutes." [level=1] [ref=e37]
+          - paragraph [ref=e38]: Enter your website, run a free audit, and see your SEO score plus the top fixes to make first. Get the aha moment before signup friction.
+          - generic [ref=e40]:
+            - generic [ref=e41]:
+              - img [ref=e42]
+              - textbox "yoursite.com" [active] [ref=e45]: stripe.com
+            - button "Run Free SEO Audit" [ref=e46]:
+              - img [ref=e47]
+              - text: Run Free SEO Audit
+          - generic [ref=e49]:
+            - generic [ref=e50]:
+              - img [ref=e51]
+              - generic [ref=e54]: No signup required
+            - generic [ref=e55]:
+              - img [ref=e56]
+              - generic [ref=e59]: 5-minute fixes
+            - generic [ref=e60]:
+              - img [ref=e61]
+              - generic [ref=e64]: Real traffic data
+          - generic [ref=e65]:
+            - generic [ref=e66]: "Try it on:"
+            - button "stripe.com" [ref=e67]
+            - button "shopify.com" [ref=e68]
+            - button "notion.so" [ref=e69]
+          - generic [ref=e70]:
+            - generic [ref=e71]:
+              - generic [ref=e72]: "0"
+              - generic [ref=e73]: Sites audited
+            - generic [ref=e74]:
+              - generic [ref=e75]: "0"
+              - generic [ref=e76]: User rating
+            - generic [ref=e77]:
+              - generic [ref=e78]: "0"
+              - generic [ref=e79]: Avg fix time
+            - generic [ref=e80]:
+              - generic [ref=e81]: "0"
+              - generic [ref=e82]: See gains in 30d
+        - generic [ref=e86]:
+          - generic [ref=e94]: rankypulse.com/report/yoursite.com
+          - generic [ref=e95]:
+            - generic [ref=e96]:
+              - generic [ref=e97]: SEO SCORE
+              - generic [ref=e98]: "75"
+              - generic [ref=e99]: / 100
+              - generic [ref=e100]: ● GOOD
+            - generic [ref=e101]:
+              - generic [ref=e102]:
+                - generic [ref=e103]: HIGH
+                - generic [ref=e104]: Canonical points to non-preferred URL
+                - generic [ref=e105]: +120–600/mo
+              - generic [ref=e106]:
+                - generic [ref=e107]: MEDIUM
+                - generic [ref=e108]: Meta description missing on homepage
+                - generic [ref=e109]: +80–400/mo
+              - generic [ref=e110]:
+                - generic [ref=e111]: FIXED
+                - generic [ref=e112]: Redirect chain resolved
+                - generic [ref=e113]: +50–200/mo
+              - generic [ref=e114]:
+                - generic [ref=e115]: You could be gaining
+                - generic [ref=e116]: 300–1,500 visits/mo
+        - generic [ref=e118]: Scroll
+      - generic [ref=e120]:
+        - generic [ref=e121]:
+          - generic [ref=e122]:
+            - generic [ref=e123]: "0"
+            - generic [ref=e124]: sites audited
+          - generic [ref=e125]:
+            - generic [ref=e126]: "0"
+            - generic [ref=e127]: average rating
+          - generic [ref=e128]:
+            - generic [ref=e129]: "0"
+            - generic [ref=e130]: avg fix time
+          - generic [ref=e131]:
+            - generic [ref=e132]: "0"
+            - generic [ref=e133]: see gains in 30d
+        - generic [ref=e136]:
+          - generic [ref=e137]:
+            - img [ref=e138]
+            - img [ref=e140]
+            - img [ref=e142]
+            - img [ref=e144]
+            - img [ref=e146]
+            - generic [ref=e148]: 4.8 on G2
+          - generic [ref=e149]: ·
+          - generic [ref=e150]:
+            - img [ref=e151]
+            - img [ref=e153]
+            - img [ref=e155]
+            - img [ref=e157]
+            - img [ref=e159]
+            - generic [ref=e161]: 4.7 on Capterra
+        - paragraph [ref=e164]: Trusted by teams at
+        - generic [ref=e166]:
+          - generic [ref=e167]: Shopify store owners
+          - generic [ref=e168]: SaaS founders
+          - generic [ref=e169]: Marketing agencies
+          - generic [ref=e170]: Freelance developers
+          - generic [ref=e171]: Local businesses
+          - generic [ref=e172]: Content creators
+          - generic [ref=e173]: E-commerce brands
+          - generic [ref=e174]: Tech startups
+          - generic [ref=e175]: Consultants
+          - generic [ref=e176]: Digital agencies
+          - generic [ref=e177]: Shopify store owners
+          - generic [ref=e178]: SaaS founders
+          - generic [ref=e179]: Marketing agencies
+          - generic [ref=e180]: Freelance developers
+          - generic [ref=e181]: Local businesses
+          - generic [ref=e182]: Content creators
+          - generic [ref=e183]: E-commerce brands
+          - generic [ref=e184]: Tech startups
+          - generic [ref=e185]: Consultants
+          - generic [ref=e186]: Digital agencies
+      - generic [ref=e187]:
+        - generic [ref=e188]:
+          - paragraph [ref=e189]: What makes it different
+          - heading "Most SEO tools tell you what's broken. RankyPulse tells you how to fix it." [level=2] [ref=e190]:
+            - text: Most SEO tools tell you what's broken.
+            - text: RankyPulse tells you how to fix it.
+        - generic [ref=e191]:
+          - generic [ref=e192]:
+            - img [ref=e194]
+            - heading "Traffic-first priorities" [level=3] [ref=e197]
+            - paragraph [ref=e198]: Every issue shows the exact visits/month you're losing. Fix the highest-impact issues first — not the longest list.
+          - generic [ref=e199]:
+            - img [ref=e201]
+            - heading "5-minute fix guides" [level=3] [ref=e204]
+            - paragraph [ref=e205]: Every issue has a time estimate and step-by-step instructions. No Googling required. Copy-paste ready.
+          - generic [ref=e206]:
+            - img [ref=e208]
+            - heading "SERP before/after preview" [level=3] [ref=e211]
+            - paragraph [ref=e212]: See exactly how Google will display your page before and after you apply the fix. No more guessing.
+          - generic [ref=e213]:
+            - img [ref=e215]
+            - heading "Competitor benchmark" [level=3] [ref=e216]
+            - paragraph [ref=e217]: See where you rank across 6 SEO dimensions vs. your top 5 competitors. Know exactly where to focus.
+          - generic [ref=e218]:
+            - img [ref=e220]
+            - heading "Fix queue UX" [level=3] [ref=e223]
+            - paragraph [ref=e224]: One fix at a time. No overwhelm. A clear next action is always in front of you — and you can see your score climb.
+            - generic [ref=e225]:
+              - generic [ref=e226]:
+                - generic [ref=e227]: ✓
+                - generic [ref=e228]: DONE
+                - generic [ref=e229]: Redirect chain fixed
+              - generic [ref=e230]:
+                - generic [ref=e231]: "2"
+                - generic [ref=e232]: NEXT
+                - generic [ref=e233]: Fix canonical URL
+              - generic [ref=e234]:
+                - generic [ref=e235]: "3"
+                - generic [ref=e236]: TODO
+                - generic [ref=e237]: Add meta description
+          - generic [ref=e238]:
+            - img [ref=e240]
+            - heading "Score sharing" [level=3] [ref=e246]
+            - paragraph [ref=e247]: Share a branded score card to Twitter or LinkedIn in one click. Built-in viral loop, zero effort.
+      - generic [ref=e249]:
+        - generic [ref=e250]:
+          - paragraph [ref=e251]: How it works
+          - heading "From broken to ranking in 3 steps" [level=2] [ref=e252]
+        - generic [ref=e255]:
+          - generic [ref=e256]:
+            - generic [ref=e259]: ①
+            - generic [ref=e260]:
+              - heading "Enter your domain" [level=3] [ref=e261]
+              - paragraph [ref=e262]: Any URL. No account needed. Works on any site, any size.
+              - generic [ref=e264]: ⏱ 30 seconds
+          - generic [ref=e265]:
+            - generic [ref=e268]: ②
+            - generic [ref=e269]:
+              - heading "See what's broken — and what it costs" [level=3] [ref=e270]
+              - paragraph [ref=e271]: Every issue shows exactly how many visits/month you're missing because of it.
+              - generic [ref=e273]: ⏱ 1 minute
+          - generic [ref=e274]:
+            - generic [ref=e277]: ③
+            - generic [ref=e278]:
+              - heading "Fix one issue at a time. Watch your score climb." [level=3] [ref=e279]
+              - paragraph [ref=e280]: Step-by-step guides. Most fixes take 5–15 minutes. No developer needed.
+              - generic [ref=e282]: ⏱ 5–15 min each
+      - generic [ref=e284]:
+        - generic [ref=e285]:
+          - paragraph [ref=e286]: Real results
+          - heading "Real sites. Real fixes. Real traffic." [level=2] [ref=e287]
+        - generic [ref=e288]:
+          - generic [ref=e289]:
+            - generic [ref=e290]: ★★★★★
+            - paragraph [ref=e291]: “I fixed my canonical issue in 4 minutes following the guide. Organic traffic was up 40% within 3 weeks. I had no idea what a canonical tag even was.”
+            - generic [ref=e292]:
+              - generic [ref=e293]:
+                - generic [ref=e295]: SK
+                - generic [ref=e296]:
+                  - generic [ref=e297]: Sarah K.
+                  - generic [ref=e298]: E-commerce founder
+              - generic [ref=e299]: +40% organic traffic
+          - generic [ref=e300]:
+            - generic [ref=e301]: ★★★★★
+            - paragraph [ref=e302]: “Every other SEO tool gave me a list of 200 problems. RankyPulse gave me 3 problems and told me exactly how to fix each one. Fixed them all in an afternoon.”
+            - generic [ref=e303]:
+              - generic [ref=e304]:
+                - generic [ref=e306]: MT
+                - generic [ref=e307]:
+                  - generic [ref=e308]: Marcus T.
+                  - generic [ref=e309]: Marketing director, SaaS
+              - generic [ref=e310]: 3 fixes in one afternoon
+          - generic [ref=e311]:
+            - generic [ref=e312]: ★★★★★
+            - paragraph [ref=e313]: “The SERP preview showing exactly how my page would look in Google after fixing the meta description — I've never seen that in any tool. Immediately understood the value.”
+            - generic [ref=e314]:
+              - generic [ref=e315]:
+                - generic [ref=e317]: PS
+                - generic [ref=e318]:
+                  - generic [ref=e319]: Priya S.
+                  - generic [ref=e320]: Freelance web developer
+              - generic [ref=e321]: CTR up 28%
+        - generic [ref=e323]:
+          - generic [ref=e324]: “Fixed my 404 redirect issue in 3 minutes. Score went from 61 → 79.”
+          - generic [ref=e325]: “Never knew my site was leaking 800 visits/month. Now I know exactly why.”
+          - generic [ref=e326]: “My clients love the before/after SERP preview. Use it in every pitch.”
+          - generic [ref=e327]: “Finally understood what PageSpeed score actually means for rankings.”
+          - generic [ref=e328]: “The traffic impact numbers are a game changer for prioritizing work.”
+          - generic [ref=e329]: “Showed this to my dev team — they fixed everything in one sprint.”
+          - generic [ref=e330]: “Cleanest SEO tool UI I've ever used. The others feel like spreadsheets.”
+          - generic [ref=e331]: “Used the share card to show my boss why we needed to fix canonicals.”
+          - generic [ref=e332]: “Fixed my 404 redirect issue in 3 minutes. Score went from 61 → 79.”
+          - generic [ref=e333]: “Never knew my site was leaking 800 visits/month. Now I know exactly why.”
+          - generic [ref=e334]: “My clients love the before/after SERP preview. Use it in every pitch.”
+          - generic [ref=e335]: “Finally understood what PageSpeed score actually means for rankings.”
+          - generic [ref=e336]: “The traffic impact numbers are a game changer for prioritizing work.”
+          - generic [ref=e337]: “Showed this to my dev team — they fixed everything in one sprint.”
+          - generic [ref=e338]: “Cleanest SEO tool UI I've ever used. The others feel like spreadsheets.”
+          - generic [ref=e339]: “Used the share card to show my boss why we needed to fix canonicals.”
+      - generic [ref=e340]:
+        - generic [ref=e341]:
+          - paragraph [ref=e342]: The honest comparison
+          - heading "You don't need Semrush. You need fixes." [level=2] [ref=e343]
+        - table [ref=e345]:
+          - rowgroup [ref=e346]:
+            - row "Feature RankyPulse You are here Semrush Ahrefs DIY / Google" [ref=e347]:
+              - columnheader "Feature" [ref=e348]
+              - columnheader "RankyPulse You are here" [ref=e349]:
+                - generic [ref=e350]: RankyPulse
+                - generic [ref=e351]: You are here
+              - columnheader "Semrush" [ref=e352]
+              - columnheader "Ahrefs" [ref=e353]
+              - columnheader "DIY / Google" [ref=e354]
+          - rowgroup [ref=e355]:
+            - row "Step-by-step fix guides Yes No No No" [ref=e356]:
+              - cell "Step-by-step fix guides" [ref=e357]
+              - cell "Yes" [ref=e358]:
+                - generic:
+                  - img "Yes"
+              - cell "No" [ref=e359]:
+                - generic:
+                  - img "No"
+              - cell "No" [ref=e360]:
+                - generic:
+                  - img "No"
+              - cell "No" [ref=e361]:
+                - generic:
+                  - img "No"
+            - row "Traffic impact estimates Yes Yes Yes No" [ref=e362]:
+              - cell "Traffic impact estimates" [ref=e363]
+              - cell "Yes" [ref=e364]:
+                - generic:
+                  - img "Yes"
+              - cell "Yes" [ref=e365]:
+                - generic:
+                  - img "Yes"
+              - cell "Yes" [ref=e366]:
+                - generic:
+                  - img "Yes"
+              - cell "No" [ref=e367]:
+                - generic:
+                  - img "No"
+            - row "SERP before/after preview Yes No No No" [ref=e368]:
+              - cell "SERP before/after preview" [ref=e369]
+              - cell "Yes" [ref=e370]:
+                - generic:
+                  - img "Yes"
+              - cell "No" [ref=e371]:
+                - generic:
+                  - img "No"
+              - cell "No" [ref=e372]:
+                - generic:
+                  - img "No"
+              - cell "No" [ref=e373]:
+                - generic:
+                  - img "No"
+            - row "Free tier (real value) Yes Partial No Yes" [ref=e374]:
+              - cell "Free tier (real value)" [ref=e375]
+              - cell "Yes" [ref=e376]:
+                - generic:
+                  - img "Yes"
+              - cell "Partial" [ref=e377]:
+                - generic:
+                  - img "Partial"
+              - cell "No" [ref=e378]:
+                - generic:
+                  - img "No"
+              - cell "Yes" [ref=e379]:
+                - generic:
+                  - img "Yes"
+            - row "Fix time estimates Yes No No No" [ref=e380]:
+              - cell "Fix time estimates" [ref=e381]
+              - cell "Yes" [ref=e382]:
+                - generic:
+                  - img "Yes"
+              - cell "No" [ref=e383]:
+                - generic:
+                  - img "No"
+              - cell "No" [ref=e384]:
+                - generic:
+                  - img "No"
+              - cell "No" [ref=e385]:
+                - generic:
+                  - img "No"
+            - row "Built for non-technical users Yes No No No" [ref=e386]:
+              - cell "Built for non-technical users" [ref=e387]
+              - cell "Yes" [ref=e388]:
+                - generic:
+                  - img "Yes"
+              - cell "No" [ref=e389]:
+                - generic:
+                  - img "No"
+              - cell "No" [ref=e390]:
+                - generic:
+                  - img "No"
+              - cell "No" [ref=e391]:
+                - generic:
+                  - img "No"
+            - row "Price to start $0 $129/mo $99/mo $0" [ref=e392]:
+              - cell "Price to start" [ref=e393]
+              - cell "$0" [ref=e394]
+              - cell "$129/mo" [ref=e395]
+              - cell "$99/mo" [ref=e396]
+              - cell "$0" [ref=e397]
+        - paragraph [ref=e398]: Semrush and Ahrefs are tools for SEO professionals. RankyPulse is built for site owners who want fixes, not complexity.
+      - generic [ref=e399]:
+        - generic [ref=e400]:
+          - paragraph [ref=e401]: Pricing
+          - heading "Start free. Upgrade when you're ready." [level=2] [ref=e402]
+        - generic [ref=e403]:
+          - generic [ref=e404]:
+            - generic [ref=e405]:
+              - paragraph [ref=e406]: Free forever
+              - generic [ref=e408]: $0
+              - paragraph [ref=e409]: No credit card required
+            - list [ref=e410]:
+              - listitem [ref=e411]:
+                - img [ref=e412]
+                - generic [ref=e414]: 3 audits per month
+              - listitem [ref=e415]:
+                - img [ref=e416]
+                - generic [ref=e418]: Basic SEO audit
+              - listitem [ref=e419]:
+                - img [ref=e420]
+                - generic [ref=e422]: Copy-ready fixes
+              - listitem [ref=e423]:
+                - img [ref=e424]
+                - generic [ref=e426]: Top 3 issues per audit
+            - button "Get started free" [ref=e427]
+          - generic [ref=e428]:
+            - generic [ref=e429]: Popular
+            - generic [ref=e430]:
+              - paragraph [ref=e431]: Starter
+              - generic [ref=e432]:
+                - generic [ref=e433]: $9
+                - generic [ref=e434]: /month
+              - paragraph [ref=e435]: 25 audits / month
+            - list [ref=e436]:
+              - listitem [ref=e437]:
+                - img [ref=e438]
+                - generic [ref=e440]: 25 audits per month
+              - listitem [ref=e441]:
+                - img [ref=e442]
+                - generic [ref=e444]: Everything in Free
+              - listitem [ref=e445]:
+                - img [ref=e446]
+                - generic [ref=e448]: Discoverability dashboard
+              - listitem [ref=e449]:
+                - img [ref=e450]
+                - generic [ref=e452]: Score tracking
+            - button "Start 7-day free trial" [ref=e453]
+            - paragraph [ref=e454]: No credit card required
+          - generic [ref=e455]:
+            - generic [ref=e456]:
+              - paragraph [ref=e457]: Pro
+              - generic [ref=e458]:
+                - generic [ref=e459]: $29
+                - generic [ref=e460]: /month
+              - paragraph [ref=e461]: Unlimited audits
+            - list [ref=e462]:
+              - listitem [ref=e463]:
+                - img [ref=e464]
+                - generic [ref=e466]: Unlimited audits
+              - listitem [ref=e467]:
+                - img [ref=e468]
+                - generic [ref=e470]: Everything in Starter
+              - listitem [ref=e471]:
+                - img [ref=e472]
+                - generic [ref=e474]: Competitor benchmarking
+              - listitem [ref=e475]:
+                - img [ref=e476]
+                - generic [ref=e478]: Growth tracker
+              - listitem [ref=e479]:
+                - img [ref=e480]
+                - generic [ref=e482]: Priority support
+            - button "Start 7-day free trial" [ref=e483]:
+              - img [ref=e484]
+              - text: Start 7-day free trial
+            - paragraph [ref=e486]: 30-day money-back guarantee
+        - paragraph [ref=e487]: “Most users fix their top 3 issues on the free plan. Starter is for growth-focused teams.”
+      - generic [ref=e489]:
+        - paragraph [ref=e490]: Free · No credit card · Results in 10 seconds
+        - heading "Find out what Google sees when it looks at your site." [level=2] [ref=e491]:
+          - text: Find out what Google sees
+          - text: when it looks at your site.
+        - paragraph [ref=e492]: Free audit. No account needed. Takes 30 seconds. Most users find their first fix within 2 minutes.
+        - generic [ref=e493]:
+          - generic [ref=e494]:
+            - img [ref=e495]
+            - textbox "yoursite.com" [ref=e498]
+          - button "Get SEO Score" [ref=e499]:
+            - img [ref=e500]
+            - text: Get SEO Score
+        - paragraph [ref=e502]: 12,400+ sites audited · 4.8★ rating · free forever
+      - contentinfo [ref=e503]:
+        - generic [ref=e504]:
+          - generic "Footer navigation" [ref=e505]:
+            - generic [ref=e506]:
+              - link "RankyPulse Beta" [ref=e507] [cursor=pointer]:
+                - /url: /
+                - img [ref=e509]
+                - generic [ref=e511]: RankyPulse
+                - generic [ref=e512]: Beta
+              - paragraph [ref=e513]: Simple SEO audits that actually tell you what to fix.
+            - generic [ref=e514]:
+              - heading "Product" [level=4] [ref=e515]
+              - list [ref=e516]:
+                - listitem [ref=e517]:
+                  - link "Free SEO Audit" [ref=e518] [cursor=pointer]:
+                    - /url: /audit
+                - listitem [ref=e519]:
+                  - link "All SEO Tools" [ref=e520] [cursor=pointer]:
+                    - /url: /tools
+                - listitem [ref=e521]:
+                  - link "Pricing" [ref=e522] [cursor=pointer]:
+                    - /url: /pricing
+                - listitem [ref=e523]:
+                  - link "Sign In" [ref=e524] [cursor=pointer]:
+                    - /url: /auth/signin
+            - generic [ref=e525]:
+              - heading "Learn" [level=4] [ref=e526]
+              - list [ref=e527]:
+                - listitem [ref=e528]:
+                  - link "Blog" [ref=e529] [cursor=pointer]:
+                    - /url: /blog
+                - listitem [ref=e530]:
+                  - link "SEO Checklist" [ref=e531] [cursor=pointer]:
+                    - /url: /guides/technical-seo-checklist
+                - listitem [ref=e532]:
+                  - link "How to Audit" [ref=e533] [cursor=pointer]:
+                    - /url: /guides/how-to-do-seo-audit
+                - listitem [ref=e534]:
+                  - link "Fix Core Web Vitals" [ref=e535] [cursor=pointer]:
+                    - /url: /guides/fix-core-web-vitals
+            - generic [ref=e536]:
+              - heading "Company" [level=4] [ref=e537]
+              - list [ref=e538]:
+                - listitem [ref=e539]:
+                  - link "About" [ref=e540] [cursor=pointer]:
+                    - /url: /about
+                - listitem [ref=e541]:
+                  - link "Contact" [ref=e542] [cursor=pointer]:
+                    - /url: /contact
+                - listitem [ref=e543]:
+                  - link "Privacy Policy" [ref=e544] [cursor=pointer]:
+                    - /url: /privacy
+                - listitem [ref=e545]:
+                  - link "Terms of Service" [ref=e546] [cursor=pointer]:
+                    - /url: /terms
+          - generic [ref=e547]:
+            - paragraph [ref=e548]: © 2026 RankyPulse. Built for site owners, not SEOs.
+            - generic [ref=e549]:
+              - link "Twitter / X" [ref=e550] [cursor=pointer]:
+                - /url: https://twitter.com/rankypulse
+              - link "LinkedIn" [ref=e551] [cursor=pointer]:
+                - /url: https://linkedin.com/company/rankypulse
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e557] [cursor=pointer]:
+    - img [ref=e558]
+  - alert [ref=e561]
+```

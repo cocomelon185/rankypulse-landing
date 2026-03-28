@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import AboutClientPage from "./AboutClientPage";
+import { SEOContentWrapper } from "@/components/landing/SEOContentWrapper";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "About | RankyPulse";
+  const title = "About RankyPulse | AI-Powered SEO Audit Platform";
   const description =
     "Fix SEO issues in minutes, not weeks. AI-powered audits with copy-ready fixes.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "/about" },
     robots: { index: true, follow: true },
@@ -31,5 +32,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function AboutPage() {
-  return <AboutClientPage />;
+  return (
+    <>
+      <AboutClientPage />
+      <SEOContentWrapper />
+    </>
+  );
 }

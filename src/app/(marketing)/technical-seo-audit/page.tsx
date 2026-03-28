@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import TechnicalSEOClient from "./TechnicalSEOClient";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "Technical SEO Audit | Fix Website Crawlability Issues | RankyPulse";
-  const description = "Comprehensive technical SEO audit to identify crawlability, indexation, and site structure issues. Get actionable recommendations to improve your website's technical foundation and search visibility.";
+  const title = "Technical SEO Audit | Fix Crawlability Issues | RankyPulse";
+  const description = "Technical SEO audit to identify crawlability, indexation, and site structure issues. Get actionable recommendations.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/technical-seo-audit" },
     robots: { index: true, follow: true },

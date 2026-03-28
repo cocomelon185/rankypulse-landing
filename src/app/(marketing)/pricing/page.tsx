@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import PricingClientPage from "./PricingClientPage";
+import { SEOContentWrapper } from "@/components/landing/SEOContentWrapper";
 
 export async function generateMetadata(): Promise<Metadata> {
-    const title = "RankyPulse Pricing | Plans for Founders & Agencies";
+    const title = "RankyPulse Pricing | SEO Intelligence Platform";
     const description =
         "Choose a plan that fits your workflow — free audits, saved reports, and ongoing score tracking.";
 
     return {
-        title,
+        title: { absolute: title },
         description,
         alternates: { canonical: "/pricing" },
         robots: { index: true, follow: true },
@@ -31,5 +32,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function PublicPricingPage() {
-    return <PricingClientPage />;
+    return (
+        <>
+            <PricingClientPage />
+            <SEOContentWrapper />
+        </>
+    );
 }

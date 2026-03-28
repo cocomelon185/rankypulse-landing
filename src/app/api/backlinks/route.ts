@@ -8,19 +8,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { logApiCost } from "@/lib/cost-engine";
+import {
+  getDataProviderErrorPayload,
+} from "@/lib/data-provider";
+import {
+  DataForSeoRequestError,
+  fetchDataForSeoJson,
+} from "@/lib/dataforseo";
 
 export const dynamic = "force-dynamic";
-
-// ── DataForSEO auth ───────────────────────────────────────────────────────────
-function dfsHeaders(): HeadersInit {
-  const login = process.env.DATAFORSEO_LOGIN ?? "";
-  const password = process.env.DATAFORSEO_PASSWORD ?? "";
-  const token = Buffer.from(`${login}:${password}`).toString("base64");
-  return {
-    Authorization: `Basic ${token}`,
-    "Content-Type": "application/json",
-  };
-}
 
 // ── GET: latest snapshot (cached 24h) ────────────────────────────────────────
 export async function GET(req: Request) {
@@ -79,10 +75,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "domain required" }, { status: 400 });
   }
 
-  if (!process.env.DATAFORSEO_LOGIN || !process.env.DATAFORSEO_PASSWORD) {
-    return NextResponse.json({ error: "DataForSEO credentials not configured" }, { status: 503 });
-  }
-
   // Check if today's snapshot already exists (avoid unnecessary API calls)
   const today = new Date().toISOString().split("T")[0];
   const { data: existing } = await supabaseAdmin
@@ -102,16 +94,23 @@ export async function POST(req: Request) {
   const requestBody = [{ target: domain, include_subdomains: true }];
 
   try {
-    const res = await fetch(
-      "https://api.dataforseo.com/v3/backlinks/summary/live",
-      { method: "POST", headers: dfsHeaders(), body: JSON.stringify(requestBody) }
-    );
-
-    if (!res.ok) {
-      throw new Error(`DataForSEO backlinks error: ${res.status}`);
-    }
-
-    const json = await res.json();
+    const json = await fetchDataForSeoJson<{
+      tasks?: Array<{
+        result?: Array<{
+          total_backlinks?: number;
+          referring_domains?: number;
+          rank?: number | null;
+          spam_score?: number | null;
+          referring_domains_noindex?: number | null;
+          backlinks_spam_score?: number | null;
+        }>;
+      }>;
+    }>({
+      feature: "backlinks",
+      url: "https://api.dataforseo.com/v3/backlinks/summary/live",
+      method: "POST",
+      body: requestBody,
+    });
     const result = json?.tasks?.[0]?.result?.[0] ?? {};
 
     const snapshot = {
@@ -123,7 +122,10 @@ export async function POST(req: Request) {
       spam_score: result.spam_score ?? null,
       gov_count: result.referring_domains_noindex ?? 0, // approximation
       edu_count: 0,
-      dofollow_count: result.backlinks_spam_score ? Math.round(result.total_backlinks * 0.7) : null,
+      dofollow_count:
+        result.backlinks_spam_score && result.total_backlinks != null
+          ? Math.round(result.total_backlinks * 0.7)
+          : null,
       nofollow_count: null,
       snapshot_date: today,
     };
@@ -154,8 +156,14 @@ export async function POST(req: Request) {
       cached: false,
     });
   } catch (err) {
+    if (err instanceof DataForSeoRequestError) {
+      return NextResponse.json(
+        getDataProviderErrorPayload("backlinks", err.availability),
+        { status: 502 }
+      );
+    }
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "DataForSEO call failed" },
+      getDataProviderErrorPayload("backlinks", "provider_unavailable"),
       { status: 502 }
     );
   }

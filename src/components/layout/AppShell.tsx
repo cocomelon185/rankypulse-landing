@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Sidebar, MobileSidebar } from "@/components/layout/Sidebar";
 import { TopNav } from "@/components/layout/TopNav";
 import { Footer } from "@/components/layout/Footer";
+import { PulseOnboarding } from "@/components/audit/v2/PulseOnboarding";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -53,6 +54,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
+      {/* Floating onboarding widget — persisted across pages via localStorage */}
+      <PulseOnboarding />
     </div>
   );
 }

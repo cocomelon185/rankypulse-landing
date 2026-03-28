@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { User, CreditCard, Bell, Key, Save } from "lucide-react";
+import { User, CreditCard, Bell, Key, Save, ShieldCheck } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 const TABS = [
@@ -36,6 +37,7 @@ function InputField({ label, value, onChange, type = "text" }: { label: string; 
 
 export function SettingsClient() {
     const { data: session } = useSession();
+    const isAdmin = session?.user?.role === "admin";
     const [tab, setTab] = useState("profile");
     const [name, setName] = useState(session?.user?.name || "");
     const [email, setEmail] = useState(session?.user?.email || "");
@@ -167,6 +169,29 @@ export function SettingsClient() {
                                 </button>
                             </div>
                         </SectionCard>
+                        {isAdmin && (
+                            <SectionCard title="Admin Diagnostics">
+                                <div className="flex items-start justify-between gap-3 rounded-lg p-4"
+                                    style={{ background: "rgba(123,92,245,0.06)", border: "1px solid rgba(123,92,245,0.15)" }}>
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                            <ShieldCheck size={14} style={{ color: "#A78BFA" }} />
+                                            <p className="text-sm font-semibold text-white">DataForSEO health</p>
+                                        </div>
+                                        <p className="text-[12px]" style={{ color: "#8B9BB4" }}>
+                                            Check live credentials, account capabilities, and upstream DataForSEO probe results.
+                                        </p>
+                                    </div>
+                                    <Link
+                                        href="/app/settings/data-provider"
+                                        className="shrink-0 px-3 py-2 rounded-lg text-[12px] font-semibold text-white"
+                                        style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)" }}
+                                    >
+                                        Open
+                                    </Link>
+                                </div>
+                            </SectionCard>
+                        )}
                     </div>
                 )}
             </motion.div>

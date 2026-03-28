@@ -3,20 +3,22 @@ import { Zap } from "lucide-react";
 
 const LINKS = {
   Product: [
-    { label: "Audit Tool", href: "/" },
+    { label: "Free SEO Audit", href: "/audit" },
+    { label: "All SEO Tools", href: "/tools" },
     { label: "Pricing", href: "/pricing" },
-    { label: "Dashboard", href: "/dashboard" },
-    { label: "Reports", href: "/reports" },
+    { label: "Sign In", href: "/auth/signin" },
+  ],
+  Learn: [
+    { label: "Blog", href: "/blog" },
+    { label: "SEO Checklist", href: "/guides/technical-seo-checklist" },
+    { label: "How to Audit", href: "/guides/how-to-do-seo-audit" },
+    { label: "Fix Core Web Vitals", href: "/guides/fix-core-web-vitals" },
   ],
   Company: [
     { label: "About", href: "/about" },
-    { label: "Blog", href: "/blog" },
     { label: "Contact", href: "/contact" },
-  ],
-  Legal: [
     { label: "Privacy Policy", href: "/privacy" },
     { label: "Terms of Service", href: "/terms" },
-    { label: "Cookie Policy", href: "/cookies" },
   ],
 };
 
@@ -28,7 +30,7 @@ export function LandingFooter() {
     >
       <div className="mx-auto max-w-6xl px-6">
         {/* Top row: logo + columns */}
-        <div className="mb-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-4" aria-label="Footer navigation">
           {/* Brand */}
           <div>
             <Link href="/" className="mb-4 flex items-center gap-2">
@@ -40,7 +42,7 @@ export function LandingFooter() {
                 Beta
               </span>
             </Link>
-            <p className="font-['DM_Sans'] text-sm leading-relaxed text-gray-600">
+            <p className="font-['DM_Sans'] text-sm leading-relaxed text-gray-400">
               Simple SEO audits that actually tell you what to fix.
             </p>
           </div>
@@ -48,7 +50,7 @@ export function LandingFooter() {
           {/* Link columns */}
           {Object.entries(LINKS).map(([group, items]) => (
             <div key={group}>
-              <h4 className="mb-4 font-['DM_Mono'] text-xs font-semibold uppercase tracking-widest text-gray-700">
+              <h4 className="mb-4 font-['DM_Mono'] text-xs font-semibold uppercase tracking-widest text-gray-400">
                 {group}
               </h4>
               <ul className="space-y-2.5">
@@ -56,7 +58,7 @@ export function LandingFooter() {
                   <li key={item.label}>
                     <Link
                       href={item.href}
-                      className="font-['DM_Sans'] text-sm text-gray-500 transition-colors duration-150 hover:text-white"
+                      className="font-['DM_Sans'] text-sm text-gray-300 transition-colors duration-150 hover:text-white"
                     >
                       {item.label}
                     </Link>
@@ -69,7 +71,7 @@ export function LandingFooter() {
 
         {/* Bottom row */}
         <div className="flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-8 sm:flex-row">
-          <p className="font-['DM_Sans'] text-xs text-gray-700">
+          <p className="font-['DM_Sans'] text-xs text-gray-400">
             © 2026 RankyPulse. Built for site owners, not SEOs.
           </p>
           <div className="flex items-center gap-4">
@@ -77,7 +79,7 @@ export function LandingFooter() {
               href="https://twitter.com/rankypulse"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-['DM_Sans'] text-xs text-gray-700 transition-colors hover:text-gray-400"
+              className="font-['DM_Sans'] text-xs text-gray-400 transition-colors hover:text-gray-200"
             >
               Twitter / X
             </a>
@@ -85,7 +87,7 @@ export function LandingFooter() {
               href="https://linkedin.com/company/rankypulse"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-['DM_Sans'] text-xs text-gray-700 transition-colors hover:text-gray-400"
+              className="font-['DM_Sans'] text-xs text-gray-400 transition-colors hover:text-gray-200"
             >
               LinkedIn
             </a>

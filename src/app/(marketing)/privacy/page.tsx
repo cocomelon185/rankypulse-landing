@@ -5,7 +5,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { Zap } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy",
+  title: { absolute: "RankyPulse Privacy Policy — Your Data & Rights" },
   description:
     "Privacy Policy for RankyPulse — how we collect, use, and protect your data when you use our SEO audit platform.",
   robots: { index: true, follow: true },

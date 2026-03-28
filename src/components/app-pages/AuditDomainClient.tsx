@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Globe, RefreshCcw, Download, Share2, AlertTriangle, XCircle,
     CheckCircle, ChevronRight, Zap, ArrowRight, AlertCircle,
-    Loader2, Clock,
+    Loader2, Clock, Lock, TrendingDown, Sparkles,
 } from "lucide-react";
 import { AuditSummaryPanel } from "./AuditSummaryPanel";
 import { ISSUE_CONTENT } from "@/lib/issue-content";
@@ -48,6 +48,16 @@ interface AuditData {
     issues: IssueItem[];
     brokenLinks?: { source: string; targets: string[] }[];
     crawlDuration?: number | null;
+    urgency?: {
+        monthlyLoss: number;
+        urgencyLevel: "critical" | "high" | "medium" | "low";
+        summary: string;
+    } | null;
+    density?: {
+        critical: number;
+        warning: number;
+        notice: number;
+    } | null;
     crawlStats?: {
         avgDepth: number;
         deepPageCount: number;
@@ -95,6 +105,9 @@ const ISSUE_CATEGORY: Record<string, string> = {
     // Phase 4
     multiple_canonicals:     "Technical",
     keyword_cannibalization: "Content",
+    // Phase 5 showstoppers
+    no_viewport: "Technical",
+    http_pages:  "Technical",
 };
 
 const THEMATIC_COLORS: Record<string, string> = {
@@ -113,6 +126,14 @@ function computeThematicScores(issues: IssueItem[]) {
         const cat = ISSUE_CATEGORY[issue.id] ?? "Technical";
         const penalty = issue.severity === "error" ? 15 : issue.severity === "warning" ? 8 : 3;
         base[cat] = Math.max(0, base[cat] - penalty);
+    }
+    // Showstopper cap: non-mobile-friendly sites get a reasonable cap in Performance/Technical
+    // Cap of 45 (not 30) keeps score in "Orange" (Needs Work) instead of "Red" (Failed)
+    // This acknowledges performance merit while penalizing lack of responsiveness
+    const hasNoViewport = issues.some(i => i.id === "no_viewport");
+    if (hasNoViewport) {
+        base.Performance = Math.min(base.Performance, 45);
+        base.Technical   = Math.min(base.Technical, 45);
     }
     return Object.entries(base).map(([label, score]) => ({
         label, score, color: THEMATIC_COLORS[label] ?? "#FF642D",
@@ -356,6 +377,38 @@ function SEOInsightPanel({ auditData, crawlStats }: {
     );
 }
 
+// ── UrgencyBanner ─────────────────────────────────────────────────────────────
+function UrgencyBanner({ monthlyLoss, criticalCount, onUpgrade }: {
+    monthlyLoss: number;
+    criticalCount: number;
+    onUpgrade: () => void;
+}) {
+    if (monthlyLoss <= 0 || criticalCount === 0) return null;
+    const formatted = monthlyLoss >= 1000
+        ? `$${(monthlyLoss / 1000).toFixed(1)}k`
+        : `$${Math.round(monthlyLoss).toLocaleString()}`;
+    return (
+        <div className="rounded-xl border px-5 py-4 flex flex-wrap items-center gap-4 relative overflow-hidden"
+            style={{ background: "rgba(239,68,68,0.07)", borderColor: "rgba(239,68,68,0.35)" }}>
+            <div className="absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(239,68,68,0.5), transparent)" }} />
+            <TrendingDown size={20} style={{ color: "#ef4444" }} className="shrink-0" />
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold" style={{ color: "#ef4444" }}>
+                    🚨 Your site is leaking <span className="text-white">{formatted}/month</span> due to <span className="text-white">{criticalCount} critical SEO failures</span>
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: "#8B9BB4" }}>
+                    Fix critical issues to recover estimated lost organic revenue
+                </p>
+            </div>
+            <button onClick={onUpgrade}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-white shrink-0 transition hover:opacity-90"
+                style={{ background: "linear-gradient(135deg, #ef4444, #dc2626)", boxShadow: "0 0 20px rgba(239,68,68,0.3)" }}>
+                Fix Now →
+            </button>
+        </div>
+    );
+}
+
 // ── Main Component ─────────────────────────────────────────────────────────────
 export function AuditDomainClient({ domain }: { domain: string }) {
     const router = useRouter();
@@ -365,6 +418,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
     const [error, setError] = useState<string | null>(null);
     const [expandedIssue, setExpandedIssue] = useState<string | null>(null);
     const [rerunning, setRerunning] = useState(false);
+    const [userPlan, setUserPlan] = useState<"free" | "starter" | "pro" | "premium">("free");
 
     // Tracks how many concurrent crawl driver workers are running.
     const activeDriversRef = useRef<number>(0);
@@ -376,6 +430,16 @@ export function AuditDomainClient({ domain }: { domain: string }) {
             localStorage.setItem("rankypulse_audit_domain", domain);
         }
     }, [domain]);
+
+    // Fetch user plan (once)
+    useEffect(() => {
+        fetch("/api/user/plan")
+            .then(r => r.ok ? r.json() : null)
+            .then(d => {
+                if (d?.plan) setUserPlan(d.plan as "free" | "starter" | "pro" | "premium");
+            })
+            .catch(() => { /* default to free */ });
+    }, []);
 
     const fetchData = useCallback(async () => {
         try {
@@ -627,12 +691,13 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                     </div>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                    <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition hover:bg-white/[0.04] relative"
-                        style={{ borderColor: "#1E2940", color: "#8B9BB4" }} title="Pro feature">
+                    <button onClick={() => window.print()}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition hover:bg-white/[0.04] relative"
+                        style={{ borderColor: "#1E2940", color: "#8B9BB4" }}>
                         <Download size={12} /> Export PDF
-                        <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold px-1 rounded" style={{ background: "#FF9800", color: "white" }}>PRO</span>
                     </button>
-                    <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition hover:bg-white/[0.04]"
+                    <button onClick={() => { navigator.clipboard.writeText(window.location.href); alert("Link copied to clipboard!"); }}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition hover:bg-white/[0.04]"
                         style={{ borderColor: "#1E2940", color: "#8B9BB4" }}>
                         <Share2 size={12} /> Share
                     </button>
@@ -669,6 +734,15 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                         </p>
                     )}
                 </div>
+            )}
+
+            {/* ── Revenue Urgency Banner */}
+            {auditData && !isCrawling && (auditData.urgency?.monthlyLoss ?? 0) > 0 && (
+                <UrgencyBanner
+                    monthlyLoss={auditData.urgency!.monthlyLoss}
+                    criticalCount={errors}
+                    onUpgrade={() => router.push("/pricing")}
+                />
             )}
 
             {/* ── Insight Cards */}
@@ -735,7 +809,7 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <div className="rounded-xl border p-5 flex flex-col items-center" style={{ background: "#151B27", borderColor: "#1E2940" }}>
                             <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: "#6B7A99" }}>SEO Health</p>
-                            {isCrawling && score === 0 ? (
+                            {isCrawling ? (
                                 <div className="flex flex-col items-center justify-center h-32">
                                     <Loader2 size={28} className="animate-spin mb-2" style={{ color: "#FF9800" }} />
                                     <span className="text-[11px]" style={{ color: "#6B7A99" }}>Calculating…</span>
@@ -779,7 +853,11 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                 style={{ background: bg, borderColor: `${color}30` }}>
                                 <Icon size={20} style={{ color }} />
                                 <div>
-                                    <p className="text-3xl font-black mt-3" style={{ color }}>{count}</p>
+                                    {isCrawling ? (
+                                        <Loader2 size={20} className="animate-spin mt-3 mb-1" style={{ color }} />
+                                    ) : (
+                                        <p className="text-3xl font-black mt-3" style={{ color }}>{count}</p>
+                                    )}
                                     <p className="text-xs font-semibold text-white mt-0.5">{label}</p>
                                 </div>
                             </div>
@@ -836,7 +914,10 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                                     </p>
                                                     {issue.affectedUrls && issue.affectedUrls.length > 0 && (
                                                         <div className="flex flex-wrap gap-1 mt-1.5">
-                                                            {issue.affectedUrls.slice(0, 3).map((url) => {
+                                                            {(userPlan === "free"
+                                                                ? issue.affectedUrls.slice(0, 1)
+                                                                : issue.affectedUrls.slice(0, 3)
+                                                            ).map((url) => {
                                                                 const path = url.replace(/^https?:\/\/[^/]+/, "") || "/";
                                                                 return (
                                                                     <span key={url} className="px-1.5 rounded text-[10px] font-mono truncate max-w-[160px]"
@@ -845,7 +926,15 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                                                     </span>
                                                                 );
                                                             })}
-                                                            {issue.affectedUrls.length > 3 && (
+                                                            {userPlan === "free" && issue.affectedUrls.length > 1 && (
+                                                                <span className="flex items-center gap-1 px-1.5 rounded text-[10px] font-mono cursor-pointer hover:opacity-80 transition"
+                                                                    style={{ background: "rgba(255,100,45,0.1)", color: "#FF642D", border: "1px solid rgba(255,100,45,0.3)" }}
+                                                                    onClick={() => router.push("/pricing")}>
+                                                                    <Lock size={9} />
+                                                                    +{issue.affectedUrls.length - 1} URLs — Unlock ($9)
+                                                                </span>
+                                                            )}
+                                                            {userPlan !== "free" && issue.affectedUrls.length > 3 && (
                                                                 <span className="text-[10px] font-mono" style={{ color: "#4A5568" }}>
                                                                     +{issue.affectedUrls.length - 3} more
                                                                 </span>
@@ -945,24 +1034,74 @@ export function AuditDomainClient({ domain }: { domain: string }) {
                                                                     <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#6B7A99" }}>
                                                                         Affected Pages
                                                                     </p>
-                                                                    <div className="flex flex-wrap gap-1.5">
-                                                                        {issue.affectedUrls.map((url) => {
-                                                                            const path = url.replace(/^https?:\/\/[^/]+/, "") || "/";
-                                                                            return (
-                                                                                <span key={url} className="px-2 py-0.5 rounded text-[11px] font-mono truncate max-w-[280px]"
-                                                                                    style={{ background: "#1a2236", color: "#8B9BB4", border: "1px solid #1E2940" }}>
-                                                                                    {path}
-                                                                                </span>
-                                                                            );
-                                                                        })}
-                                                                    </div>
+                                                                    {userPlan === "free" ? (
+                                                                        <div>
+                                                                            <div className="flex flex-wrap gap-1.5 mb-2">
+                                                                                {issue.affectedUrls.slice(0, 1).map((url) => {
+                                                                                    const path = url.replace(/^https?:\/\/[^/]+/, "") || "/";
+                                                                                    return (
+                                                                                        <span key={url} className="px-2 py-0.5 rounded text-[11px] font-mono truncate max-w-[280px]"
+                                                                                            style={{ background: "#1a2236", color: "#8B9BB4", border: "1px solid #1E2940" }}>
+                                                                                            {path}
+                                                                                        </span>
+                                                                                    );
+                                                                                })}
+                                                                            </div>
+                                                                            {issue.affectedUrls.length > 1 && (
+                                                                                <div className="rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:opacity-80 transition"
+                                                                                    style={{ background: "rgba(255,100,45,0.06)", border: "1px dashed rgba(255,100,45,0.3)" }}
+                                                                                    onClick={() => router.push("/pricing")}>
+                                                                                    <Lock size={14} style={{ color: "#FF642D" }} className="shrink-0" />
+                                                                                    <div>
+                                                                                        <p className="text-xs font-bold" style={{ color: "#FF642D" }}>
+                                                                                            {issue.affectedUrls.length - 1} more affected URLs locked
+                                                                                        </p>
+                                                                                        <p className="text-[11px]" style={{ color: "#6B7A99" }}>
+                                                                                            Upgrade to Starter ($9/mo) to see all affected pages
+                                                                                        </p>
+                                                                                    </div>
+                                                                                    <span className="ml-auto text-xs font-bold px-2.5 py-1 rounded-lg shrink-0"
+                                                                                        style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)", color: "white" }}>
+                                                                                        Unlock
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="flex flex-wrap gap-1.5">
+                                                                            {issue.affectedUrls.map((url) => {
+                                                                                const path = url.replace(/^https?:\/\/[^/]+/, "") || "/";
+                                                                                return (
+                                                                                    <span key={url} className="px-2 py-0.5 rounded text-[11px] font-mono truncate max-w-[280px]"
+                                                                                        style={{ background: "#1a2236", color: "#8B9BB4", border: "1px solid #1E2940" }}>
+                                                                                        {path}
+                                                                                    </span>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             )}
-                                                            <button onClick={() => router.push(`/app/action-center`)}
-                                                                className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-white transition hover:opacity-90"
-                                                                style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)" }}>
-                                                                <Zap size={12} /> Fix This Issue
-                                                            </button>
+                                                            <div className="flex items-center gap-3">
+                                                                <button onClick={() => router.push(`/app/action-center`)}
+                                                                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-white transition hover:opacity-90"
+                                                                    style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)" }}>
+                                                                    <Zap size={12} /> Fix This Issue
+                                                                </button>
+                                                                {(userPlan === "pro" || userPlan === "premium") ? (
+                                                                    <button
+                                                                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-white transition hover:opacity-90"
+                                                                        style={{ background: "linear-gradient(135deg, #7B5CF5, #6D48E8)" }}>
+                                                                        <Sparkles size={12} /> Generate AI Fix
+                                                                    </button>
+                                                                ) : (
+                                                                    <button onClick={() => router.push("/pricing")}
+                                                                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition hover:opacity-80"
+                                                                        style={{ background: "rgba(123,92,245,0.1)", color: "#7B5CF5", border: "1px solid rgba(123,92,245,0.3)" }}>
+                                                                        <Lock size={12} /> AI Fix ($29)
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </motion.div>
                                                 )}

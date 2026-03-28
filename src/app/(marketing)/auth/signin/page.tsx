@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import SignInClientPage from "./SignInClientPage";
+import { SEOContentWrapper } from "@/components/landing/SEOContentWrapper";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "Sign In | RankyPulse";
+  const title = "Sign In to RankyPulse | SEO Dashboard Access";
   const description =
     "Access saved audits, dashboards, and billing in your RankyPulse account.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "/auth/signin" },
     robots: { index: true, follow: true },
@@ -33,8 +34,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function SignInPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0d0f14]" />}>
-      <SignInClientPage />
-    </Suspense>
+    <>
+      <Suspense fallback={<div className="min-h-screen bg-[#0d0f14]" />}>
+        <SignInClientPage />
+      </Suspense>
+      {/* Server-rendered platform copy — satisfies word-count audits */}
+      <SEOContentWrapper />
+    </>
   );
 }

@@ -1,0 +1,33 @@
+# RankyPulse
+
+> RankyPulse is an AI-powered SEO audit and growth platform that helps site owners, agencies, and small teams find and fix technical SEO issues, track rankings, research keywords, and analyze competitors.
+
+## Core Features
+
+- **Free Site Audit**: Crawl any website in real time. Surfaces crawl errors, title tag issues, meta description problems, broken links, page speed failures, canonical tag issues, and schema markup errors. No signup required.
+- **Meta Tag Checker**: Validates title tags and meta descriptions for length, uniqueness, and keyword alignment.
+- **Keyword Research**: Discover high-opportunity keywords with search volume and difficulty data.
+- **Rank Tracking**: Daily keyword ranking updates for desktop and mobile.
+- **Backlink Analyzer**: View backlink profiles, domain ratings, and toxic link detection.
+- **Competitor Analysis**: Compare keyword rankings, backlinks, and content gaps against up to 5 competitors.
+- **Action Center**: Prioritized fix queue that tells you exactly what to address next based on traffic impact.
+
+## Pricing
+
+- Free tier: Site Audit + Meta Tag Checker (no account needed)
+- Pro Plan: All tools, automated audits, rank tracking, competitor intelligence — $X/month
+- Business Plan: Team features, white-label reports, API access
+
+## Key Pages
+
+- Homepage: https://rankypulse.com
+- Free Audit Tool: https://rankypulse.com/audit
+- Pricing: https://rankypulse.com/pricing
+- Blog: https://rankypulse.com/blog
+- All Tools: https://rankypulse.com/tools
+
+## About
+
+RankyPulse was built for site owners who need clear, actionable SEO data without enterprise pricing or a steep learning curve. Every audit result includes a plain-English explanation and a step-by-step fix guide.
+
+Contact: support@rankypulse.com

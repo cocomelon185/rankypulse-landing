@@ -3,10 +3,10 @@ import HowToSEOAuditClient from "./HowToSEOAuditClient";
 
 export async function generateMetadata(): Promise<Metadata> {
   const title = "How to Do an SEO Audit | Step-by-Step Guide | RankyPulse";
-  const description = "Complete step-by-step guide to conducting a professional SEO audit. Learn what to check, how to prioritize issues, and create an action plan to improve rankings.";
+  const description = "Step-by-step guide to conducting a professional SEO audit. Learn what to check, how to prioritize issues, and build an action plan to improve rankings.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/guides/how-to-do-seo-audit" },
     robots: { index: true, follow: true },

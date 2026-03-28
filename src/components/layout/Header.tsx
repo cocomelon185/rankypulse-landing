@@ -34,7 +34,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                 <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500">
                     <span className="hover:text-gray-300 transition-colors pointer-events-none">RankyPulse</span>
                     <span className="text-gray-700">/</span>
-                    <h1 className="font-semibold text-gray-200">{getPageTitle()}</h1>
+                    <span className="font-semibold text-gray-200">{getPageTitle()}</span>
                 </div>
             </div>
 

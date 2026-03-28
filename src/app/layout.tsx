@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { Inter, DM_Mono } from "next/font/google";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { CanonicalFixer } from "@/components/CanonicalFixer";
 import "./globals.css";
 import { AnalyticsClient } from "@/components/AnalyticsClient";
 
@@ -45,7 +46,7 @@ export const metadata: Metadata = {
     title: "RankyPulse SEO Audit",
     description:
       "Fix your SEO in minutes. Step-by-step guides with traffic impact estimates.",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "RankyPulse — SEO Audit & Fix Tool" }],
+    images: [{ url: "/og.jpg", width: 1200, height: 630, alt: "RankyPulse — SEO Audit & Fix Tool" }],
     siteName: "RankyPulse",
     type: "website",
   },
@@ -54,7 +55,7 @@ export const metadata: Metadata = {
     title: "RankyPulse SEO Audit",
     description:
       "Fix your SEO in minutes. Step-by-step guides with traffic impact estimates.",
-    images: ["/og.png"],
+    images: ["/og.jpg"],
   },
 };
 
@@ -132,6 +133,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ></script>
         <SessionProvider>
           <ThemeProvider attribute="class" forcedTheme="dark" enableSystem={false}>
+            <CanonicalFixer />
             {children}
             <Toaster position="bottom-center" richColors closeButton />
             <Suspense fallback={null}>

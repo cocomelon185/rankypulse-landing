@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import WritingAssistantClient from "./WritingAssistantClient";
 
 export const metadata: Metadata = {
-    title: "SEO Writing Assistant | RankyPulse",
+    title: "AI Writing Assistant - Grade Content for SEO | RankyPulse",
     description: "Grade your content in real-time for SEO, readability, tone of voice, and originality.",
+    alternates: { canonical: "https://rankypulse.com/app/features/writing-assistant" },
+    robots: { index: false, follow: false },
 };
 
 export default function WritingAssistantPage() {

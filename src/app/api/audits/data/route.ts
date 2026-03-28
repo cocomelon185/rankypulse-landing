@@ -3,8 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { ISSUE_META } from "@/lib/dashboard-data";
-import { calculateSeoScore, computeSeoScore } from "@/lib/seo-score";
-import { validateAuditData } from "@/lib/audit-validator";
+import { computeSeoScore, calculateUrgencyMetrics } from "@/lib/seo-score";
+import { resolveSharedAuditContext } from "@/lib/shared-audits";
 
 interface RawIssue {
   id: string;
@@ -43,25 +43,8 @@ export async function GET(req: NextRequest) {
   const domainParam = req.nextUrl.searchParams.get("domain");
 
   try {
-    // ── Get the latest completed crawl job (skip saved_domains entirely) ──────
-    // crawl engine writes to crawl_jobs + audit_pages, never to saved_domains
-    const jobQueryBase = supabaseAdmin
-      .from("crawl_jobs")
-      .select("id, domain, created_at, updated_at, pages_crawled")
-      .eq("user_id", userId)
-      .eq("status", "completed")
-      .order("created_at", { ascending: false })
-      .limit(1);
+    const { latestJob, targetDomain } = await resolveSharedAuditContext(userId, domainParam);
 
-    const { data: latestJob } = await (
-      domainParam
-        ? jobQueryBase.eq("domain", domainParam).maybeSingle()
-        : jobQueryBase.maybeSingle()
-    );
-
-    const targetDomain = latestJob?.domain ?? null;
-
-    // No completed crawl job found at all
     if (!latestJob || !targetDomain) {
       return NextResponse.json({
         healthScore: 0,
@@ -78,23 +61,41 @@ export async function GET(req: NextRequest) {
     // ── Previous completed job for score delta ────────────────────────────────
     let previousScore: number | null = null;
     try {
-      const { data: prevJob } = await supabaseAdmin
+      const completedJobQuery = supabaseAdmin
         .from("crawl_jobs")
         .select("id")
-        .eq("user_id", userId)
         .eq("domain", targetDomain)
         .eq("status", "completed")
-        .order("created_at", { ascending: false })
-        .range(1, 1)
-        .maybeSingle();
+        .order("created_at", { ascending: false });
+
+      const { data: prevJob } = await (
+        latestJob.status === "completed"
+          ? completedJobQuery.range(1, 1).maybeSingle()
+          : completedJobQuery.limit(1).maybeSingle()
+      );
 
       if (prevJob?.id) {
         const { data: prevPages } = await supabaseAdmin
           .from("audit_pages")
-          .select("score")
+          .select("url, issues")
           .eq("job_id", prevJob.id);
         if (prevPages && prevPages.length > 0) {
-          previousScore = calculateSeoScore(prevPages as { score: number | null }[]);
+          // Density-based previous score (same formula as current score)
+          const realPrev = prevPages.filter(p => p.url !== "__site_level__");
+          let prevCrit = 0, prevWarn = 0, prevNotice = 0;
+          for (const pg of realPrev) {
+            for (const iss of (Array.isArray(pg.issues) ? pg.issues : []) as { sev: string }[]) {
+              if (iss.sev === "HIGH") prevCrit++;
+              else if (iss.sev === "MED") prevWarn++;
+              else prevNotice++;
+            }
+          }
+          const prevTotal = realPrev.length || 1;
+          previousScore = computeSeoScore({
+            critical: prevCrit / prevTotal,
+            warning: prevWarn / prevTotal,
+            notice: prevNotice / prevTotal,
+          });
         }
       }
     } catch { /* non-critical */ }
@@ -112,10 +113,18 @@ export async function GET(req: NextRequest) {
       metadata: (p.metadata as PageMetadata) ?? null,
     }));
 
+    // Exclude synthetic __site_level__ row from real-page counts
+    const realPages = pages.filter(p => p.url !== "__site_level__");
+    const totalPages = realPages.length;
+
     // ── Aggregate issues across all pages grouped by issue ID ─────────────────
     const issueMap: Record<string, { sev: string; count: number }> = {};
     const issueUrlMap: Record<string, string[]> = {};
+    // rawIssueMap: only persisted issues from real pages (no __site_level__, no derived)
+    // Used exclusively for the density-based score so it matches all other pages.
+    const rawIssueMap: Record<string, { sev: string; count: number }> = {};
     for (const page of pages) {
+      const isReal = page.url !== "__site_level__";
       for (const issue of page.issues ?? []) {
         if (!issueMap[issue.id]) {
           issueMap[issue.id] = { sev: issue.sev, count: 0 };
@@ -124,6 +133,11 @@ export async function GET(req: NextRequest) {
         issueMap[issue.id].count++;
         if (issueUrlMap[issue.id].length < 10) {
           issueUrlMap[issue.id].push(page.url);
+        }
+        // Only count real-page persisted issues for score density
+        if (isReal) {
+          if (!rawIssueMap[issue.id]) rawIssueMap[issue.id] = { sev: issue.sev, count: 0 };
+          rawIssueMap[issue.id].count++;
         }
       }
     }
@@ -134,22 +148,37 @@ export async function GET(req: NextRequest) {
     const linkedSet = new Set<string>();
     const homepage = `https://${targetDomain}`;
 
+    // Normalize URL: strip trailing slash (except bare origin), strip www, lowercase
+    const normUrl = (u: string) => {
+      try {
+        const parsed = new URL(u);
+        const host = parsed.hostname.replace(/^www\./, "");
+        const path = parsed.pathname.replace(/\/+$/, "") || "/";
+        return `https://${host}${path}`;
+      } catch { return u.toLowerCase().replace(/\/+$/, ""); }
+    };
+
     for (const page of pages) {
       const meta = page.metadata;
       const title = meta?.title?.trim();
       const desc  = meta?.meta_description?.trim();
       if (title) { titleMap[title] = [...(titleMap[title] ?? []), page.url]; }
       if (desc)  { metaDescMap[desc]  = [...(metaDescMap[desc]  ?? []), page.url]; }
-      for (const lnk of meta?.outbound_links ?? []) { linkedSet.add(lnk); }
+      // Normalize each outbound link so trailing-slash variants resolve to same key
+      for (const lnk of meta?.outbound_links ?? []) { linkedSet.add(normUrl(lnk)); }
     }
 
     const dupTitleUrls = new Set(Object.values(titleMap).filter(u => u.length > 1).flat());
     const dupMetaUrls  = new Set(Object.values(metaDescMap).filter(u => u.length > 1).flat());
     const homepageWww  = `https://www.${targetDomain}`;
     const orphanUrls   = new Set(
-      pages.map(p => p.url).filter(
-        url => url !== homepage && url !== homepageWww && !linkedSet.has(url)
-      )
+      pages.map(p => p.url).filter(url => {
+        if (url === "__site_level__") return false;
+        // Normalize the page URL for comparison — catches trailing-slash mismatches
+        // e.g. sitemap seeds "https://example.com/cookies/" but footer links "/cookies"
+        const norm = normUrl(url);
+        return norm !== normUrl(homepage) && norm !== normUrl(homepageWww) && !linkedSet.has(norm);
+      })
     );
 
     if (dupTitleUrls.size > 0) {
@@ -217,27 +246,34 @@ export async function GET(req: NextRequest) {
           b.urlsAffected - a.urlsAffected
       );
 
-    // ── Summary stats ─────────────────────────────────────────────────────────
+    // ── Density-based scoring (Semrush-style, normalized by page count) ───────
+    // Use rawIssueMap (persisted issues from real pages only) for score density
+    // so it matches Projects, Dashboard, and Action Center pages exactly.
+    const rawEntries = Object.entries(rawIssueMap);
+    const totalCritical = rawEntries
+      .filter(([, v]) => v.sev === "HIGH")
+      .reduce((s, [, v]) => s + v.count, 0);
+    const totalWarning = rawEntries
+      .filter(([, v]) => v.sev === "MED")
+      .reduce((s, [, v]) => s + v.count, 0);
+    const totalNotice = rawEntries
+      .filter(([, v]) => v.sev === "LOW")
+      .reduce((s, [, v]) => s + v.count, 0);
+
+    // Compute density — no showstoppers, matching all other routes
+    const density = {
+      critical: totalPages > 0 ? totalCritical / totalPages : 0,
+      warning:  totalPages > 0 ? totalWarning  / totalPages : 0,
+      notice:   totalPages > 0 ? totalNotice   / totalPages : 0,
+    };
+
+    const finalScore = totalPages > 0 ? computeSeoScore(density) : 0;
+    const urgency = calculateUrgencyMetrics(totalCritical);
+
+    // Legacy counts for UI display
     const errors   = issues.filter((i) => i.severity === "error").length;
     const warnings = issues.filter((i) => i.severity === "warning").length;
     const notices  = issues.filter((i) => i.severity === "notice").length;
-    const totalIssueTypes = errors + warnings + notices;
-
-    // Deterministic issue-weighted score (replaces PSI-average + single-case patch)
-    const rawScore = computeSeoScore({
-      pages: pages.length,
-      totalIssues: totalIssueTypes,
-      criticalIssues: errors,
-      warningIssues: warnings,
-      noticeIssues: notices,
-    });
-
-    // Validate and correct any remaining contradictions before responding
-    const { score: finalScore } = validateAuditData({
-      score: rawScore,
-      pages: pages.length,
-      totalIssues: totalIssueTypes,
-    });
 
     // ── Crawl duration (updated_at − created_at) ───────────────────────────────
     const crawlDurationSecs = latestJob.updated_at && latestJob.created_at
@@ -276,6 +312,7 @@ export async function GET(req: NextRequest) {
       .slice(0, 20);
 
     return NextResponse.json({
+      auditId: latestJob.id,
       healthScore: finalScore,
       previousScore,
       errors,
@@ -284,6 +321,7 @@ export async function GET(req: NextRequest) {
       domain: targetDomain,
       crawledAt: latestJob.updated_at ?? latestJob.created_at,
       totalPages: pages.length || latestJob.pages_crawled || 0,
+      status: latestJob.status,
       issues,
       brokenLinks: brokenLinksReport,
       crawlDuration: crawlDurationSecs,

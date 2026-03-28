@@ -6,7 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = "Local SEO strategy for service-based businesses. Optimize Google Business Profile, get reviews, and rank for local keywords to attract nearby customers.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/seo-audit-for-local-business" },
     robots: { index: true, follow: true },

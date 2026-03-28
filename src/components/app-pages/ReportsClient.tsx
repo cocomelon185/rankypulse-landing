@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { FileText, Download, Calendar, Share2, Lock, Plus } from "lucide-react";
 
@@ -12,9 +13,10 @@ const REPORT_TEMPLATES = [
 ];
 
 export function ReportsClient() {
+    const router = useRouter();
     const [domains, setDomains] = useState<string[]>([]);
     const [selectedDomain, setSelectedDomain] = useState("");
-    const [isPro] = useState(false); // simulate free tier
+    const [userPlan, setUserPlan] = useState("free");
 
     useEffect(() => {
         fetch("/api/projects")
@@ -25,7 +27,13 @@ export function ReportsClient() {
                 if (list.length > 0) setSelectedDomain(list[0]);
             })
             .catch(() => {});
+        fetch("/api/user/plan")
+            .then(r => r.ok ? r.json() : { plan: "free" })
+            .then(d => setUserPlan(d.plan ?? "free"))
+            .catch(() => {});
     }, []);
+
+    const isPro = userPlan === "pro" || userPlan === "premium";
 
     return (
         <div className="space-y-6">
@@ -35,11 +43,13 @@ export function ReportsClient() {
                     <p className="text-sm mt-1" style={{ color: "#6B7A99" }}>Build, schedule and share SEO reports</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition hover:bg-white/[0.06]"
+                    <button onClick={() => { navigator.clipboard.writeText(window.location.href); alert("Link copied to clipboard!"); }}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition hover:bg-white/[0.06]"
                         style={{ color: "#8B9BB4", border: "1px solid #1E2940" }}>
                         <Share2 size={14} /> Share Link
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition"
+                    <button onClick={() => router.push("/app/audit")}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition"
                         style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)" }}>
                         <Plus size={14} /> New Report
                     </button>
@@ -83,15 +93,17 @@ export function ReportsClient() {
                         <p className="font-bold text-white mb-1">{t.name}</p>
                         <p className="text-[12px] mb-4" style={{ color: "#6B7A99" }}>{t.desc}</p>
                         <div className="flex gap-2">
-                            <button className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold text-white hover:opacity-90 transition"
+                            <button onClick={() => selectedDomain && router.push(`/report/${selectedDomain}`)}
+                                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold text-white hover:opacity-90 transition"
                                 style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)" }}>
                                 <FileText size={12} /> Preview
                             </button>
                             <div className="relative">
                                 <button
+                                    onClick={() => isPro ? window.print() : router.push("/pricing")}
                                     className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition hover:bg-white/[0.06]"
                                     style={{ color: isPro ? "#8B9BB4" : "#4A5568", border: "1px solid #1E2940", opacity: isPro ? 1 : 0.7 }}
-                                    title={isPro ? undefined : "PDF Export requires Pro plan"}
+                                    title={isPro ? "Export as PDF" : "PDF Export requires Pro plan"}
                                 >
                                     <Download size={12} />
                                     {!isPro && <Lock size={10} />}
@@ -109,12 +121,14 @@ export function ReportsClient() {
                     <h2 className="text-sm font-bold text-white flex items-center gap-2">
                         <Calendar size={15} style={{ color: "#FF642D" }} /> Scheduled Reports
                     </h2>
-                    <span className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full"
-                        style={{ background: "rgba(255,152,0,0.15)", color: "#FF9800" }}>
-                        <Lock size={10} /> Pro Feature
-                    </span>
+                    {!isPro && (
+                        <span className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full"
+                            style={{ background: "rgba(255,152,0,0.15)", color: "#FF9800" }}>
+                            <Lock size={10} /> Pro Feature
+                        </span>
+                    )}
                 </div>
-                <div className="filter blur-[2px] pointer-events-none select-none">
+                <div className={!isPro ? "filter blur-[2px] pointer-events-none select-none" : ""}>
                     {["Weekly sitemap audit digest", "Monthly ranking report"].map(r => (
                         <div key={r} className="flex items-center gap-3 py-3 border-b" style={{ borderColor: "#1E2940" }}>
                             <div className="w-8 h-8 rounded-lg" style={{ background: "#1E2940" }} />
@@ -122,17 +136,20 @@ export function ReportsClient() {
                         </div>
                     ))}
                 </div>
-                <div className="absolute inset-0 flex items-center justify-center rounded-xl" style={{ background: "rgba(13,20,36,0.8)", backdropFilter: "blur(2px)" }}>
-                    <div className="text-center p-6">
-                        <Lock size={24} style={{ color: "#FF9800" }} className="mx-auto mb-3" />
-                        <p className="font-bold text-white mb-1">Upgrade to Pro</p>
-                        <p className="text-[12px] mb-4" style={{ color: "#8B9BB4" }}>Schedule weekly/monthly reports with PDF export and email delivery</p>
-                        <button className="px-5 py-2.5 rounded-lg text-sm font-bold text-white hover:opacity-90 transition"
-                            style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)" }}>
-                            Upgrade Now
-                        </button>
+                {!isPro && (
+                    <div className="absolute inset-0 flex items-center justify-center rounded-xl" style={{ background: "rgba(13,20,36,0.8)", backdropFilter: "blur(2px)" }}>
+                        <div className="text-center p-6">
+                            <Lock size={24} style={{ color: "#FF9800" }} className="mx-auto mb-3" />
+                            <p className="font-bold text-white mb-1">Upgrade to Pro</p>
+                            <p className="text-[12px] mb-4" style={{ color: "#8B9BB4" }}>Schedule weekly/monthly reports with PDF export and email delivery</p>
+                            <button onClick={() => router.push("/pricing")}
+                                className="px-5 py-2.5 rounded-lg text-sm font-bold text-white hover:opacity-90 transition"
+                                style={{ background: "linear-gradient(135deg, #FF642D, #E8541F)" }}>
+                                Upgrade Now
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );

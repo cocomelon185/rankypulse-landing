@@ -1,4 +1,14 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "404 - Page Not Found | RankyPulse",
+  description: "The page you were looking for could not be found. Return to RankyPulse and run a free SEO audit.",
+  robots: { index: false, follow: true },
+  alternates: {
+    canonical: "https://rankypulse.com/404"
+  }
+};
 
 export default function NotFound() {
   return (
@@ -11,7 +21,7 @@ export default function NotFound() {
         <div className="absolute left-1/2 top-1/2 h-[400px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/6 blur-[120px]" />
       </div>
 
-      <div className="relative">
+      <div className="relative max-w-xl">
         {/* Large ghost 404 */}
         <div
           className="mb-2 font-['Fraunces'] font-bold leading-none"
@@ -28,12 +38,39 @@ export default function NotFound() {
           But your website&apos;s SEO issues do.
         </p>
 
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-6 py-3 font-['DM_Sans'] text-sm font-semibold text-white transition-colors hover:bg-indigo-400"
-        >
-          Run a free audit →
-        </Link>
+        <div className="mb-10 flex flex-col sm:flex-row gap-3 justify-center">
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 px-6 py-3 font-['DM_Sans'] text-sm font-semibold text-white transition-colors hover:bg-indigo-400"
+          >
+            Back to Home →
+          </Link>
+          <Link
+            href="/audit"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-500/30 px-6 py-3 font-['DM_Sans'] text-sm font-semibold text-indigo-400 transition-colors hover:bg-indigo-500/10"
+          >
+            Run Free Audit →
+          </Link>
+        </div>
+
+        {/* Helpful Resources */}
+        <div className="mt-12 pt-8 border-t border-gray-800">
+          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-4">Quick Links</p>
+          <nav className="flex flex-wrap justify-center gap-6 text-sm">
+            <Link href="/#features" className="text-indigo-400 hover:text-indigo-300 transition-colors">
+              Features
+            </Link>
+            <Link href="/pricing" className="text-indigo-400 hover:text-indigo-300 transition-colors">
+              Pricing
+            </Link>
+            <Link href="/contact" className="text-indigo-400 hover:text-indigo-300 transition-colors">
+              Contact
+            </Link>
+            <Link href="/seo-audit-tool" className="text-indigo-400 hover:text-indigo-300 transition-colors">
+              SEO Tools
+            </Link>
+          </nav>
+        </div>
       </div>
     </main>
   );

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     template: "%s | RankyPulse",
   },
   description:
-    "Get a complete SEO audit in 30 seconds. See exactly which issues are costing you traffic, how many visits you could gain, and how to fix each one in minutes. Free. No signup required.",
+    "Get a free SEO audit in 30 seconds. Find every issue hurting your traffic and get step-by-step fix guides. No signup required.",
   keywords: [
     "free SEO audit",
     "SEO audit tool",
@@ -19,6 +19,16 @@ export const metadata: Metadata = {
     "canonical URL checker",
     "core web vitals checker",
     "free SEO checker",
+    "site seo audit",
+    "check website seo",
+    "seo analysis tool",
+    "seo analysis website",
+    "website audit tool",
+    "site audit tool",
+    "seo audit for website",
+    "website seo audit tool",
+    "seo site audit free",
+    "free seo audit tool",
   ],
   authors: [{ name: "RankyPulse" }],
   creator: "RankyPulse",
@@ -27,19 +37,16 @@ export const metadata: Metadata = {
     follow: true,
     googleBot: { index: true, follow: true },
   },
-  alternates: {
-    canonical: "https://rankypulse.com",
-  },
   openGraph: {
     type: "website",
     url: "https://rankypulse.com",
-    title: "RankyPulse — Free SEO Audit Tool",
+    title: "RankyPulse — Free Site SEO Audit & Website Audit Tool",
     description:
-      "Enter any domain. Get a complete SEO audit with step-by-step fix guides and real traffic estimates. Free. Takes 30 seconds.",
+      "Enter any domain. Get a free site SEO audit with step-by-step fix guides and real traffic estimates. Find exactly what to fix in 30 seconds.",
     siteName: "RankyPulse",
     images: [
       {
-        url: "https://rankypulse.com/og.png",
+        url: "https://rankypulse.com/og.jpg",
         width: 1200,
         height: 630,
         alt: "RankyPulse SEO Audit Tool — Enter your domain, get your score",
@@ -51,7 +58,7 @@ export const metadata: Metadata = {
     title: "RankyPulse — Free SEO Audit Tool",
     description:
       "Get a complete SEO audit in 30 seconds. Step-by-step fix guides with real traffic estimates. Free.",
-    images: ["https://rankypulse.com/og.png"],
+    images: ["https://rankypulse.com/og.jpg"],
     creator: "@rankypulse",
   },
 };

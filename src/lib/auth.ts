@@ -147,15 +147,14 @@ export const authOptions: NextAuthOptions = {
           clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
           authorization: {
             params: {
-              // Request GSC access alongside standard profile/email scopes
-              scope: [
-                "openid",
-                "email",
-                "profile",
-                "https://www.googleapis.com/auth/webmasters.readonly",
-              ].join(" "),
-              access_type: "offline",   // request refresh_token
-              prompt: "consent",        // always show consent to get refresh_token
+              // Only request basic scopes — no GSC scope.
+              // GSC should be requested separately via a dedicated
+              // "Connect Search Console" button in settings.
+              scope: "openid email profile",
+              // No access_type: "offline" — we don't need a refresh token at
+              // sign-in. Having it causes Google to show an "additional access"
+              // consent screen for accounts that previously had the GSC scope.
+              prompt: "select_account",
             },
           },
         }),
@@ -193,13 +192,6 @@ export const authOptions: NextAuthOptions = {
           token.userId = dbUser.id;
           token.role = dbUser.role;
         }
-      }
-
-      // Persist GSC tokens from the initial Google sign-in
-      if (account?.provider === "google") {
-        if (account.access_token) token.gscAccessToken = account.access_token;
-        if (account.refresh_token) token.gscRefreshToken = account.refresh_token;
-        if (account.expires_at) token.gscTokenExpiry = account.expires_at * 1000;
       }
 
       return token;

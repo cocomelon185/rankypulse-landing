@@ -4,6 +4,24 @@ import { create } from "zustand";
 import type { AuditData, AuditIssueData } from "./audit-data";
 import { MOCK_AUDIT } from "./audit-data";
 
+export interface RoadmapTask {
+  id: string;
+  type: "CONTENT" | "LINK" | "TECHNICAL";
+  title: string;
+  description: string;
+  impact: "HIGH" | "MED";
+  effort: string;
+  status: "TODO" | "DONE";
+  addedAt: number;
+}
+
+export interface BrandingConfig {
+  logoUrl: string | null;
+  primaryColor: string;
+  shareEnabled: boolean;
+  sharePassword: string;
+}
+
 interface AuditState {
   data: AuditData;
   completedFixIds: string[];
@@ -12,6 +30,8 @@ interface AuditState {
   expandedIssueId: string | null;
   isLoading: boolean;
   loadError: string | null;
+  brandingConfig: BrandingConfig;
+  roadmapTasks: RoadmapTask[];
 
   setData: (data: AuditData) => void;
   setLoading: (loading: boolean) => void;
@@ -20,6 +40,11 @@ interface AuditState {
   skipIssue: (issueId: string) => void;
   setActiveIssue: (issueId: string | null) => void;
   setExpandedIssue: (issueId: string | null) => void;
+  setBrandingConfig: (patch: Partial<BrandingConfig>) => void;
+  addTaskToRoadmap: (task: RoadmapTask) => void;
+  removeTask: (id: string) => void;
+  toggleTaskStatus: (id: string) => void;
+  clearRoadmap: () => void;
 
   openIssues: () => AuditIssueData[];
   fixedIssues: () => AuditIssueData[];
@@ -39,6 +64,28 @@ export const useAuditStore = create<AuditState>((set, get) => ({
   expandedIssueId: null,
   isLoading: false,
   loadError: null,
+  brandingConfig: {
+    logoUrl: null,
+    primaryColor: "#FF642D",
+    shareEnabled: false,
+    sharePassword: "",
+  },
+  roadmapTasks: [],
+
+  addTaskToRoadmap: (task) =>
+    set((s) => ({ roadmapTasks: [...s.roadmapTasks, task] })),
+
+  removeTask: (id) =>
+    set((s) => ({ roadmapTasks: s.roadmapTasks.filter((t) => t.id !== id) })),
+
+  toggleTaskStatus: (id) =>
+    set((s) => ({
+      roadmapTasks: s.roadmapTasks.map((t) =>
+        t.id === id ? { ...t, status: t.status === "DONE" ? "TODO" : "DONE" } : t
+      ),
+    })),
+
+  clearRoadmap: () => set({ roadmapTasks: [] }),
 
   setData: (data) => set({ data, completedFixIds: [], skippedIds: [], loadError: null, isLoading: false }),
   setLoading: (loading) => set({ isLoading: loading }),
@@ -67,6 +114,8 @@ export const useAuditStore = create<AuditState>((set, get) => ({
   },
 
   setActiveIssue: (id) => set({ activeIssueId: id }),
+  setBrandingConfig: (patch) =>
+    set((s) => ({ brandingConfig: { ...s.brandingConfig, ...patch } })),
   setExpandedIssue: (id) =>
     set((state) => ({
       expandedIssueId: state.expandedIssueId === id ? null : id,

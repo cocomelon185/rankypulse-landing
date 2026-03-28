@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { ISSUE_META } from "@/lib/dashboard-data";
-import { calculateSeoScore } from "@/lib/seo-score";
+import { computeSeoScore } from "@/lib/seo-score";
 
 interface RawIssue {
   id: string;
@@ -54,11 +54,14 @@ export async function GET(
       .select("url, score, issues")
       .eq("job_id", auditId);
 
-    const pages: AuditPage[] = (rawPages ?? []).map((p) => ({
-      url: p.url,
-      score: p.score ?? null,
-      issues: Array.isArray(p.issues) ? (p.issues as RawIssue[]) : [],
-    }));
+    // Exclude __site_level__ synthetic page
+    const pages: AuditPage[] = (rawPages ?? [])
+      .filter((p) => p.url !== "__site_level__")
+      .map((p) => ({
+        url: p.url,
+        score: p.score ?? null,
+        issues: Array.isArray(p.issues) ? (p.issues as RawIssue[]) : [],
+      }));
 
     // Aggregate issues across all pages grouped by issue ID
     const issueMap: Record<string, { sev: string; count: number }> = {};
@@ -104,7 +107,14 @@ export async function GET(
     const warnings = issues.filter((i) => i.severity === "warning").length;
     const notices  = issues.filter((i) => i.severity === "notice").length;
 
-    const healthScore = calculateSeoScore(pages);
+    // Density-based score — same formula as all other pages
+    const issueEntries = Object.entries(issueMap);
+    const totalPg = pages.length || 1;
+    const healthScore = pages.length > 0 ? computeSeoScore({
+      critical: issueEntries.filter(([, v]) => v.sev === "HIGH").reduce((s, [, v]) => s + v.count, 0) / totalPg,
+      warning:  issueEntries.filter(([, v]) => v.sev === "MED").reduce((s, [, v]) => s + v.count, 0) / totalPg,
+      notice:   issueEntries.filter(([, v]) => v.sev === "LOW").reduce((s, [, v]) => s + v.count, 0) / totalPg,
+    }) : 0;
 
     return NextResponse.json({
       healthScore,

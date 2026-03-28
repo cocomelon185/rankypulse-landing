@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import InternalLinkingStrategyClient from "./InternalLinkingStrategyClient";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "Internal Linking Strategy | Ultimate Guide 2024 | RankyPulse";
+  const title = "Internal Linking Strategy | 2024 Guide | RankyPulse";
   const description = "Master internal linking strategy to improve rankings and user experience. Learn anchor text, link placement, authority distribution, and proven tactics.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/guides/internal-linking-strategy" },
     robots: { index: true, follow: true },

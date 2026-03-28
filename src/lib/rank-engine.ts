@@ -6,6 +6,9 @@
  */
 
 import { supabaseAdmin } from "@/lib/supabase";
+import {
+  fetchDataForSeoJson,
+} from "@/lib/dataforseo";
 
 // ── Country → DataForSEO location_code map ───────────────────────────────────
 const LOCATION_CODES: Record<string, number> = {
@@ -23,17 +26,6 @@ const LOCATION_CODES: Record<string, number> = {
 
 function getLocationCode(country: string): number {
   return LOCATION_CODES[country.toUpperCase()] ?? 2840; // default US
-}
-
-// ── DataForSEO auth ──────────────────────────────────────────────────────────
-function dfsHeaders(): HeadersInit {
-  const login = process.env.DATAFORSEO_LOGIN ?? "";
-  const password = process.env.DATAFORSEO_PASSWORD ?? "";
-  const token = Buffer.from(`${login}:${password}`).toString("base64");
-  return {
-    Authorization: `Basic ${token}`,
-    "Content-Type": "application/json",
-  };
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -75,10 +67,6 @@ export async function fetchRanking(params: {
 }): Promise<{ position: number | null; ranked_url: string | null }> {
   const { keyword, domain, device, country } = params;
 
-  if (!process.env.DATAFORSEO_LOGIN || !process.env.DATAFORSEO_PASSWORD) {
-    throw new Error("DataForSEO credentials not configured");
-  }
-
   const body = [
     {
       keyword,
@@ -89,20 +77,23 @@ export async function fetchRanking(params: {
     },
   ];
 
-  const res = await fetch(
-    "https://api.dataforseo.com/v3/serp/google/organic/live/regular",
-    {
-      method: "POST",
-      headers: dfsHeaders(),
-      body: JSON.stringify(body),
-    }
-  );
-
-  if (!res.ok) {
-    throw new Error(`DataForSEO SERP error: ${res.status}`);
-  }
-
-  const json = await res.json();
+  const json = await fetchDataForSeoJson<{
+    tasks?: Array<{
+      result?: Array<{
+        items?: Array<{
+          type: string;
+          rank_absolute: number;
+          url: string;
+          domain: string;
+        }>;
+      }>;
+    }>;
+  }>({
+    feature: "rankings",
+    url: "https://api.dataforseo.com/v3/serp/google/organic/live/regular",
+    method: "POST",
+    body,
+  });
   const items: Array<{
     type: string;
     rank_absolute: number;
@@ -140,10 +131,6 @@ export async function fetchSearchVolumes(params: {
 }): Promise<Record<string, { volume: number | null; cpc: number | null }>> {
   const { keywords, country } = params;
 
-  if (!process.env.DATAFORSEO_LOGIN || !process.env.DATAFORSEO_PASSWORD) {
-    throw new Error("DataForSEO credentials not configured");
-  }
-
   const body = [
     {
       keywords,
@@ -152,20 +139,20 @@ export async function fetchSearchVolumes(params: {
     },
   ];
 
-  const res = await fetch(
-    "https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live",
-    {
-      method: "POST",
-      headers: dfsHeaders(),
-      body: JSON.stringify(body),
-    }
-  );
-
-  if (!res.ok) {
-    throw new Error(`DataForSEO volume error: ${res.status}`);
-  }
-
-  const json = await res.json();
+  const json = await fetchDataForSeoJson<{
+    tasks?: Array<{
+      result?: Array<{
+        keyword: string;
+        search_volume: number | null;
+        cpc: number | null;
+      }>;
+    }>;
+  }>({
+    feature: "keywords",
+    url: "https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live",
+    method: "POST",
+    body,
+  });
   const results: Array<{
     keyword: string;
     search_volume: number | null;
@@ -319,10 +306,6 @@ export async function fetchRankingsBatch(params: {
   const { items, domain } = params;
   if (items.length === 0) return {};
 
-  if (!process.env.DATAFORSEO_LOGIN || !process.env.DATAFORSEO_PASSWORD) {
-    throw new Error("DataForSEO credentials not configured");
-  }
-
   const body = items.map((item) => ({
     keyword: item.keyword,
     language_code: "en",
@@ -331,14 +314,18 @@ export async function fetchRankingsBatch(params: {
     depth: 100,
   }));
 
-  const res = await fetch(
-    "https://api.dataforseo.com/v3/serp/google/organic/live/regular",
-    { method: "POST", headers: dfsHeaders(), body: JSON.stringify(body) }
-  );
-
-  if (!res.ok) throw new Error(`DataForSEO batch SERP error: ${res.status}`);
-
-  const json = await res.json();
+  const json = await fetchDataForSeoJson<{
+    tasks?: Array<{
+      result?: Array<{
+        items?: Array<{ type: string; rank_absolute: number; url: string; domain: string }>;
+      }>;
+    }>;
+  }>({
+    feature: "rankings",
+    url: "https://api.dataforseo.com/v3/serp/google/organic/live/regular",
+    method: "POST",
+    body,
+  });
   const cleanDomain = domain
     .replace(/^https?:\/\//, "")
     .replace(/^www\./, "")
@@ -347,7 +334,13 @@ export async function fetchRankingsBatch(params: {
 
   const results: Record<string, { position: number | null; ranked_url: string | null }> = {};
 
-  (json.tasks ?? []).forEach((task: any, idx: number) => {
+  (
+    (json.tasks ?? []) as Array<{
+      result?: Array<{
+        items?: Array<{ type: string; rank_absolute: number; url: string; domain: string }>;
+      }>;
+    }>
+  ).forEach((task, idx: number) => {
     const item = items[idx];
     if (!item) return;
     const organicItems: Array<{ type: string; rank_absolute: number; url: string; domain: string }> =

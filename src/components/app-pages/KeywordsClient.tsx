@@ -22,13 +22,131 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { isDataProviderUnavailableCode } from "@/lib/data-provider";
+import { computeFullOpportunityScore } from "@/lib/dataforseo/opportunity-score";
+import { KeywordOpportunityMap } from "@/components/keywords/KeywordOpportunityMap";
+import { DifficultyDistributionBar } from "@/components/keywords/DifficultyDistributionBar";
 
 interface Suggestion {
   keyword: string;
-  volume: number | null;
+  searchVolume: number | null;
   cpc: number | null;
   competition: number | null;
-}
+  difficultyScore: number | null;
+  difficultyLabel: string;
+  difficultyStatus: "pending" | "available" | "unavailable";
+  intent: "informational" | "commercial" | "transactional" | "navigational" | "unknown";
+  clusterName: string | null;
+  recommendedContentType: string;
+  preOpportunityScore: number;
+  opportunityScore: number | null;
+  opportunityKind: "preliminary" | "full" | "unavailable";
+  opportunityLabel: string;
+  serpFeaturesCount: number;
+  serpPressure: "Low" | "Medium" | "High" | "Unknown";
+  freshness: "cached" | "fresh";
+};
+
+type KeywordSearchResponse = {
+  cacheKey: string;
+  cached: boolean;
+  freshnessLabel: string;
+  query: {
+    domain: string;
+    seedKeyword: string;
+    countryCode: string;
+    languageCode: string;
+    mode: "preview" | "expanded";
+    limit: number;
+    offset: number;
+  };
+  quota: {
+    plan: "free" | "starter" | "pro";
+    searchesUsedToday: number;
+    searchesPerDay: number;
+    searchesRemainingToday: number;
+    maxAnalyzedKeywordsPerSearch: number;
+    initialFetchSize: number;
+    autoDifficultyCount: number;
+  };
+  budget: {
+    spendToday: number;
+    softLimitReached: boolean;
+    hardLimitReached: boolean;
+    budgetUsd: number;
+    softThresholdUsd: number;
+    hardThresholdUsd: number;
+    mode: "normal" | "degraded" | "cache_only";
+  };
+  summary: {
+    totalKeywords: number;
+    avgSearchVolume: number;
+    avgCpc: number;
+    lowCompetitionOpportunities: number;
+    analyzedKeywords: number;
+  };
+  topOpportunity: {
+    keyword: string | null;
+    score: number | null;
+    label: string;
+  };
+  clusters: Array<{
+    clusterId: string;
+    clusterName: string;
+    totalSearchVolume: number;
+    averageDifficulty: number | null;
+    topKeyword: string;
+    topOpportunityScore: number | null;
+    keywords?: string[];
+  }>;
+  rows: SearchRow[];
+  page: {
+    hasMore: boolean;
+    nextOffset: number | null;
+  };
+  controls: {
+    canRefresh: boolean;
+    minRefreshAgeMinutes: number;
+    autoAnalyzedCount: number;
+    showingMessage: string;
+  };
+};
+
+type KeywordSuggestionResponse = {
+  cached: boolean;
+  domain: string;
+  topic: string;
+  recommendedSeed: string | null;
+  suggestedSeeds: Array<{
+    keyword: string;
+    source: "domain" | "ai" | "autocomplete" | "fallback";
+    score: number;
+    reason: string;
+  }>;
+  expandedKeywords: Array<{
+    keyword: string;
+    source: "autocomplete";
+    basedOn: string;
+    score: number;
+    reason: string;
+  }>;
+  sourceSummary: {
+    usedAuditData: boolean;
+    usedAiExpansion: boolean;
+    usedAutocomplete: boolean;
+    cacheKey: string;
+  };
+};
+
+type RecentKeywordSearch = {
+  domain: string;
+  seed: string;
+  country: string;
+};
+
+type VolumeFilter = "all" | "50" | "100" | "1000";
+type DifficultyFilter = "all" | "pending" | "easy" | "medium" | "hard" | "very-hard" | "unavailable";
+type OpportunityFilter = "all" | "top" | "quick-wins" | "low-competition";
 
 type VolumeFilter = "all" | "1k" | "5k" | "10k";
 type DifficultyFilter = "all" | "low" | "medium" | "high";
@@ -42,6 +160,7 @@ const BORDER = "#1E2940";
 const ACCENT = "#FF642D";
 const TEXT_MUTED = "#64748B";
 const TEXT_DIM = "#8B9BB4";
+const DEFAULT_LIMIT = 25;
 
 const COUNTRIES = [
   { code: "US", label: "United States" },
@@ -71,11 +190,21 @@ function normalizeDomainInput(raw: string): string {
     .trim();
 }
 
-function formatVolume(v: number | null): string {
-  if (v === null) return "—";
-  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
-  return String(v);
+function IntentIcon({ intent }: { intent: SearchRow["intent"] }) {
+  const map: Record<SearchRow["intent"], { icon: typeof Info; color: string; label: string }> = {
+    informational: { icon: Info, color: "#60A5FA", label: "Informational" },
+    commercial: { icon: ShoppingCart, color: "#F59E0B", label: "Commercial" },
+    transactional: { icon: Zap, color: "#FF642D", label: "Transactional" },
+    navigational: { icon: Compass, color: "#A78BFA", label: "Navigational" },
+    unknown: { icon: HelpCircle, color: "#4A5568", label: "Unknown" },
+  };
+  const { icon: Icon, color, label } = map[intent] ?? map.unknown;
+  return (
+    <div className="flex items-center gap-1.5">
+      <Icon size={11} style={{ color }} />
+      <span className="text-[10px] font-semibold" style={{ color }}>{label}</span>
+    </div>
+  );
 }
 
 function formatCurrency(v: number | null): string {
@@ -389,7 +518,8 @@ export function KeywordsClient() {
     const cleanedSeed = seed.trim();
     if (!cleanedSeed || !domain) return;
 
-    setLoading(true);
+  function resetResults(preserveDomain = false) {
+    setData(null);
     setError(null);
     setProviderUnavailable(false);
     setFromCache(false);
@@ -411,17 +541,36 @@ export function KeywordsClient() {
           return;
         }
       }
+      setSuggestions(json as KeywordSuggestionResponse);
     } catch {
       // Fall through to live request.
     }
+  }, [country, domain, seed]);
+
+  useEffect(() => {
+    if (!lastAuditDomain || didAutoLoadSuggestions) return;
+    setDidAutoLoadSuggestions(true);
+    void runSuggestionDiscovery({ nextDomain: lastAuditDomain });
+  }, [didAutoLoadSuggestions, lastAuditDomain, runSuggestionDiscovery]);
+
+  async function runSearch(options?: { forceRefresh?: boolean; nextLimit?: number; overrideSeed?: string }) {
+    const activeSeed = (options?.overrideSeed ?? seed).trim();
+    if (!activeSeed || !domain.trim()) return;
+
+    const requestedLimit = options?.nextLimit ?? limit;
+    setLoading(true);
+    setError(null);
+    setProviderUnavailable(false);
+    setHasSearched(true);
 
     try {
-      const res = await fetch("/api/keywords/research", {
+      const res = await fetch("/api/keywords/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ domain, seed: cleanedSeed, country }),
       });
-      const data = await res.json();
+
+      const json = await res.json();
       if (!res.ok) {
         if (isDataProviderUnavailableCode(data.code)) {
           setProviderUnavailable(true);
@@ -434,6 +583,11 @@ export function KeywordsClient() {
         setSuggestions(data.suggestions ?? []);
         setFromCache(Boolean(data.cached));
       }
+
+      setLimit(requestedLimit);
+      setData(json as KeywordSearchResponse);
+      setSeed(activeSeed);
+      persistRecentSearch({ domain, seed: activeSeed, country });
     } catch {
       setError("Network error. Please try again.");
       setSuggestions([]);
@@ -442,12 +596,16 @@ export function KeywordsClient() {
     }
   }
 
-  async function trackSelected() {
-    const keywords = Array.from(selected);
-    if (!keywords.length || batchState === "running") return;
-    batchRef.current = true;
-    setBatchState("running");
-    setBatchProgress(0);
+  async function runSearchForSeed(nextSeed: string) {
+    const normalized = nextSeed.trim();
+    if (!normalized) return;
+    setSeed(normalized);
+    await runSearch({ overrideSeed: normalized });
+  }
+
+  async function analyzeDifficulty(keywords: string[]) {
+    const unique = [...new Set(keywords.filter(Boolean))];
+    if (!unique.length || !data) return;
 
     for (let index = 0; index < keywords.length; index += 1) {
       if (!batchRef.current) break;
@@ -459,9 +617,10 @@ export function KeywordsClient() {
       setBatchProgress(index + 1);
     }
 
-    setBatchState("done");
-    setSelected(new Set());
-  }
+      const updates = new Map<string, { difficultyScore: number | null; difficultyLabel: string; difficultyStatus: "pending" | "available" | "unavailable"; serpFeaturesCount: number; }>();
+      for (const row of json.rows ?? []) {
+        updates.set(String(row.keyword).toLowerCase().trim(), row);
+      }
 
   function toggleSelect(keyword: string) {
     setSelected((prev) => {
@@ -859,6 +1018,8 @@ export function KeywordsClient() {
                   Export CSV
                 </button>
               </div>
+            )}
+          </div>
 
               <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
                 <div className="relative">

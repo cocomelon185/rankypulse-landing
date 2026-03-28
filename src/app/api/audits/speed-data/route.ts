@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { resolveSharedAuditContext } from "@/lib/shared-audits";
 
 /**
  * GET /api/audits/speed-data?domain=X
@@ -16,24 +17,10 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = session.user.id;
     const domainParam = req.nextUrl.searchParams.get("domain");
 
     try {
-        // ── Latest completed job ─────────────────────────────────────────────
-        const jobQuery = supabaseAdmin
-            .from("crawl_jobs")
-            .select("id, domain, pages_crawled, pages_limit")
-            .eq("user_id", userId)
-            .eq("status", "completed")
-            .order("created_at", { ascending: false })
-            .limit(1);
-
-        const { data: latestJob } = await (
-            domainParam
-                ? jobQuery.eq("domain", domainParam).maybeSingle()
-                : jobQuery.maybeSingle()
-        );
+        const { latestJob } = await resolveSharedAuditContext(session.user.id, domainParam);
 
         if (!latestJob) {
             return NextResponse.json({ hasPsiData: false, reason: "No completed crawl found" });
@@ -56,6 +43,7 @@ export async function GET(req: NextRequest) {
                 hasPsiData: false,
                 reason: "PSI data not stored for this crawl. Re-run the audit to get speed data.",
                 domain,
+                status: latestJob.status,
             });
         }
 

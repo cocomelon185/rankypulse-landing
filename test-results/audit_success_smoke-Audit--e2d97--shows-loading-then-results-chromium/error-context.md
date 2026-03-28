@@ -1,0 +1,165 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - navigation "Main navigation" [ref=e3]:
+      - generic [ref=e4]:
+        - link "RankyPulse home" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img "RankyPulse" [ref=e6]
+        - generic [ref=e7]:
+          - link "Features" [ref=e8] [cursor=pointer]:
+            - /url: /#features
+          - link "Pricing" [ref=e9] [cursor=pointer]:
+            - /url: /pricing
+          - link "Sign in" [ref=e10] [cursor=pointer]:
+            - /url: /auth/signin
+          - link "Scan your site now" [ref=e11] [cursor=pointer]:
+            - /url: /audit
+            - text: Run My Free Audit
+    - main [ref=e12]:
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - heading "SEO Audit Guides" [level=1] [ref=e15]
+          - paragraph [ref=e16]: Free, actionable guides for auditing your site. Pick your niche or use case, then run a free audit to get started.
+        - generic [ref=e17]:
+          - heading "Run a free audit" [level=2] [ref=e18]
+          - paragraph [ref=e19]: Enter your website URL to get an actionable SEO score and prioritized fixes in under 30 seconds. No signup required.
+          - generic [ref=e20]:
+            - textbox "https://example.com" [active] [ref=e21]
+            - button "Run Free Audit" [ref=e22]
+        - generic [ref=e23]:
+          - generic [ref=e25]:
+            - img [ref=e26]
+            - searchbox "Search audit guides" [ref=e29]
+          - generic [ref=e30]:
+            - link "WordPress SEO Audit WordPress powers over 40% of the web, but default setups often leave rankings on the table. A WordPress SEO audit reveals plugin conflicts, slow queries, and schema gaps that block your content from ranking. Read guide →" [ref=e31] [cursor=pointer]:
+              - /url: /audit/wordpress-seo-audit
+              - heading "WordPress SEO Audit" [level=3] [ref=e32]
+              - paragraph [ref=e33]: WordPress powers over 40% of the web, but default setups often leave rankings on the table. A WordPress SEO audit reveals plugin conflicts, slow queries, and schema gaps that block your content from ranking.
+              - generic [ref=e34]: Read guide →
+            - 'link "Shopify SEO Audit Shopify stores face unique SEO challenges: duplicate content from collections, thin product descriptions, and slow checkout paths. A targeted audit pinpoints what''s holding your store back from search visibility. Read guide →" [ref=e35] [cursor=pointer]':
+              - /url: /audit/shopify-seo-audit
+              - heading "Shopify SEO Audit" [level=3] [ref=e36]
+              - paragraph [ref=e37]: "Shopify stores face unique SEO challenges: duplicate content from collections, thin product descriptions, and slow checkout paths. A targeted audit pinpoints what's holding your store back from search visibility."
+              - generic [ref=e38]: Read guide →
+            - link "Wix SEO Audit Wix has improved its SEO tools, but many sites still suffer from weak meta tags, limited schema support, and suboptimal structure. A Wix SEO audit shows exactly where to improve. Read guide →" [ref=e39] [cursor=pointer]:
+              - /url: /audit/wix-seo-audit
+              - heading "Wix SEO Audit" [level=3] [ref=e40]
+              - paragraph [ref=e41]: Wix has improved its SEO tools, but many sites still suffer from weak meta tags, limited schema support, and suboptimal structure. A Wix SEO audit shows exactly where to improve.
+              - generic [ref=e42]: Read guide →
+            - 'link "Squarespace SEO Audit Squarespace sites look polished but can miss SEO basics: custom meta per page, rich snippets, and fast load times. An audit reveals gaps before competitors outrank you. Read guide →" [ref=e43] [cursor=pointer]':
+              - /url: /audit/squarespace-seo-audit
+              - heading "Squarespace SEO Audit" [level=3] [ref=e44]
+              - paragraph [ref=e45]: "Squarespace sites look polished but can miss SEO basics: custom meta per page, rich snippets, and fast load times. An audit reveals gaps before competitors outrank you."
+              - generic [ref=e46]: Read guide →
+            - link "Local SEO Audit Local SEO depends on NAP consistency, LocalBusiness schema, and page quality. A local SEO audit surfaces directory mismatches, missing schema, and content gaps that hurt local pack rankings. Read guide →" [ref=e47] [cursor=pointer]:
+              - /url: /audit/local-seo-audit
+              - heading "Local SEO Audit" [level=3] [ref=e48]
+              - paragraph [ref=e49]: Local SEO depends on NAP consistency, LocalBusiness schema, and page quality. A local SEO audit surfaces directory mismatches, missing schema, and content gaps that hurt local pack rankings.
+              - generic [ref=e50]: Read guide →
+            - link "E‑commerce SEO Audit E‑commerce sites face product cannibalization, thin content, and crawl budget waste. A focused audit identifies the highest-impact fixes for category and product page visibility. Read guide →" [ref=e51] [cursor=pointer]:
+              - /url: /audit/ecommerce-seo-audit
+              - heading "E‑commerce SEO Audit" [level=3] [ref=e52]
+              - paragraph [ref=e53]: E‑commerce sites face product cannibalization, thin content, and crawl budget waste. A focused audit identifies the highest-impact fixes for category and product page visibility.
+              - generic [ref=e54]: Read guide →
+            - link "Technical SEO Audit Technical SEO underpins everything. Crawl errors, broken redirects, and poor structure prevent Google from indexing and ranking your best content. A technical audit surfaces these fast. Read guide →" [ref=e55] [cursor=pointer]:
+              - /url: /audit/technical-seo-audit
+              - heading "Technical SEO Audit" [level=3] [ref=e56]
+              - paragraph [ref=e57]: Technical SEO underpins everything. Crawl errors, broken redirects, and poor structure prevent Google from indexing and ranking your best content. A technical audit surfaces these fast.
+              - generic [ref=e58]: Read guide →
+            - 'link "On‑Page SEO Audit On‑page SEO is what you control directly: titles, meta, headings, and content. Even strong sites have underoptimized pages. An on‑page audit finds quick wins across your site. Read guide →" [ref=e59] [cursor=pointer]':
+              - /url: /audit/on-page-seo-audit
+              - heading "On‑Page SEO Audit" [level=3] [ref=e60]
+              - paragraph [ref=e61]: "On‑page SEO is what you control directly: titles, meta, headings, and content. Even strong sites have underoptimized pages. An on‑page audit finds quick wins across your site."
+              - generic [ref=e62]: Read guide →
+            - 'link "SaaS SEO Audit SaaS sites juggle product pages, docs, and blog content. A SaaS SEO audit ensures each asset is built for search: clear meta, schema, and structure that support conversion from organic traffic. Read guide →" [ref=e63] [cursor=pointer]':
+              - /url: /audit/saas-seo-audit
+              - heading "SaaS SEO Audit" [level=3] [ref=e64]
+              - paragraph [ref=e65]: "SaaS sites juggle product pages, docs, and blog content. A SaaS SEO audit ensures each asset is built for search: clear meta, schema, and structure that support conversion from organic traffic."
+              - generic [ref=e66]: Read guide →
+            - link "Agency SEO Audit Agencies need fast, repeatable audits for pitches and ongoing work. An agency-focused audit gives you a structured report, prioritized fixes, and insights you can turn into client deliverables. Read guide →" [ref=e67] [cursor=pointer]:
+              - /url: /audit/agency-seo-audit
+              - heading "Agency SEO Audit" [level=3] [ref=e68]
+              - paragraph [ref=e69]: Agencies need fast, repeatable audits for pitches and ongoing work. An agency-focused audit gives you a structured report, prioritized fixes, and insights you can turn into client deliverables.
+              - generic [ref=e70]: Read guide →
+            - link "Real Estate SEO Audit Real estate sites compete on listings, area pages, and local visibility. A real estate SEO audit checks listing schema, location pages, and NAP consistency so you show up when buyers search. Read guide →" [ref=e71] [cursor=pointer]:
+              - /url: /audit/real-estate-seo-audit
+              - heading "Real Estate SEO Audit" [level=3] [ref=e72]
+              - paragraph [ref=e73]: Real estate sites compete on listings, area pages, and local visibility. A real estate SEO audit checks listing schema, location pages, and NAP consistency so you show up when buyers search.
+              - generic [ref=e74]: Read guide →
+            - link "Restaurant SEO Audit Restaurants need local pack visibility and clear menu/reservation signals. An audit checks menu schema, location pages, and technical basics that help you appear when diners search nearby. Read guide →" [ref=e75] [cursor=pointer]:
+              - /url: /audit/restaurant-seo-audit
+              - heading "Restaurant SEO Audit" [level=3] [ref=e76]
+              - paragraph [ref=e77]: Restaurants need local pack visibility and clear menu/reservation signals. An audit checks menu schema, location pages, and technical basics that help you appear when diners search nearby.
+              - generic [ref=e78]: Read guide →
+            - link "Law Firm SEO Audit Law firms compete on practice areas, location, and authority. A law firm SEO audit ensures practice pages, attorney bios, and local signals are optimized for both rankings and conversions. Read guide →" [ref=e79] [cursor=pointer]:
+              - /url: /audit/law-firm-seo-audit
+              - heading "Law Firm SEO Audit" [level=3] [ref=e80]
+              - paragraph [ref=e81]: Law firms compete on practice areas, location, and authority. A law firm SEO audit ensures practice pages, attorney bios, and local signals are optimized for both rankings and conversions.
+              - generic [ref=e82]: Read guide →
+            - link "Dentist SEO Audit Dental practices rely heavily on local search. A dentist SEO audit checks service pages, LocalBusiness schema, and NAP consistency so you show up when patients search for dentists nearby. Read guide →" [ref=e83] [cursor=pointer]:
+              - /url: /audit/dentist-seo-audit
+              - heading "Dentist SEO Audit" [level=3] [ref=e84]
+              - paragraph [ref=e85]: Dental practices rely heavily on local search. A dentist SEO audit checks service pages, LocalBusiness schema, and NAP consistency so you show up when patients search for dentists nearby.
+              - generic [ref=e86]: Read guide →
+            - 'link "Blog SEO Audit Blogs drive traffic when each post is optimized: strong meta, clear structure, and internal links that pass authority. A blog SEO audit finds underperforming posts and structural gaps. Read guide →" [ref=e87] [cursor=pointer]':
+              - /url: /audit/blog-seo-audit
+              - heading "Blog SEO Audit" [level=3] [ref=e88]
+              - paragraph [ref=e89]: "Blogs drive traffic when each post is optimized: strong meta, clear structure, and internal links that pass authority. A blog SEO audit finds underperforming posts and structural gaps."
+              - generic [ref=e90]: Read guide →
+            - 'link "Site Speed SEO Audit Speed is a ranking factor and a conversion driver. A site speed audit pinpoints what''s slowing your pages: images, scripts, server response—and what to fix first for SEO and UX. Read guide →" [ref=e91] [cursor=pointer]':
+              - /url: /audit/site-speed-seo-audit
+              - heading "Site Speed SEO Audit" [level=3] [ref=e92]
+              - paragraph [ref=e93]: "Speed is a ranking factor and a conversion driver. A site speed audit pinpoints what's slowing your pages: images, scripts, server response—and what to fix first for SEO and UX."
+              - generic [ref=e94]: Read guide →
+            - link "Core Web Vitals Audit Core Web Vitals affect rankings and user experience. LCP, FID, and CLS tell Google how fast and stable your site feels. An audit shows where you fail and how to fix it. Read guide →" [ref=e95] [cursor=pointer]:
+              - /url: /audit/core-web-vitals-audit
+              - heading "Core Web Vitals Audit" [level=3] [ref=e96]
+              - paragraph [ref=e97]: Core Web Vitals affect rankings and user experience. LCP, FID, and CLS tell Google how fast and stable your site feels. An audit shows where you fail and how to fix it.
+              - generic [ref=e98]: Read guide →
+            - link "Backlink Audit Backlinks build authority, but bad links can hurt. A backlink audit surfaces toxic or spammy links, over-optimized anchor text, and opportunities to strengthen your profile. Read guide →" [ref=e99] [cursor=pointer]:
+              - /url: /audit/backlink-audit
+              - heading "Backlink Audit" [level=3] [ref=e100]
+              - paragraph [ref=e101]: Backlinks build authority, but bad links can hurt. A backlink audit surfaces toxic or spammy links, over-optimized anchor text, and opportunities to strengthen your profile.
+              - generic [ref=e102]: Read guide →
+            - link "Indexability Audit If Google can't or won't index your pages, rankings are impossible. An indexability audit finds noindex tags, robots blocks, thin content, and crawl budget waste. Read guide →" [ref=e103] [cursor=pointer]:
+              - /url: /audit/indexability-audit
+              - heading "Indexability Audit" [level=3] [ref=e104]
+              - paragraph [ref=e105]: If Google can't or won't index your pages, rankings are impossible. An indexability audit finds noindex tags, robots blocks, thin content, and crawl budget waste.
+              - generic [ref=e106]: Read guide →
+            - link "SEO Audit Checklist A comprehensive SEO audit covers technical, on-page, and content factors. Our checklist guides you through each area so nothing gets missed—and RankyPulse runs the checks automatically. Read guide →" [ref=e107] [cursor=pointer]:
+              - /url: /audit/seo-audit-checklist
+              - heading "SEO Audit Checklist" [level=3] [ref=e108]
+              - paragraph [ref=e109]: A comprehensive SEO audit covers technical, on-page, and content factors. Our checklist guides you through each area so nothing gets missed—and RankyPulse runs the checks automatically.
+              - generic [ref=e110]: Read guide →
+    - contentinfo [ref=e111]:
+      - generic [ref=e112]:
+        - generic [ref=e113]:
+          - link "RankyPulse home" [ref=e114] [cursor=pointer]:
+            - /url: /
+            - img [ref=e115]
+            - text: RankyPulse
+          - generic [ref=e117]:
+            - link "Features" [ref=e118] [cursor=pointer]:
+              - /url: /#features
+            - link "Pricing" [ref=e119] [cursor=pointer]:
+              - /url: /pricing
+            - link "Run free audit" [ref=e120] [cursor=pointer]:
+              - /url: /audit
+            - link "Contact" [ref=e121] [cursor=pointer]:
+              - /url: /contact
+            - link "Sign in" [ref=e122] [cursor=pointer]:
+              - /url: /auth/signin
+        - paragraph [ref=e123]: Built for founders, marketers, and agencies who want actionable SEO — not just scores.
+        - paragraph [ref=e124]:
+          - text: Need help?
+          - link "support@rankypulse.com" [ref=e125] [cursor=pointer]:
+            - /url: mailto:support@rankypulse.com
+        - paragraph [ref=e126]: © 2026 RankyPulse. All rights reserved.
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e132] [cursor=pointer]:
+    - img [ref=e133]
+  - alert [ref=e136]
+```

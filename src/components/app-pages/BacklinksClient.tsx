@@ -1,13 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
+import { isDataProviderUnavailableCode } from "@/lib/data-provider";
 import {
   Link as LinkIcon,
   Globe,
   RefreshCw,
-  TrendingUp,
-  TrendingDown,
   Shield,
   AlertTriangle,
   ExternalLink,
@@ -122,6 +122,7 @@ export function BacklinksClient() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [providerUnavailable, setProviderUnavailable] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   // Resolve domain from localStorage
@@ -138,8 +139,13 @@ export function BacklinksClient() {
 
   const fetchData = useCallback(async (d: string, forceRefresh = false) => {
     if (!d) return;
-    forceRefresh ? setRefreshing(true) : setLoading(true);
+    if (forceRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
+    setProviderUnavailable(false);
 
     try {
       if (forceRefresh) {
@@ -150,7 +156,13 @@ export function BacklinksClient() {
           body: JSON.stringify({ domain: d }),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "Failed to fetch backlinks");
+        if (!res.ok) {
+          if (isDataProviderUnavailableCode(data.code)) {
+            setProviderUnavailable(true);
+            return;
+          }
+          throw new Error(data.error ?? "Failed to fetch backlinks");
+        }
         setSnapshot(data.snapshot ?? null);
         setTrend(data.trend ?? []);
         if (data.snapshot?.snapshot_date) setLastUpdated(data.snapshot.snapshot_date);
@@ -255,8 +267,32 @@ export function BacklinksClient() {
         </div>
       )}
 
+      {!loading && providerUnavailable && !snapshot && (
+        <div
+          className="rounded-2xl border p-8 space-y-3"
+          style={{ background: "rgba(123,92,245,0.05)", borderColor: "rgba(123,92,245,0.16)" }}
+        >
+          <div className="flex items-center gap-2">
+            <BarChart2 size={16} style={{ color: "#A78BFA" }} />
+            <p className="text-sm font-semibold text-white">Backlink refresh is temporarily unavailable</p>
+          </div>
+          <p className="text-sm" style={{ color: TEXT_DIM }}>
+            Your dashboard is still available. Fresh backlink metrics will appear here once the provider is reachable again.
+          </p>
+        </div>
+      )}
+
+      {!loading && providerUnavailable && snapshot && (
+        <div
+          className="rounded-xl border p-4 text-sm"
+          style={{ background: "rgba(123,92,245,0.05)", borderColor: "rgba(123,92,245,0.16)", color: TEXT_DIM }}
+        >
+          Fresh backlink refresh is temporarily unavailable. Showing your latest saved snapshot instead.
+        </div>
+      )}
+
       {/* No domain */}
-      {!loading && !error && !domain && (
+      {!loading && !error && !providerUnavailable && !domain && (
         <div
           className="rounded-2xl border p-16 flex flex-col items-center gap-4"
           style={{ background: CARD_BG, borderColor: BORDER }}
@@ -265,18 +301,18 @@ export function BacklinksClient() {
           <p className="text-sm text-center" style={{ color: TEXT_MUTED }}>
             Run a site audit first to set your domain. Then come back here.
           </p>
-          <a
+          <Link
             href="/app/audit"
             className="text-sm font-semibold px-4 py-2 rounded-lg text-white"
             style={{ background: `linear-gradient(135deg, ${ACCENT}, #E8541F)` }}
           >
             Go to Site Audit
-          </a>
+          </Link>
         </div>
       )}
 
       {/* No data yet — prompt refresh */}
-      {!loading && !error && domain && !snapshot && (
+      {!loading && !error && !providerUnavailable && domain && !snapshot && (
         <div
           className="rounded-2xl border p-16 flex flex-col items-center gap-4"
           style={{ background: CARD_BG, borderColor: BORDER }}

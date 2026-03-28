@@ -3,7 +3,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { ISSUE_META } from "@/lib/dashboard-data";
-import { calculateSeoScore } from "@/lib/seo-score";
+import { computeSeoScore } from "@/lib/seo-score";
+import { resolveSharedAuditContext } from "@/lib/shared-audits";
 
 type IssueSeverity = "error" | "warning" | "notice";
 type BotStatus = "ok" | "blocked";
@@ -61,6 +62,9 @@ const ISSUE_CATEGORY: Record<string, string> = {
     // Phase 4
     multiple_canonicals:     "crawlability",
     keyword_cannibalization: "markup",
+    // Phase 5 showstoppers
+    no_viewport: "crawlability",
+    http_pages:  "crawlability",
 };
 
 export async function GET(req: Request) {
@@ -73,19 +77,10 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url);
         const domainParam = searchParams.get("domain")?.trim().toLowerCase();
 
-        // ── Latest completed job ─────────────────────────────────────────────
-        const jobQuery = supabaseAdmin
-            .from("crawl_jobs")
-            .select("id, domain, status, pages_limit, pages_crawled, created_at, updated_at")
-            .eq("user_id", session.user.id)
-            .eq("status", "completed")
-            .order("created_at", { ascending: false })
-            .limit(1);
-
-        const { data: job } = await (
-            domainParam
-                ? jobQuery.eq("domain", domainParam).maybeSingle()
-                : jobQuery.maybeSingle()
+        const { latestJob: job } = await resolveSharedAuditContext(
+            session.user.id,
+            domainParam,
+            ["completed"]
         );
 
         if (!job) {
@@ -100,18 +95,34 @@ export async function GET(req: Request) {
             .select("url, score, issues")
             .eq("job_id", job.id);
 
-        const pages = (rawPages ?? []).map((p) => ({
-            url: p.url as string,
-            score: p.score as number | null,
-            issues: Array.isArray(p.issues) ? (p.issues as CompactIssue[]) : [],
-        }));
+        // Exclude __site_level__ synthetic page
+        const pages = (rawPages ?? [])
+            .filter((p) => p.url !== "__site_level__")
+            .map((p) => ({
+                url: p.url as string,
+                score: p.score as number | null,
+                issues: Array.isArray(p.issues) ? (p.issues as CompactIssue[]) : [],
+            }));
 
         if (pages.length === 0) {
             return NextResponse.json({ noData: true, domain });
         }
 
-        // ── Site Health Score ────────────────────────────────────────────────
-        const avgScore = calculateSeoScore(pages);
+        // ── Site Health Score (density-based, same formula as all pages) ─────
+        let critOcc = 0, warnOcc = 0, noticeOcc = 0;
+        for (const page of pages) {
+            for (const iss of page.issues) {
+                if (iss.sev === "HIGH") critOcc++;
+                else if (iss.sev === "MED") warnOcc++;
+                else noticeOcc++;
+            }
+        }
+        const totalPg = pages.length || 1;
+        const avgScore = computeSeoScore({
+            critical: critOcc / totalPg,
+            warning: warnOcc / totalPg,
+            notice: noticeOcc / totalPg,
+        });
 
         // ── Page breakdown ───────────────────────────────────────────────────
         const pageBreakdown = { healthy: 0, broken: 0, hasIssues: 0, redirects: 0, blocked: 0 };
@@ -188,6 +199,25 @@ export async function GET(req: Request) {
             if (perf !== undefined) psiPerfScore = Math.round(perf * 100);
         }
 
+        // ── Detect showstoppers ───────────────────────────────────────────────
+        // noHttps: any crawled page URL is http:// OR http_pages issue detected
+        const noHttps = pages.some(p => p.url.startsWith("http:")) ||
+            topIssues.some(i => i.id === "http_pages");
+        // notMobileFriendly: no_viewport issue detected
+        const notMobileFriendly = topIssues.some(i => i.id === "no_viewport");
+
+        // Apply mobile cap to PSI performance score — non-responsive sites cap at 45
+        // Cap of 45 (not 30) keeps score in "Orange" (Needs Work) instead of "Red" (Failed)
+        if (notMobileFriendly) psiPerfScore = Math.min(psiPerfScore, 45);
+
+        // Apply showstopper percentage-based multipliers to site health score
+        // Proportional reductions ensure fair penalties: 100 × 0.7 = 70 (still respectable), 50 × 0.7 = 35 (clearly bad)
+        let finalAvgScore = avgScore;
+        if (noHttps) finalAvgScore *= 0.8;              // 20% reduction
+        if (notMobileFriendly) finalAvgScore *= 0.7;    // 30% reduction
+        // Soft floor at 20 — matches industry practices (never shows 0)
+        finalAvgScore = Math.max(Math.round(finalAvgScore), 20);
+
         // ── Robots.txt: real bot blocking check ──────────────────────────────
         let robotsTxtContent = "";
         try {
@@ -241,7 +271,7 @@ export async function GET(req: Request) {
             crawledAt: job.updated_at ?? job.created_at,
             pagesLimit: job.pages_limit ?? 10,
             pagesCrawled: job.pages_crawled ?? pages.length,
-            siteHealthScore: avgScore,
+            siteHealthScore: finalAvgScore,
             previousScore: null,
             pageBreakdown,
             errors,
@@ -253,7 +283,7 @@ export async function GET(req: Request) {
                     status: "ok" as const,
                 },
                 crawlability: thematicBase.crawlability ?? 100,
-                https: 100, // all crawled URLs are https
+                https: noHttps ? 0 : 100,
                 internationalSeo: "not_implemented" as const,
                 coreWebVitals: psiPerfScore,
                 sitePerformance: psiPerfScore,

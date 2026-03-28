@@ -6,9 +6,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Zap, CheckCircle, ChevronRight, AlertTriangle,
     XCircle, AlertCircle, ExternalLink, Check, X, Loader2,
-    ChevronDown, Copy, Target, Shield, Sparkles, Globe, Lock,
+    ChevronDown, Copy, Target, Shield, Sparkles, Globe, Lock, TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
+import { ScoreRevealModal } from "@/components/action-center/ScoreRevealModal";
+import type { FixedTaskSummary } from "@/components/action-center/ScoreRevealModal";
 
 // ── Enriched Task interface (matches API v5 response) ────────────────────────
 
@@ -40,6 +42,7 @@ interface ApiResponse {
     allDomains: string[];
     seoScore: number;
     projectedScore: number;
+    currentProjected: number;
     totalPoints: number;
     earnedPoints: number;
 }
@@ -110,8 +113,8 @@ function ScoreRing({ score, size = 80 }: { score: number; size?: number }) {
 
 // ── KPI Card ──────────────────────────────────────────────────────────────────
 
-function KpiCard({ icon: Icon, label, value, color }: {
-    icon: React.ElementType; label: string; value: string; color: string;
+function KpiCard({ icon: Icon, label, value, color, sublabel }: {
+    icon: React.ElementType; label: string; value: string; color: string; sublabel?: string;
 }) {
     return (
         <div className="rounded-xl border p-4" style={{ background: "#151B27", borderColor: "#1E2940" }}>
@@ -123,6 +126,7 @@ function KpiCard({ icon: Icon, label, value, color }: {
             </div>
             <p className="text-xl font-black text-white tabular-nums">{value}</p>
             <p className="text-[11px] mt-0.5 font-medium" style={{ color: "#6B7A99" }}>{label}</p>
+            {sublabel && <p className="text-[10px] mt-0.5" style={{ color: "#4A5568" }}>{sublabel}</p>}
         </div>
     );
 }
@@ -138,6 +142,8 @@ export function ActionCenterClient() {
     const [allDomains, setAllDomains] = useState<string[]>([]);
     const [seoScore, setSeoScore] = useState(0);
     const [projectedScore, setProjectedScore] = useState(0);
+    const [currentProjected, setCurrentProjected] = useState(0);
+    const [showReveal, setShowReveal] = useState(false);
     const [userPlan, setUserPlan] = useState<"free" | "starter" | "pro">("free");
 
     // UI state
@@ -154,19 +160,57 @@ export function ActionCenterClient() {
     const [aiFixState, setAiFixState] = useState<"idle" | "loading" | "done" | "error">("idle");
     const [aiFixText, setAiFixText] = useState<string>("");
     const [aiFixCopied, setAiFixCopied] = useState(false);
+    const [aiFixTrace, setAiFixTrace] = useState(0);
+    const [aiFixTab, setAiFixTab] = useState<"code" | "why" | "steps">("code");
+    const [aiFixStructured, setAiFixStructured] = useState<{
+        analysis: string; code: string; steps: string;
+        verification: string; scoreImpact: string; suggestion: string;
+    } | null>(null);
+    const [aiFixModelLabel, setAiFixModelLabel] = useState<string>("");
+    const [aiFixHasLiveHtml, setAiFixHasLiveHtml] = useState(false);
+    const [aiFixPagesAnalyzed, setAiFixPagesAnalyzed] = useState(0);
+
+    // Verify Fix state
+    const [verifyState, setVerifyState] = useState<"idle" | "loading" | "resolved" | "not_resolved" | "partial" | "unable_to_verify" | "error">("idle");
+    const [verifyDetails, setVerifyDetails] = useState<{ url: string; resolved: boolean; detail: string; status?: string }[]>([]);
 
     // Reset AI fix state when selected task changes
     useEffect(() => {
         setAiFixState("idle");
         setAiFixText("");
         setAiFixCopied(false);
+        setAiFixTrace(0);
+        setAiFixTab("code");
+        setAiFixStructured(null);
+        setAiFixModelLabel("");
+        setAiFixHasLiveHtml(false);
+        setAiFixPagesAnalyzed(0);
+        setVerifyState("idle");
+        setVerifyDetails([]);
     }, [selectedTask]);
 
     // ── Generate AI fix ──────────────────────────────────────────────────────
 
+    const AI_TRACE_STEPS = [
+        "🔍 Fetching live page HTML to study the issue…",
+        "📊 Analyzing real crawl data for affected pages…",
+        "🧠 Claude is studying your page structure…",
+        "🧪 Generating a verified, page-specific fix…",
+    ];
+
     const generateAiFix = async (task: Task, force = false) => {
         if (!domain) return;
         setAiFixState("loading");
+        setAiFixTrace(0);
+        setAiFixStructured(null);
+
+        // Cycle through trace steps while loading
+        let step = 0;
+        const traceInterval = setInterval(() => {
+            step = Math.min(step + 1, AI_TRACE_STEPS.length - 1);
+            setAiFixTrace(step);
+        }, 1500);
+
         try {
             const res = await fetch("/api/action-center/ai-fix", {
                 method: "POST",
@@ -179,17 +223,38 @@ export function ActionCenterClient() {
                     force,
                 }),
             });
+            clearInterval(traceInterval);
             if (!res.ok) throw new Error("ai_unavailable");
-            const data = await res.json() as { suggestion: string; cached: boolean };
+            const data = await res.json() as {
+                suggestion: string; analysis?: string; code?: string;
+                steps?: string; verification?: string; scoreImpact?: string;
+                cached: boolean; modelLabel?: string; hasLiveHtml?: boolean; pagesAnalyzed?: number;
+            };
             setAiFixText(data.suggestion);
+            setAiFixModelLabel(data.modelLabel ?? "Claude");
+            setAiFixHasLiveHtml(data.hasLiveHtml ?? false);
+            setAiFixPagesAnalyzed(data.pagesAnalyzed ?? 0);
+            if (data.code) {
+                setAiFixStructured({
+                    analysis:     data.analysis ?? "",
+                    code:         data.code ?? "",
+                    steps:        data.steps ?? "",
+                    verification: data.verification ?? "",
+                    scoreImpact:  data.scoreImpact ?? "",
+                    suggestion:   data.suggestion,
+                });
+                setAiFixTab("code");
+            }
             setAiFixState("done");
         } catch {
+            clearInterval(traceInterval);
             setAiFixState("error");
         }
     };
 
     const copyAiFix = async () => {
-        await navigator.clipboard.writeText(aiFixText);
+        const textToCopy = aiFixStructured?.code || aiFixText;
+        await navigator.clipboard.writeText(textToCopy);
         setAiFixCopied(true);
         setTimeout(() => setAiFixCopied(false), 2000);
     };
@@ -210,6 +275,7 @@ export function ActionCenterClient() {
             setAllDomains(data.allDomains);
             setSeoScore(data.seoScore);
             setProjectedScore(data.projectedScore);
+            setCurrentProjected(data.currentProjected ?? data.seoScore);
         } catch {
             setTasks([]);
         } finally {
@@ -231,15 +297,50 @@ export function ActionCenterClient() {
 
     // ── Persist task toggle ──────────────────────────────────────────────────
 
+    const verifyFix = async (task: Task) => {
+        setVerifyState("loading");
+        setVerifyDetails([]);
+        try {
+            const res = await fetch("/api/action-center/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    issueId: task.issueId,
+                    affectedPageUrls: task.affectedPageUrls.slice(0, 3),
+                }),
+            });
+            if (!res.ok) throw new Error("Verification failed");
+            const data = await res.json();
+            if (data.unable_to_verify) {
+                setVerifyState("unable_to_verify");
+            } else if (data.resolved) {
+                setVerifyState("resolved");
+            } else if (data.partial) {
+                setVerifyState("partial");
+            } else {
+                setVerifyState("not_resolved");
+            }
+            setVerifyDetails(data.results ?? []);
+        } catch {
+            setVerifyState("error");
+        }
+    };
+
     const toggleDone = async (task: Task) => {
         if (!domain) return;
         const newStatus = task.status === "done" ? "todo" : "done";
         setSaving(task.id);
 
-        // Optimistic update
+        // Optimistic update — adjust currentProjected based on density-proportional estimatedPoints
         setTasks(prev => prev.map(t =>
             t.id === task.id ? { ...t, status: newStatus as "todo" | "done", progress: newStatus === "done" ? 100 : 0 } : t
         ));
+        setCurrentProjected(prev => {
+            const delta = task.estimatedPoints;
+            return newStatus === "done"
+                ? Math.min(projectedScore, prev + delta)
+                : Math.max(seoScore, prev - delta);
+        });
 
         try {
             await fetch("/api/action-center/complete", {
@@ -295,8 +396,18 @@ export function ActionCenterClient() {
     const doneTasks = tasks.filter(t => t.status === "done").length;
     const criticalRemaining = tasks.filter(t => t.severity === "error" && t.status !== "done").length;
     const quickWins = tasks.filter(t => t.effort === "easy" && t.status !== "done").length;
-    const pointsRemaining = tasks.filter(t => t.status !== "done").reduce((s, t) => s + t.estimatedPoints, 0);
     const progressPct = tasks.length > 0 ? Math.round((doneTasks / tasks.length) * 100) : 0;
+
+    // Live score: uses server-computed currentProjected (density-based, same formula as Site Audit)
+    const liveScore = doneTasks > 0 ? currentProjected : seoScore;
+
+    // Real remaining improvement (never exceeds projectedScore − liveScore)
+    const pointsToUnlock = Math.max(0, projectedScore - liveScore);
+
+    // Summary of fixed tasks for the ScoreRevealModal
+    const fixedTaskSummaries: FixedTaskSummary[] = tasks
+        .filter(t => t.status === "done")
+        .map(t => ({ issueId: t.issueId, title: t.title, estimatedPoints: t.estimatedPoints, severity: t.severity }));
 
     const selectedTaskData = tasks.find(t => t.id === selectedTask);
 
@@ -367,21 +478,39 @@ export function ActionCenterClient() {
             {tasks.length > 0 && (
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
                     {/* Score Ring Card */}
-                    <div className="col-span-2 lg:col-span-1 rounded-xl border p-4 flex flex-col items-center justify-center"
-                        style={{ background: "#151B27", borderColor: "#1E2940" }}>
-                        <ScoreRing score={seoScore} size={80} />
-                        <p className="text-[11px] font-medium mt-2" style={{ color: "#6B7A99" }}>SEO Score</p>
-                        {projectedScore > seoScore && (
-                            <p className="text-[10px] font-semibold mt-0.5" style={{ color: "#00C853" }}>
-                                → {projectedScore} if all fixed
+                    <div className="col-span-2 lg:col-span-1 rounded-xl border p-4 flex flex-col items-center justify-center relative overflow-hidden"
+                        style={{
+                            background: "#151B27",
+                            borderColor: doneTasks > 0 ? "rgba(0,200,83,0.3)" : "#1E2940",
+                            boxShadow: doneTasks > 0 ? "0 0 0 1px rgba(0,200,83,0.15)" : "none",
+                        }}>
+                        {/* Live score ring (animated to liveScore when tasks are done) */}
+                        <ScoreRing score={liveScore} size={80} />
+                        <p className="text-[11px] font-medium mt-2" style={{ color: "#6B7A99" }}>
+                            {doneTasks > 0 ? "Live Score" : "SEO Score"}
+                        </p>
+                        {doneTasks > 0 && liveScore > seoScore && (
+                            <p className="text-[10px] font-bold mt-0.5" style={{ color: "#00C853" }}>
+                                +{liveScore - seoScore} pts gained
                             </p>
+                        )}
+                        {/* See Score Boost CTA */}
+                        {doneTasks > 0 && (
+                            <button
+                                onClick={() => setShowReveal(true)}
+                                className="mt-2.5 w-full flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-bold transition hover:opacity-90"
+                                style={{ background: "rgba(0,200,83,0.12)", color: "#00C853", border: "1px solid rgba(0,200,83,0.2)" }}
+                            >
+                                <TrendingUp size={11} />
+                                See Score Boost
+                            </button>
                         )}
                     </div>
 
                     {/* KPI Cards */}
-                    <KpiCard icon={XCircle} label="Critical Issues" value={String(criticalRemaining)} color="#FF3D3D" />
-                    <KpiCard icon={Sparkles} label="Quick Wins Left" value={String(quickWins)} color="#00C853" />
-                    <KpiCard icon={Target} label="Points to Unlock" value={String(pointsRemaining)} color="#FF642D" />
+                    <KpiCard icon={XCircle} label="Critical Issues" value={String(criticalRemaining)} color="#FF3D3D" sublabel="Needs immediate fix" />
+                    <KpiCard icon={Sparkles} label="Quick Wins" value={String(quickWins)} color="#00C853" sublabel="Easy fixes available" />
+                    <KpiCard icon={Target} label="Score Potential" value={`+${pointsToUnlock}`} color="#FF642D" sublabel="Points if all fixed" />
 
                     {/* Progress Card */}
                     <div className="rounded-xl border p-4" style={{ background: "#151B27", borderColor: "#1E2940" }}>
@@ -394,6 +523,7 @@ export function ActionCenterClient() {
                         </div>
                         <p className="text-xl font-black text-white tabular-nums">{doneTasks}/{tasks.length}</p>
                         <p className="text-[11px] mt-0.5 font-medium" style={{ color: "#6B7A99" }}>Tasks Complete</p>
+                        <p className="text-[10px] mt-0.5" style={{ color: "#4A5568" }}>Fixed vs total issues</p>
                         <div className="h-1.5 rounded-full overflow-hidden mt-2" style={{ background: "#1E2940" }}>
                             <motion.div className="h-full rounded-full"
                                 style={{ background: "linear-gradient(90deg, #7B5CF5, #9B7DFF)" }}
@@ -837,26 +967,165 @@ export function ActionCenterClient() {
                                                 )}
                                             </div>
 
-                                            {/* Loading */}
+                                            {/* Loading — Surgical Suite trace */}
                                             {aiFixState === "loading" && (
-                                                <div className="flex items-center gap-3 py-3">
-                                                    {[0, 1, 2, 3, 4].map((i) => (
+                                                <div className="py-3 space-y-2">
+                                                    {AI_TRACE_STEPS.map((step, i) => (
                                                         <motion.div
                                                             key={i}
-                                                            className="h-1.5 w-1.5 rounded-full"
-                                                            style={{ background: "#7C3AED" }}
-                                                            animate={{ opacity: [0.3, 1, 0.3], scaleY: [1, 1.8, 1] }}
-                                                            transition={{ duration: 1, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
-                                                        />
+                                                            className="flex items-center gap-2"
+                                                            initial={{ opacity: 0, x: -6 }}
+                                                            animate={{ opacity: i <= aiFixTrace ? 1 : 0.25, x: 0 }}
+                                                            transition={{ duration: 0.4, delay: i * 0.05 }}
+                                                        >
+                                                            {i < aiFixTrace ? (
+                                                                <Check size={10} style={{ color: "#22C55E", flexShrink: 0 }} />
+                                                            ) : i === aiFixTrace ? (
+                                                                <motion.div
+                                                                    className="h-2 w-2 rounded-full flex-shrink-0"
+                                                                    style={{ background: "#7C3AED" }}
+                                                                    animate={{ opacity: [0.4, 1, 0.4] }}
+                                                                    transition={{ duration: 0.8, repeat: Infinity }}
+                                                                />
+                                                            ) : (
+                                                                <div className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: "#1E2940" }} />
+                                                            )}
+                                                            <span className="text-[11px]" style={{ color: i <= aiFixTrace ? "#C8D0E0" : "#4A5568" }}>
+                                                                {step}
+                                                            </span>
+                                                        </motion.div>
                                                     ))}
-                                                    <span className="text-[11px]" style={{ color: "#8B9BB4" }}>
-                                                        Generating suggestion…
-                                                    </span>
                                                 </div>
                                             )}
 
-                                            {/* Result */}
-                                            {aiFixState === "done" && aiFixText && (
+                                            {/* Result — Structured Surgical Suite tabs */}
+                                            {aiFixState === "done" && aiFixStructured?.code ? (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 4 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ duration: 0.3 }}
+                                                >
+                                                    {/* Score Impact Banner */}
+                                                    {aiFixStructured.scoreImpact && (() => {
+                                                        const raw = aiFixStructured.scoreImpact;
+                                                        const ptsMatch = raw.match(/^([+\-\d\s\w]+points?)/i);
+                                                        const pts = ptsMatch ? ptsMatch[1].trim() : raw.split("—")[0].trim();
+                                                        const reason = raw.includes("—") ? raw.split("—").slice(1).join("—").trim() : "";
+                                                        return (
+                                                            <div className="flex items-center gap-2 mb-3 rounded-lg px-3 py-2" style={{ background: "rgba(255,100,45,0.08)", border: "1px solid rgba(255,100,45,0.2)" }}>
+                                                                <span className="text-[13px] font-bold shrink-0" style={{ color: "#FF642D" }}>{pts}</span>
+                                                                {reason && <span className="text-[11px] leading-snug" style={{ color: "#8A9BB0" }}>— {reason}</span>}
+                                                            </div>
+                                                        );
+                                                    })()}
+
+                                                    {/* Tabs */}
+                                                    <div className="flex gap-0.5 mb-3 rounded-lg p-0.5" style={{ background: "rgba(0,0,0,0.3)", border: "1px solid #1E2940" }}>
+                                                        {([
+                                                            { id: "code", label: "Code", icon: "⌥" },
+                                                            { id: "why",  label: "Why It Matters", icon: "◎" },
+                                                            { id: "steps", label: "Steps", icon: "☰" },
+                                                        ] as const).map(({ id, label, icon }) => (
+                                                            <button
+                                                                key={id}
+                                                                onClick={() => setAiFixTab(id)}
+                                                                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-[10px] font-semibold transition-all"
+                                                                style={aiFixTab === id
+                                                                    ? { background: "rgba(139,92,246,0.25)", color: "#C4B5FD" }
+                                                                    : { color: "#4A5568" }
+                                                                }
+                                                            >
+                                                                <span>{icon}</span>{label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Tab: Code */}
+                                                    {aiFixTab === "code" && (
+                                                        <div>
+                                                            <div className="rounded-lg overflow-hidden mb-2" style={{ border: "1px solid #30363D" }}>
+                                                                <div className="flex items-center justify-between px-3 py-1.5" style={{ background: "#161B22", borderBottom: "1px solid #30363D" }}>
+                                                                    <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "#4A5568" }}>Code Fix</span>
+                                                                    <button
+                                                                        onClick={copyAiFix}
+                                                                        className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium transition-all"
+                                                                        style={aiFixCopied
+                                                                            ? { background: "rgba(34,197,94,0.12)", color: "#22C55E" }
+                                                                            : { background: "rgba(139,92,246,0.1)", color: "#A78BFA" }
+                                                                        }
+                                                                    >
+                                                                        {aiFixCopied ? <Check size={10} /> : <Copy size={10} />}
+                                                                        {aiFixCopied ? "Copied!" : "Copy"}
+                                                                    </button>
+                                                                </div>
+                                                                <pre className="p-3 text-[11px] leading-relaxed overflow-x-auto font-mono m-0" style={{ background: "#0D1117", color: "#E6EDF3" }}>
+                                                                    <code>
+                                                                        {aiFixStructured.code.split("\n").map((line, i) => {
+                                                                            const isComment = line.trim().startsWith("#") || line.trim().startsWith("//") || line.trim().startsWith("<!--");
+                                                                            return (
+                                                                                <span key={i} style={isComment ? { color: "#6A8A6A", fontStyle: "italic" } : {}}>
+                                                                                    {line}{"\n"}
+                                                                                </span>
+                                                                            );
+                                                                        })}
+                                                                    </code>
+                                                                </pre>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Tab: Why It Matters */}
+                                                    {aiFixTab === "why" && (
+                                                        <div className="space-y-3">
+                                                            <div className="rounded-lg p-3" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.15)" }}>
+                                                                <p className="text-[9px] font-bold uppercase tracking-widest mb-2" style={{ color: "#6D5FA8" }}>SEO Analysis</p>
+                                                                <p className="text-[12px] leading-relaxed" style={{ color: "#C8D0E0" }}>
+                                                                    {aiFixStructured.analysis}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Tab: Implementation */}
+                                                    {aiFixTab === "steps" && (
+                                                        <div className="space-y-2">
+                                                            {aiFixStructured.steps.split("\n").filter(s => s.trim()).map((step, i) => {
+                                                                const cleaned = step.replace(/^\d+\.\s*/, "").trim();
+                                                                const stepNum = step.match(/^(\d+)\./)?.[1];
+                                                                return (
+                                                                    <div key={i} className="flex items-start gap-2.5">
+                                                                        <span className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5"
+                                                                            style={{ background: "rgba(139,92,246,0.15)", color: "#A78BFA" }}>
+                                                                            {stepNum ?? i + 1}
+                                                                        </span>
+                                                                        <p className="text-[12px] leading-relaxed" style={{ color: "#C8D0E0" }}>{cleaned}</p>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                            {aiFixStructured.verification && (
+                                                                <div className="mt-3 rounded-lg overflow-hidden" style={{ border: "1px solid #1E2940" }}>
+                                                                    <div className="px-3 py-1.5" style={{ background: "rgba(34,197,94,0.06)", borderBottom: "1px solid #1E2940" }}>
+                                                                        <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "#22C55E" }}>✓ Verify the fix</p>
+                                                                    </div>
+                                                                    <div className="px-3 py-2" style={{ background: "rgba(0,0,0,0.3)" }}>
+                                                                        <code className="text-[11px] font-mono break-all" style={{ color: "#22C55E" }}>
+                                                                            {aiFixStructured.verification}
+                                                                        </code>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    <p className="text-[10px] mt-3" style={{ color: "#2D3748" }}>
+                                                        Generated by {aiFixModelLabel || "Claude"}
+                                                        {aiFixHasLiveHtml && " · Studied live HTML"}
+                                                        {aiFixPagesAnalyzed > 0 && ` · Analyzed ${aiFixPagesAnalyzed} page${aiFixPagesAnalyzed > 1 ? "s" : ""}`}
+                                                        {" · "}Apply fix, then click <strong style={{ color: "#818CF8" }}>Verify Fix</strong> to confirm it works
+                                                    </p>
+                                                </motion.div>
+                                            ) : aiFixState === "done" && aiFixText ? (
+                                                /* Fallback: plain text for old cached suggestions */
                                                 <motion.div
                                                     initial={{ opacity: 0, y: 4 }}
                                                     animate={{ opacity: 1, y: 0 }}
@@ -872,10 +1141,9 @@ export function ActionCenterClient() {
                                                         <button
                                                             onClick={copyAiFix}
                                                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all"
-                                                            style={
-                                                                aiFixCopied
-                                                                    ? { background: "rgba(34,197,94,0.12)", color: "#22C55E" }
-                                                                    : { background: "rgba(139,92,246,0.1)", color: "#A78BFA" }
+                                                            style={aiFixCopied
+                                                                ? { background: "rgba(34,197,94,0.12)", color: "#22C55E" }
+                                                                : { background: "rgba(139,92,246,0.1)", color: "#A78BFA" }
                                                             }
                                                         >
                                                             {aiFixCopied ? <Check size={11} /> : <Copy size={11} />}
@@ -883,7 +1151,7 @@ export function ActionCenterClient() {
                                                         </button>
                                                     </div>
                                                 </motion.div>
-                                            )}
+                                            ) : null}
 
                                             {/* Error */}
                                             {aiFixState === "error" && (
@@ -904,13 +1172,119 @@ export function ActionCenterClient() {
                                             {/* Idle hint */}
                                             {aiFixState === "idle" && (
                                                 <p className="text-[11px]" style={{ color: "#4A5568" }}>
-                                                    Get a tailored fix suggestion generated by Claude AI for this specific issue.
+                                                    Claude will study your live page HTML, analyze real crawl data, and generate a working fix using Sonnet or Opus.
                                                 </p>
                                             )}
                                         </div>
 
+                                        {/* VERIFY FIX RESULT */}
+                                        {verifyState !== "idle" && (
+                                            <div className="rounded-lg p-3 text-xs" style={{
+                                                background: verifyState === "resolved" ? "rgba(0,200,83,0.08)"
+                                                    : verifyState === "loading" ? "rgba(139,155,180,0.08)"
+                                                    : verifyState === "unable_to_verify" ? "rgba(251,191,36,0.08)"
+                                                    : "rgba(239,68,68,0.08)",
+                                                border: `1px solid ${verifyState === "resolved" ? "#00C85333"
+                                                    : verifyState === "loading" ? "#1E2940"
+                                                    : verifyState === "unable_to_verify" ? "#FBBF2433"
+                                                    : "#F8717133"}`,
+                                            }}>
+                                                {verifyState === "loading" && (
+                                                    <div className="flex items-center gap-2" style={{ color: "#8B9BB4" }}>
+                                                        <Loader2 size={13} className="animate-spin" />
+                                                        Fetching live page and checking issue…
+                                                    </div>
+                                                )}
+                                                {verifyState === "resolved" && (
+                                                    <div>
+                                                        <div className="flex items-center gap-2" style={{ color: "#00C853" }}>
+                                                            <Check size={13} />
+                                                            <span className="font-semibold">Issue resolved! ✓</span>
+                                                        </div>
+                                                        {verifyDetails.map((r, i) => (
+                                                            <p key={i} style={{ color: "#66BB6A" }} className="ml-5 mt-0.5 truncate text-[11px]">
+                                                                {r.detail}
+                                                            </p>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {verifyState === "not_resolved" && (
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1.5" style={{ color: "#F87171" }}>
+                                                            <X size={13} />
+                                                            <span className="font-semibold">Issue still present</span>
+                                                        </div>
+                                                        {verifyDetails.map((r, i) => (
+                                                            <p key={i} style={{ color: "#8B9BB4" }} className="ml-5 mt-0.5 truncate">
+                                                                {r.url.replace(/^https?:\/\//, "")} — {r.detail}
+                                                            </p>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {verifyState === "unable_to_verify" && (
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1" style={{ color: "#FBBF24" }}>
+                                                            <AlertTriangle size={13} />
+                                                            <span className="font-semibold">Requires full re-audit to verify</span>
+                                                        </div>
+                                                        <p className="ml-5 text-[11px]" style={{ color: "#8B9BB4" }}>
+                                                            This issue involves multiple pages. Apply the fix, then run a new audit to confirm it worked.
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                {verifyState === "partial" && (
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1.5" style={{ color: "#FBBF24" }}>
+                                                            <AlertTriangle size={13} />
+                                                            <span className="font-semibold">Partially resolved</span>
+                                                        </div>
+                                                        {verifyDetails.map((r, i) => (
+                                                            <p key={i} className="ml-5 mt-0.5 truncate" style={{ color: r.resolved ? "#00C853" : "#F87171" }}>
+                                                                {r.resolved ? "✓" : "✗"} {r.url.replace(/^https?:\/\//, "")} — {r.detail}
+                                                            </p>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {verifyState === "error" && (
+                                                    <div className="flex items-center gap-2" style={{ color: "#F87171" }}>
+                                                        <AlertCircle size={13} />
+                                                        Verification failed — try again later
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
                                         {/* ACTION BUTTONS */}
                                         <div className="flex gap-2.5 pt-1">
+                                            <button onClick={() => verifyFix(selectedTaskData)}
+                                                disabled={verifyState === "loading" || selectedTaskData.status === "done"}
+                                                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition hover:opacity-90 disabled:opacity-60"
+                                                style={{
+                                                    background: verifyState === "resolved"
+                                                        ? "rgba(0,200,83,0.12)"
+                                                        : verifyState === "unable_to_verify"
+                                                            ? "rgba(251,191,36,0.1)"
+                                                            : "rgba(99,102,241,0.1)",
+                                                    color: verifyState === "resolved" ? "#00C853"
+                                                        : verifyState === "unable_to_verify" ? "#FBBF24"
+                                                        : "#818CF8",
+                                                    border: `1px solid ${verifyState === "resolved" ? "#00C85333"
+                                                        : verifyState === "unable_to_verify" ? "#FBBF2433"
+                                                        : "#818CF833"}`,
+                                                }}>
+                                                {verifyState === "loading" ? (
+                                                    <Loader2 size={13} className="animate-spin" />
+                                                ) : verifyState === "resolved" ? (
+                                                    <Check size={13} />
+                                                ) : verifyState === "unable_to_verify" ? (
+                                                    <AlertTriangle size={13} />
+                                                ) : (
+                                                    <Shield size={13} />
+                                                )}
+                                                {verifyState === "resolved" ? "Verified ✓"
+                                                    : verifyState === "unable_to_verify" ? "Re-audit needed"
+                                                    : "Verify Fix"}
+                                            </button>
                                             <button onClick={() => toggleDone(selectedTaskData)}
                                                 disabled={saving === selectedTaskData.id}
                                                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-60"
@@ -940,6 +1314,16 @@ export function ActionCenterClient() {
                     </div>
                 </>
             )}
+
+            {/* ═══ Score Reveal Modal ═══ */}
+            <ScoreRevealModal
+                isOpen={showReveal}
+                onClose={() => setShowReveal(false)}
+                oldScore={seoScore}
+                newScore={liveScore}
+                fixedTasks={fixedTaskSummaries}
+                domain={domain ?? "your site"}
+            />
         </div>
     );
 }

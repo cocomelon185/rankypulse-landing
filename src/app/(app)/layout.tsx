@@ -3,7 +3,7 @@ import { AppShell } from "@/components/layout/AppShell";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://rankypulse.com"),
-  robots: { index: true, follow: true },
+  robots: { index: false, follow: false },
   openGraph: {
     siteName: "RankyPulse",
     type: "website",

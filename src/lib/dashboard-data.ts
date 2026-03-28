@@ -6,7 +6,7 @@
  */
 
 import { supabaseAdmin } from "./supabase";
-import { calculateSeoScore } from "./seo-score";
+import { computeSeoScore } from "./seo-score";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -115,6 +115,9 @@ export const ISSUE_META: Record<string, {
   // ── Phase 4 new checks ──────────────────────────────────────────────────────
   multiple_canonicals:     { label: "Multiple Canonical Tags",    impact: "high",   action: "Remove Duplicates", actionHref: "/audits/issues", gain: "Prevents conflicting canonical signals to Google" },
   keyword_cannibalization: { label: "Keyword Cannibalization",    impact: "high",   action: "Consolidate Pages", actionHref: "/audits/issues", gain: "Consolidating competing pages strengthens ranking signal" },
+  // ── Phase 5 showstopper checks ───────────────────────────────────────────────
+  no_viewport: { label: "Not Mobile-Friendly (No Viewport Tag)", impact: "high", action: "Fix Now", actionHref: "/audits/issues", gain: "Mobile responsiveness is required for Google rankings post-2024" },
+  http_pages:  { label: "Page Not Served Over HTTPS",            impact: "high", action: "Fix Now", actionHref: "/audits/issues", gain: "HTTPS is a confirmed Google ranking signal — critical for trust & rankings" },
 };
 
 // ─── Static fallback data (used for metrics we can't compute from DB) ─────────
@@ -209,11 +212,14 @@ export async function getDashboardData(userId: string, domain: string): Promise<
       .eq("job_id", latestJob.id);
 
     if (pages) {
-      auditPages = pages.map((p) => ({
-        url: p.url,
-        score: p.score ?? 0,
-        issues: Array.isArray(p.issues) ? (p.issues as AuditIssue[]) : [],
-      }));
+      // Exclude __site_level__ synthetic page from score computation
+      auditPages = pages
+        .filter((p) => p.url !== "__site_level__")
+        .map((p) => ({
+          url: p.url,
+          score: p.score ?? 0,
+          issues: Array.isArray(p.issues) ? (p.issues as AuditIssue[]) : [],
+        }));
     }
   }
 
@@ -309,8 +315,16 @@ export async function getDashboardData(userId: string, domain: string): Promise<
 
   // ── 8. KPI cards — real where possible, estimated otherwise ───────────────
   const indexedPages = latestJob?.pages_crawled ?? 0;
-  // Compute average health score from audit_pages — shared formula used across all pages
-  const domainScore = calculateSeoScore(auditPages);
+  // Density-based score — same formula as Projects and Site Audit pages
+  const totalAuditPages = auditPages.length || 1;
+  const rawCritOcc = Object.entries(issueCountMap).filter(([id]) => issueSevMap[id] === "HIGH").reduce((s, [, n]) => s + n, 0);
+  const rawWarnOcc = Object.entries(issueCountMap).filter(([id]) => issueSevMap[id] === "MED").reduce((s, [, n]) => s + n, 0);
+  const rawNoticeOcc = Object.entries(issueCountMap).filter(([id]) => issueSevMap[id] === "LOW").reduce((s, [, n]) => s + n, 0);
+  const domainScore = computeSeoScore({
+    critical: rawCritOcc / totalAuditPages,
+    warning: rawWarnOcc / totalAuditPages,
+    notice: rawNoticeOcc / totalAuditPages,
+  });
   const scoreDelta = 0; // No historical data without saved_domains
 
   const kpis = [

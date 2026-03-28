@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import FixCoreWebVitalsClient from "./FixCoreWebVitalsClient";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "How to Fix Core Web Vitals | Complete Guide 2024 | RankyPulse";
+  const title = "How to Fix Core Web Vitals | 2024 Guide | RankyPulse";
   const description = "Step-by-step guide to fixing Core Web Vitals (LCP, FID, CLS). Improve page speed, interactivity, and visual stability to boost rankings and user experience.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/guides/fix-core-web-vitals" },
     robots: { index: true, follow: true },

@@ -2,7 +2,25 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, CheckCircle, AlertCircle, AlertTriangle, Info, ExternalLink } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle,
+  AlertCircle,
+  AlertTriangle,
+  Info,
+  ExternalLink,
+  Zap,
+  UserCheck,
+  Clock,
+  TrendingUp,
+  ShieldCheck,
+  Lightbulb,
+  Wrench,
+  MonitorSmartphone,
+  Globe,
+} from "lucide-react";
+import { getIssueContent } from "@/lib/quickwins/issueCatalog";
 
 interface AuditIssue {
   id: string;
@@ -35,54 +53,22 @@ const SEV_LABEL: Record<string, string> = {
   notice: "Notice",
 };
 
-/** General guidance for common SEO issue types */
-function getFixGuidance(issueId: string): string[] {
-  const guides: Record<string, string[]> = {
-    missing_title: [
-      "Add a unique <title> tag to every page (50–60 characters)",
-      "Include the primary keyword near the beginning",
-      "Avoid duplicate titles across pages",
-    ],
-    missing_meta_description: [
-      "Add a <meta name='description'> tag (150–160 characters)",
-      "Include a clear value proposition and a call to action",
-      "Each page should have a unique description",
-    ],
-    missing_h1: [
-      "Add exactly one <h1> tag per page",
-      "The H1 should describe the main topic of the page",
-      "Include your primary target keyword naturally",
-    ],
-    slow_lcp: [
-      "Optimize and compress images (use WebP format)",
-      "Preload the Largest Contentful Paint element",
-      "Remove render-blocking resources from the critical path",
-      "Enable browser caching and use a CDN",
-    ],
-    broken_links: [
-      "Identify broken links using your audit results",
-      "Fix or remove links that return 4xx / 5xx responses",
-      "Set up 301 redirects for permanently moved pages",
-    ],
-    missing_alt_text: [
-      "Add descriptive alt text to every <img> element",
-      "Be concise — describe what is in the image",
-      "Avoid 'image of' or 'photo of' prefixes",
-    ],
-    no_canonical: [
-      "Add <link rel='canonical'> to every page",
-      "Point it to the preferred URL for that content",
-      "Ensure consistent use of www vs non-www and trailing slashes",
-    ],
-  };
-  return (
-    guides[issueId] ?? [
-      "Review the issue details and consult your CMS documentation",
-      "Make the required changes in your page templates or CMS settings",
-      "Re-audit the page after making changes to confirm the fix",
-    ]
-  );
-}
+const DIFFICULTY_COLOR: Record<string, string> = {
+  Easy: "bg-emerald-500/15 text-emerald-400",
+  Medium: "bg-amber-500/15 text-amber-400",
+  Hard: "bg-red-500/15 text-red-400",
+};
+
+type Platform = "html" | "wordpress" | "shopify" | "wix";
+
+const PLATFORMS: { id: Platform; label: string }[] = [
+  { id: "html", label: "HTML / Custom" },
+  { id: "wordpress", label: "WordPress" },
+  { id: "shopify", label: "Shopify" },
+  { id: "wix", label: "Wix" },
+];
+
+const PLATFORM_STORAGE_KEY = "rp_platform_preference";
 
 export default function AuditFixPage() {
   const params = useParams();
@@ -93,6 +79,22 @@ export default function AuditFixPage() {
   const [data, setData] = useState<AuditData | null>(null);
   const [loading, setLoading] = useState(true);
   const [markedFixed, setMarkedFixed] = useState(false);
+  const [platform, setPlatform] = useState<Platform>("html");
+
+  // Load saved platform preference
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(PLATFORM_STORAGE_KEY) as Platform | null;
+      if (saved && ["html", "wordpress", "shopify", "wix"].includes(saved)) {
+        setPlatform(saved);
+      }
+    } catch { /* silent */ }
+  }, []);
+
+  function savePlatform(p: Platform) {
+    setPlatform(p);
+    try { localStorage.setItem(PLATFORM_STORAGE_KEY, p); } catch { /* silent */ }
+  }
 
   useEffect(() => {
     if (!auditId) return;
@@ -108,7 +110,18 @@ export default function AuditFixPage() {
   const prevIssue = issueIndex > 0 ? data?.issues[issueIndex - 1] : null;
   const nextIssue = issueIndex >= 0 && data ? data.issues[issueIndex + 1] : null;
 
-  const guidance = getFixGuidance(issueId);
+  const catalog = getIssueContent(issueId);
+
+  // Platform-specific steps if available, else generic manual steps
+  const platformStepsForPlatform =
+    platform !== "html" ? catalog.platformSteps?.[platform] : undefined;
+  const stepsToShow = platformStepsForPlatform ?? catalog.manualSteps;
+  const hasPlatformSteps = !!(
+    catalog.platformSteps?.wordpress ||
+    catalog.platformSteps?.shopify ||
+    catalog.platformSteps?.wix
+  );
+
   const Icon = issue ? (SEV_ICON[issue.severity] ?? Info) : Info;
   const color = issue ? (SEV_COLOR[issue.severity] ?? "#6B7A99") : "#6B7A99";
 
@@ -138,7 +151,7 @@ export default function AuditFixPage() {
 
   return (
     <div className="min-h-screen px-4 pt-24 pb-16 sm:px-6" style={{ background: "#0d0f14" }}>
-      <div className="mx-auto max-w-3xl space-y-6">
+      <div className="mx-auto max-w-3xl space-y-5">
 
         {/* Breadcrumb */}
         <button
@@ -149,32 +162,42 @@ export default function AuditFixPage() {
           All Issues
         </button>
 
-        {/* Issue header */}
+        {/* ── Issue header ─────────────────────────────────────────────── */}
         <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6">
-          <div className="flex items-start gap-3 mb-4">
+          <div className="flex items-start gap-3 mb-3">
             <Icon className="h-5 w-5 mt-0.5 shrink-0" style={{ color }} />
-            <div>
-              <span
-                className="text-xs font-semibold uppercase tracking-wider"
-                style={{ color }}
-              >
+            <div className="flex-1 min-w-0">
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color }}>
                 {SEV_LABEL[issue.severity] ?? issue.severity}
               </span>
               <h1 className="text-xl font-bold text-white mt-1">{issue.title}</h1>
             </div>
           </div>
 
+          {/* Badges */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${DIFFICULTY_COLOR[catalog.difficulty]}`}>
+              {catalog.difficulty}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/[0.06] px-2.5 py-0.5 text-xs text-gray-400">
+              <Clock className="h-3 w-3" />
+              {catalog.effortMinutes < 60 ? `~${catalog.effortMinutes} min` : `~${Math.round(catalog.effortMinutes / 60)} hr`}
+            </span>
+            {catalog.estimatedImpact && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/15 px-2.5 py-0.5 text-xs font-semibold text-indigo-400">
+                <TrendingUp className="h-3 w-3" />
+                {catalog.estimatedImpact}
+              </span>
+            )}
+          </div>
+
           <p className="text-sm text-gray-300 leading-relaxed">{issue.description}</p>
 
-          <div className="mt-4 flex items-center gap-4 text-xs text-gray-500">
+          <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
             <span>{issue.urlsAffected} {issue.urlsAffected === 1 ? "page" : "pages"} affected</span>
             {data?.domain && (
-              <a
-                href={`https://${data.domain}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 transition"
-              >
+              <a href={`https://${data.domain}`} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 transition">
                 {data.domain}
                 <ExternalLink className="h-3 w-3" />
               </a>
@@ -182,11 +205,95 @@ export default function AuditFixPage() {
           </div>
         </div>
 
-        {/* Fix guidance */}
+        {/* ── Why this matters ─────────────────────────────────────────── */}
         <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6">
-          <h2 className="text-sm font-semibold text-white mb-4">How to Fix</h2>
+          <h2 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+            <Info className="h-4 w-4 text-indigo-400" />
+            Why this matters
+          </h2>
+          <p className="text-sm text-gray-300 leading-relaxed">{catalog.whyItMatters}</p>
+        </div>
+
+        {/* ── Pro Tip (SEMrush doesn't have this) ──────────────────────── */}
+        {catalog.proTip && (
+          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.07] p-5">
+            <h2 className="text-sm font-semibold text-amber-300 mb-1.5 flex items-center gap-2">
+              <Lightbulb className="h-4 w-4" />
+              Pro Tip
+            </h2>
+            <p className="text-sm text-amber-100/80 leading-relaxed">{catalog.proTip}</p>
+          </div>
+        )}
+
+        {/* ── Before / After code examples ─────────────────────────────── */}
+        {(catalog.exampleBefore || catalog.exampleAfter) && (
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 space-y-4">
+            <h2 className="text-sm font-semibold text-white">Example</h2>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {catalog.exampleBefore && (
+                <div>
+                  <div className="mb-1.5 flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-red-500" />
+                    <span className="text-xs font-medium text-red-400">Before (broken)</span>
+                  </div>
+                  <pre className="overflow-x-auto rounded-lg bg-[#0a0c10] border border-red-500/20 p-3 text-xs text-gray-300 leading-relaxed whitespace-pre-wrap">
+                    {catalog.exampleBefore}
+                  </pre>
+                </div>
+              )}
+              {catalog.exampleAfter && (
+                <div>
+                  <div className="mb-1.5 flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <span className="text-xs font-medium text-emerald-400">After (fixed)</span>
+                  </div>
+                  <pre className="overflow-x-auto rounded-lg bg-[#0a0c10] border border-emerald-500/20 p-3 text-xs text-gray-300 leading-relaxed whitespace-pre-wrap">
+                    {catalog.exampleAfter}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── How to fix (with platform selector) ──────────────────────── */}
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Wrench className="h-4 w-4 text-indigo-400" />
+              How to Fix
+            </h2>
+
+            {/* Platform selector — only shown when platform steps exist */}
+            {hasPlatformSteps && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <MonitorSmartphone className="h-3.5 w-3.5 text-gray-500 shrink-0" />
+                <span className="text-xs text-gray-500 mr-0.5">Platform:</span>
+                {PLATFORMS.map((p) => {
+                  const hasSteps =
+                    p.id === "html" || !!(catalog.platformSteps?.[p.id as "wordpress" | "shopify" | "wix"]);
+                  if (!hasSteps) return null;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => savePlatform(p.id)}
+                      className={`rounded-full px-3 py-0.5 text-xs font-medium transition ${
+                        platform === p.id
+                          ? "bg-indigo-500 text-white"
+                          : "bg-white/[0.06] text-gray-400 hover:bg-white/[0.10]"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Steps */}
           <ol className="space-y-3">
-            {guidance.map((step, i) => (
+            {stepsToShow.map((step, i) => (
               <li key={i} className="flex items-start gap-3">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-xs font-bold text-indigo-400">
                   {i + 1}
@@ -195,15 +302,162 @@ export default function AuditFixPage() {
               </li>
             ))}
           </ol>
+
+          {/* Template snippet */}
+          {catalog.templateSnippet && (
+            <div className="mt-4">
+              <p className="text-xs text-gray-500 mb-1.5">Copyable template:</p>
+              <pre className="overflow-x-auto rounded-lg bg-[#0a0c10] border border-white/[0.06] p-3 text-xs text-indigo-300 whitespace-pre-wrap">
+                {catalog.templateSnippet}
+              </pre>
+            </div>
+          )}
         </div>
 
-        {/* Mark as fixed + navigation */}
+        {/* ── Recommended free tools (SEMrush doesn't have this) ───────── */}
+        {catalog.tools && catalog.tools.length > 0 && (
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6">
+            <h2 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+              <Globe className="h-4 w-4 text-indigo-400" />
+              Recommended Tools
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {catalog.tools.map((tool) => (
+                <a
+                  key={tool.name}
+                  href={tool.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 hover:border-indigo-500/40 hover:bg-indigo-500/[0.05] transition"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-white group-hover:text-indigo-300 transition">
+                      {tool.name}
+                    </p>
+                    {tool.description && (
+                      <p className="text-xs text-gray-500 mt-0.5 leading-tight">{tool.description}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {tool.free && (
+                      <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400">
+                        Free
+                      </span>
+                    )}
+                    <ExternalLink className="h-3 w-3 text-gray-600 group-hover:text-indigo-400 transition" />
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── How to verify ────────────────────────────────────────────── */}
+        {catalog.validationSteps.length > 0 && (
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6">
+            <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-emerald-400" />
+              How to verify the fix
+            </h2>
+            <ol className="space-y-3">
+              {catalog.validationSteps.map((step, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <CheckCircle className="h-4 w-4 mt-0.5 shrink-0 text-emerald-500/60" />
+                  <span className="text-sm text-gray-300 leading-relaxed">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+
+        {/* ── AI Fix / Find Expert CTA ─────────────────────────────────── */}
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          {catalog.canAutoFix ? (
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-white mb-0.5 flex items-center gap-2">
+                <Zap className="h-4 w-4 text-indigo-400" />
+                AI Fix available
+              </p>
+              <p className="text-xs text-gray-400">{catalog.aiFixPreview}</p>
+            </div>
+          ) : (
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-white mb-0.5 flex items-center gap-2">
+                <UserCheck className="h-4 w-4 text-amber-400" />
+                Developer or expert needed
+              </p>
+              <p className="text-xs text-gray-400">
+                This fix requires server configuration or code changes — it can&apos;t be done automatically.
+              </p>
+            </div>
+          )}
+
+          {catalog.canAutoFix ? (
+            <button className="shrink-0 flex items-center gap-2 rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-400 transition">
+              <Zap className="h-4 w-4" />
+              AI Fix →
+            </button>
+          ) : (
+            <a
+              href="https://www.upwork.com/search/profiles/?q=seo+developer"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2.5 text-sm font-semibold text-gray-300 hover:bg-white/5 transition"
+            >
+              <UserCheck className="h-4 w-4" />
+              Find an Expert →
+            </a>
+          )}
+        </div>
+
+        {/* ── Related issues (SEMrush doesn't have this) ───────────────── */}
+        {catalog.relatedIssues && catalog.relatedIssues.length > 0 && (
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6">
+            <h2 className="text-sm font-semibold text-white mb-3">
+              Related issues to check
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {catalog.relatedIssues.map((relId) => {
+                const rel = getIssueContent(relId);
+                const relIssue = data?.issues.find((i) => i.id === relId);
+                const isActive = !!relIssue;
+                return (
+                  <button
+                    key={relId}
+                    onClick={() => {
+                      if (isActive && auditId) {
+                        router.push(`/audits/${auditId}/fix/${relId}`);
+                      }
+                    }}
+                    disabled={!isActive}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition ${
+                      isActive
+                        ? "border border-white/10 bg-white/[0.04] text-gray-300 hover:border-indigo-500/40 hover:text-indigo-300 cursor-pointer"
+                        : "border border-white/[0.04] bg-white/[0.02] text-gray-600 cursor-default"
+                    }`}
+                  >
+                    {rel.title}
+                    {isActive && (
+                      <span className="rounded-full bg-red-500/20 px-1.5 py-0.5 text-[10px] font-bold text-red-400">
+                        {relIssue.urlsAffected}
+                      </span>
+                    )}
+                    {!isActive && (
+                      <span className="text-[10px] text-gray-600">✓ Clean</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Mark as fixed + navigation ───────────────────────────────── */}
         <div className="flex flex-col sm:flex-row items-center gap-3">
           {!markedFixed ? (
             <button
               onClick={() => {
                 setMarkedFixed(true);
-                // Navigate to next issue after marking fixed
                 if (nextIssue) {
                   setTimeout(() => router.push(`/audits/${auditId}/fix/${nextIssue.id}`), 600);
                 } else {

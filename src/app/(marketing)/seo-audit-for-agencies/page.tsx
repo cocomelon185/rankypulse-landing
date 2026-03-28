@@ -6,7 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = "White-label SEO audits for agencies. Rebrand reports, improve client results, and scale your service offerings.";
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: "https://rankypulse.com/seo-audit-for-agencies" },
     robots: { index: true, follow: true },

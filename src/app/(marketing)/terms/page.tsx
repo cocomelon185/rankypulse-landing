@@ -5,7 +5,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 import { Zap } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Terms of Service",
+  title: { absolute: "RankyPulse Terms of Service & Usage Policy" },
   description:
     "Terms of Service for RankyPulse — the SEO audit platform. Please read these terms carefully before using our services.",
   robots: { index: true, follow: true },

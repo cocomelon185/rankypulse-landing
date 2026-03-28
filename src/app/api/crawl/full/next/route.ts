@@ -26,19 +26,32 @@ function getUrlDepth(url: string): number {
     } catch { return 0; }
 }
 
+// ── Tech stack detection ──────────────────────────────────────────────────────
+function getTechStackHint(html: string): string {
+    const h = html.toLowerCase();
+    if (h.includes("wp-content") || h.includes("wp-includes")) return "WordPress";
+    if (h.includes("_next/static") || h.includes("__next_data__")) return "Next.js";
+    if (h.includes("react-root") || h.includes("react-dom")) return "React";
+    if (h.includes("shopify")) return "Shopify";
+    if (h.includes("<table") && (h.includes("bgcolor") || h.includes("cellpadding"))) {
+        return "Legacy HTML (Table-based)";
+    }
+    return "Standard HTML/CSS";
+}
+
 function auditPageCompact(
     domain: string,
     pageUrl: string,
     html: string,
     psi: Record<string, unknown> | null,
     brokenLinks: string[]
-): { score: number; issues: CompactIssue[] } {
+): { score: number; issues: CompactIssue[]; techStack: string; extraMeta: { canonical_url: string | null; h1_text: string | null; robots_directive: string; word_count: number; html_size_kb: number } } {
     const issues: CompactIssue[] = [];
     let score = 100;
 
     if (!html) {
         // Can't audit — return minimal score with no issues if PSI failed too
-        return { score: psi ? 50 : 30, issues };
+        return { score: psi ? 50 : 30, issues, techStack: "Standard HTML/CSS", extraMeta: { canonical_url: null, h1_text: null, robots_directive: "index", word_count: 0, html_size_kb: 0 } };
     }
 
     // Meta description
@@ -83,6 +96,7 @@ function auditPageCompact(
 
     // H1
     const h1Count = (html.match(/<h1[\s>]/gi) ?? []).length;
+    const h1Text = html.match(/<h1[^>]*>([^<]+)/i)?.[1]?.trim() ?? null;
     if (h1Count === 0) {
         score -= 5;
         issues.push({ id: "no_h1", sev: "MED", msg: "Missing H1 heading" });
@@ -93,15 +107,16 @@ function auditPageCompact(
 
     // Canonical
     const hasCanonical = /<link\s[^>]*rel=["']canonical["']/i.test(html);
+    let canonHref: string | null = null;
     if (!hasCanonical) {
         score -= 3;
         issues.push({ id: "no_canonical", sev: "LOW", msg: "Missing canonical tag" });
     } else {
         // Canonical mismatch — canonical exists but points to a different URL
-        const canonHref = (
+        canonHref = (
             html.match(/<link\s[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["']/i) ??
             html.match(/<link\s[^>]*href=["']([^"']+)["'][^>]*rel=["']canonical["']/i)
-        )?.[1]?.trim();
+        )?.[1]?.trim() ?? null;
         if (canonHref) {
             const norm = (u: string) => u.replace(/\/$/, "");
             if (norm(canonHref) !== norm(pageUrl)) {
@@ -118,9 +133,11 @@ function auditPageCompact(
         }
     }
 
-    // Robots noindex
-    const isNoindex = /content=["'][^"']*noindex/i.test(html) ||
-        /<meta\s[^>]*name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(html);
+    // Robots noindex — check <head> ONLY to avoid false positives from
+    // blog post content examples like `<meta name="robots" content="noindex">`
+    // rendered as escaped text inside <code> blocks.
+    const headHtml = html.match(/<head[\s>][\s\S]*?<\/head>/i)?.[0] ?? "";
+    const isNoindex = /<meta\s[^>]*name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(headHtml);
     if (isNoindex) {
         score -= 15;
         issues.push({ id: "robots_noindex", sev: "HIGH", msg: "Page set to noindex" });
@@ -178,6 +195,19 @@ function auditPageCompact(
         issues.push({ id: "broken_links", sev: "HIGH", msg: `${brokenLinks.length} broken link(s) found` });
     }
 
+    // Viewport meta tag (mobile-friendliness) — requires width=device-width to be valid
+    const hasViewport = /<meta\s+name=["']viewport["']\s+content=["'][^"']*width=device-width[^"']*["']/i.test(html);
+    if (!hasViewport) {
+        score -= 15;
+        issues.push({ id: "no_viewport", sev: "HIGH", msg: "Missing viewport meta tag — site is not mobile-friendly" });
+    }
+
+    // HTTP (not HTTPS) URL — showstopper for trust and Google ranking
+    if (pageUrl.startsWith("http:")) {
+        score -= 20;
+        issues.push({ id: "http_pages", sev: "HIGH", msg: "Page served over HTTP (not HTTPS)" });
+    }
+
     // Page speed (from PSI)
     if (psi) {
         const lhr = psi?.lighthouseResult as Record<string, unknown> | undefined;
@@ -191,7 +221,19 @@ function auditPageCompact(
         }
     }
 
-    return { score: Math.max(20, score), issues };
+    const techStack = getTechStackHint(html);
+    return {
+        score: Math.max(20, score),
+        issues,
+        techStack,
+        extraMeta: {
+            canonical_url: canonHref,
+            h1_text: h1Text,
+            robots_directive: isNoindex ? "noindex" : "index",
+            word_count: wordCount,
+            html_size_kb: Math.round(htmlBytes / 1024),
+        },
+    };
 }
 
 export async function GET(req: NextRequest) {
@@ -247,14 +289,14 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ done: true, message: "Reached page limit", progress: 100, crawled: job.pages_crawled });
         }
 
-        // 2. Fetch the next pending URL
+        // 2. Fetch the next 2 pending URLs (batch processing for 2× speed)
         const { data: queueItems } = await supabaseAdmin
             .from("crawl_queue")
             .select("*")
             .eq("job_id", jobId)
             .eq("status", "pending")
             .order("id", { ascending: true })
-            .limit(1);
+            .limit(2);
 
         if (!queueItems || queueItems.length === 0) {
             await supabaseAdmin.from("crawl_jobs")
@@ -302,7 +344,7 @@ export async function GET(req: NextRequest) {
             // Fetch with manual redirect tracking so we can detect redirect chains
             const fetchHTMLPromise = async (): Promise<string> => {
                 const controller = new AbortController();
-                const timer = setTimeout(() => controller.abort(), 12000);
+                const timer = setTimeout(() => controller.abort(), 8000);
                 let currentUrl = targetUrl;
                 redirectChain = [targetUrl];
                 try {
@@ -332,8 +374,8 @@ export async function GET(req: NextRequest) {
             };
 
             [html, psi] = await Promise.all([
-                withTimeout(fetchHTMLPromise(), 13000, ""),
-                isRoot ? withTimeout(fetchPSI(cleanDomain), 15000, null) : Promise.resolve(null),
+                withTimeout(fetchHTMLPromise(), 9000, ""),
+                isRoot ? withTimeout(fetchPSI(cleanDomain), 10000, null) : Promise.resolve(null),
             ]);
         } catch (e) {
             fetchError = e instanceof Error ? e.message : "Fetch failed";
@@ -397,11 +439,11 @@ export async function GET(req: NextRequest) {
         let brokenLinks: string[] = [];
         if (html) {
             internalLinks = extractInternalLinks(html, cleanDomain);
-            brokenLinks = await withTimeout(checkBrokenLinks(internalLinks.slice(0, 5)), 4000, []);
+            brokenLinks = await withTimeout(checkBrokenLinks(internalLinks.slice(0, 3)), 2500, []);
         }
 
         // 5. Run compact audit
-        const { score, issues } = auditPageCompact(cleanDomain, targetUrl, html, psi, brokenLinks);
+        const { score, issues, techStack, extraMeta } = auditPageCompact(cleanDomain, targetUrl, html, psi, brokenLinks);
 
         // 5b. Detect redirect chain (≥2 hops = chain of 3+ URLs)
         if (redirectChain.length >= 3) {
@@ -453,20 +495,34 @@ export async function GET(req: NextRequest) {
                 depth: getUrlDepth(targetUrl),
                 is_root: isRoot,
                 psi_available: !!psi,
+                tech_stack: techStack,
+                ...extraMeta,
             },
         }, { onConflict: "job_id,url", ignoreDuplicates: false });
 
         // 7. Add new links to queue (upsert to skip duplicates)
+        // Skip auth-required paths (/app/*, /api/*) — the crawler can't authenticate,
+        // so these pages redirect to /auth/signin causing false canonical mismatch,
+        // keyword cannibalization, and blocked-by-robots issues.
+        const SKIP_CRAWL_PREFIXES = ["/app/", "/api/"];
         if (internalLinks.length > 0) {
-            const linksToInsert = internalLinks.slice(0, 50).map((l) => ({
-                job_id: jobId,
-                url: l,
-                status: "pending",
-            }));
-            await supabaseAdmin.from("crawl_queue").upsert(linksToInsert, {
-                onConflict: "job_id,url",
-                ignoreDuplicates: true,
+            const crawlableLinks = internalLinks.filter(link => {
+                try {
+                    const pathname = new URL(link).pathname;
+                    return !SKIP_CRAWL_PREFIXES.some(p => pathname.startsWith(p));
+                } catch { return true; }
             });
+            if (crawlableLinks.length > 0) {
+                const linksToInsert = crawlableLinks.slice(0, 50).map((l) => ({
+                    job_id: jobId,
+                    url: l,
+                    status: "pending",
+                }));
+                await supabaseAdmin.from("crawl_queue").upsert(linksToInsert, {
+                    onConflict: "job_id,url",
+                    ignoreDuplicates: true,
+                });
+            }
         }
 
         // 8. Mark done, increment counter

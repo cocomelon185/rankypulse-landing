@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { ISSUE_META } from "@/lib/dashboard-data";
 import { ISSUE_CONTENT } from "@/lib/issue-content";
 import { computeSeoScore } from "@/lib/seo-score";
+import { resolveSharedAuditContext } from "@/lib/shared-audits";
 
 const BUILD_VERSION = "2026-03-08-v5";
 
@@ -60,7 +61,7 @@ const impactToEffort: Record<string, "easy" | "medium" | "hard"> = {
   high: "medium",
 };
 
-const basePoints: Record<string, number> = { error: 8, warning: 5, notice: 2 };
+const basePoints: Record<string, number> = { error: 10, warning: 5, notice: 2 };
 
 // Map ISSUE_META issue IDs to categories based on actionHref and issue type
 const CATEGORY_MAP: Record<string, string> = {
@@ -137,23 +138,11 @@ export async function GET(req: NextRequest) {
   const domainParam = req.nextUrl.searchParams.get("domain");
 
   try {
-    // ── 1. Get all completed crawl jobs for domain selector ──────────────
-    const { data: allJobs } = await supabaseAdmin
-      .from("crawl_jobs")
-      .select("id, domain, created_at, pages_crawled")
-      .eq("user_id", userId)
-      .eq("status", "completed")
-      .order("created_at", { ascending: false })
-      .limit(20);
-
-    // Deduplicate domains (latest job per domain)
-    const domainJobMap = new Map<string, typeof allJobs extends (infer T)[] | null ? T : never>();
-    for (const job of allJobs ?? []) {
-      if (!domainJobMap.has(job.domain)) {
-        domainJobMap.set(job.domain, job);
-      }
-    }
-    const allDomains = [...domainJobMap.keys()];
+    const { allDomains, latestJob, targetDomain } = await resolveSharedAuditContext(
+      userId,
+      domainParam,
+      ["completed"]
+    );
 
     if (allDomains.length === 0) {
       return NextResponse.json({
@@ -163,47 +152,24 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ── 2. Select the target domain ─────────────────────────────────────
-    // If domain param provided, use it; otherwise try each domain's latest job until one has pages
-    let targetDomain = domainParam && allDomains.includes(domainParam) ? domainParam : null;
-    let latestJob: { id: string; domain: string; created_at: string } | null = null;
+    // ── 2. Load pages for the selected shared job ────────────────────────
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let rawPages: any[] | null = null;
     const skippedJobs: string[] = [];
 
-    if (targetDomain) {
-      // Use the specific domain's latest job
-      const job = domainJobMap.get(targetDomain);
-      if (job) {
-        const { data, error } = await supabaseAdmin
-          .from("audit_pages")
-          .select("url, score, issues, metadata")
-          .eq("job_id", job.id);
-        if (!error && data && data.length > 0) {
-          latestJob = job;
-          rawPages = data;
-        }
+    if (latestJob) {
+      const { data, error } = await supabaseAdmin
+        .from("audit_pages")
+        .select("url, score, issues, metadata")
+        .eq("job_id", latestJob.id);
+      if (!error && data && data.length > 0) {
+        rawPages = data;
+      } else if (targetDomain) {
+        skippedJobs.push(`${targetDomain}(${latestJob.id.slice(0, 8)})`);
       }
     }
 
-    if (!latestJob) {
-      // Try each domain's latest job until we find one with pages
-      for (const [dom, job] of domainJobMap) {
-        const { data, error } = await supabaseAdmin
-          .from("audit_pages")
-          .select("url, score, issues, metadata")
-          .eq("job_id", job.id);
-        if (!error && data && data.length > 0) {
-          latestJob = job;
-          rawPages = data;
-          targetDomain = dom;
-          break;
-        }
-        skippedJobs.push(`${dom}(${job.id.slice(0, 8)})`);
-      }
-    }
-
-    if (!latestJob || !rawPages || rawPages.length === 0) {
+    if (!latestJob || !targetDomain || !rawPages || rawPages.length === 0) {
       return NextResponse.json({
         tasks: [], domain: allDomains[0] ?? null, allDomains,
         seoScore: 0, projectedScore: 0, totalPoints: 0, earnedPoints: 0,
@@ -214,21 +180,29 @@ export async function GET(req: NextRequest) {
     const jobId = latestJob.id;
     const domain = latestJob.domain;
 
-    // ── 3. Parse pages ──────────────────────────────────────────────────
-    const pages = rawPages.map((p) => ({
-      url: p.url as string,
-      score: p.score as number,
-      issues: Array.isArray(p.issues) ? (p.issues as RawIssue[]) : [],
-      metadata: (p.metadata as PageMetadata) ?? null,
-    }));
+    // ── 3. Parse pages (exclude __site_level__ synthetic row) ──────────
+    const pages = rawPages
+      .filter((p) => p.url !== "__site_level__")
+      .map((p) => ({
+        url: p.url as string,
+        score: p.score as number,
+        issues: Array.isArray(p.issues) ? (p.issues as RawIssue[]) : [],
+        metadata: (p.metadata as PageMetadata) ?? null,
+      }));
 
     // ── 4. Aggregate issues + track affected URLs per issue ─────────────
     const issueMap: Record<string, { sev: string; count: number; urls: string[] }> = {};
+    // rawIssueMap contains only persisted (crawled) issues — used for the base seoScore
+    // so it matches exactly what Projects and Site Audit pages compute.
+    const rawIssueMap: Record<string, { sev: string; count: number }> = {};
     for (const page of pages) {
       for (const issue of page.issues) {
         if (!issueMap[issue.id]) issueMap[issue.id] = { sev: issue.sev, count: 0, urls: [] };
         issueMap[issue.id].count++;
         if (issueMap[issue.id].urls.length < 10) issueMap[issue.id].urls.push(page.url);
+        // Track raw (no derived) counts separately for consistent score computation
+        if (!rawIssueMap[issue.id]) rawIssueMap[issue.id] = { sev: issue.sev, count: 0 };
+        rawIssueMap[issue.id].count++;
       }
     }
 
@@ -288,32 +262,62 @@ export async function GET(req: NextRequest) {
       completionMap.set(c.issue_id, { status: c.status, marked_at: c.marked_at });
     }
 
-    // ── 7. Compute SEO scores ───────────────────────────────────────────
+    // ── 7. Compute SEO scores (density-based, raw issues only) ──────────
+    // Use rawIssueMap (persisted issues only, no derived) so seoScore matches
+    // Projects and Site Audit pages which only see persisted audit_pages data.
     const issueEntries = Object.entries(issueMap);
-    const criticalCount = issueEntries.filter(([, v]) => v.sev === "HIGH").length;
-    const warningCount = issueEntries.filter(([, v]) => v.sev === "MED").length;
-    const noticeCount = issueEntries.filter(([, v]) => v.sev === "LOW").length;
+    const rawIssueEntries = Object.entries(rawIssueMap);
+    const totalPagesForDensity = pages.length > 0 ? pages.length : 1;
 
-    const seoScore = computeSeoScore({
-      pages: pages.length,
-      totalIssues: issueEntries.length,
-      criticalIssues: criticalCount,
-      warningIssues: warningCount,
-      noticeIssues: noticeCount,
-    });
+    const totalCriticalOcc = rawIssueEntries
+      .filter(([, v]) => v.sev === "HIGH")
+      .reduce((s, [, v]) => s + v.count, 0);
+    const totalWarningOcc = rawIssueEntries
+      .filter(([, v]) => v.sev === "MED")
+      .reduce((s, [, v]) => s + v.count, 0);
+    const totalNoticeOcc = rawIssueEntries
+      .filter(([, v]) => v.sev === "LOW")
+      .reduce((s, [, v]) => s + v.count, 0);
 
-    // Projected score: remove all remaining (non-done) issues
-    const remainingCritical = issueEntries.filter(([id, v]) => v.sev === "HIGH" && completionMap.get(id)?.status !== "done").length;
-    const remainingWarning = issueEntries.filter(([id, v]) => v.sev === "MED" && completionMap.get(id)?.status !== "done").length;
-    const remainingNotice = issueEntries.filter(([id, v]) => v.sev === "LOW" && completionMap.get(id)?.status !== "done").length;
+    const seoScore = pages.length > 0 ? computeSeoScore({
+      critical: totalCriticalOcc / totalPagesForDensity,
+      warning:  totalWarningOcc  / totalPagesForDensity,
+      notice:   totalNoticeOcc   / totalPagesForDensity,
+    }) : 0;
 
-    const projectedScore = computeSeoScore({
-      pages: pages.length,
-      totalIssues: 0,
-      criticalIssues: 0,
-      warningIssues: 0,
-      noticeIssues: 0,
-    });
+    const projectedScore = pages.length > 0 ? computeSeoScore({
+      critical: 0,
+      warning:  0,
+      notice:   0,
+    }) : 0;
+
+    // ── 7b. Compute currentProjected — score if only remaining (not-done) raw issues exist
+    const remainingCriticalOcc = rawIssueEntries
+      .filter(([id, v]) => v.sev === "HIGH" && completionMap.get(id)?.status !== "done")
+      .reduce((s, [, v]) => s + v.count, 0);
+    const remainingWarningOcc = rawIssueEntries
+      .filter(([id, v]) => v.sev === "MED" && completionMap.get(id)?.status !== "done")
+      .reduce((s, [, v]) => s + v.count, 0);
+    const remainingNoticeOcc = rawIssueEntries
+      .filter(([id, v]) => v.sev === "LOW" && completionMap.get(id)?.status !== "done")
+      .reduce((s, [, v]) => s + v.count, 0);
+
+    const currentProjected = pages.length > 0 ? computeSeoScore({
+      critical: remainingCriticalOcc / totalPagesForDensity,
+      warning:  remainingWarningOcc  / totalPagesForDensity,
+      notice:   remainingNoticeOcc   / totalPagesForDensity,
+    }) : 0;
+
+    // ── 7c. Compute density-proportional estimatedPoints per issue ────────
+    //   Each issue's score impact = (count / totalPages) × severityWeight
+    //   Distribute maxDelta (projectedScore − seoScore) proportionally
+    const SEV_WEIGHT = { HIGH: 10, MED: 4, LOW: 1 } as const;
+    const rawContribMap = new Map<string, number>();
+    for (const [id, { sev, count }] of issueEntries) {
+      rawContribMap.set(id, (count / totalPagesForDensity) * (SEV_WEIGHT[sev as keyof typeof SEV_WEIGHT] ?? 1));
+    }
+    const totalDeduction = [...rawContribMap.values()].reduce((s, v) => s + v, 0);
+    const maxDelta = Math.max(0, projectedScore - seoScore);
 
     // ── 8. Transform issueMap → enriched Task[] ─────────────────────────
     const tasks: Task[] = issueEntries.map(([id, { sev, count, urls }], index) => {
@@ -321,7 +325,11 @@ export async function GET(req: NextRequest) {
       const content = ISSUE_CONTENT[id];
       const severity = sevToSeverity(sev);
       const effort = impactToEffort[meta?.impact ?? "medium"] ?? "medium";
-      const estimatedPoints = Math.round((basePoints[severity] ?? 3) * (1 + count / 100));
+      // Points proportional to this issue's actual density contribution
+      const rawContrib = rawContribMap.get(id) ?? 0;
+      const estimatedPoints = totalDeduction > 0 && maxDelta > 0
+        ? Math.max(1, Math.round((rawContrib / totalDeduction) * maxDelta))
+        : 0;
       const title = meta?.label ?? id.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
       const description = meta?.gain
         ? `${meta.gain}. Fix this issue to improve your SEO performance.`
@@ -374,6 +382,7 @@ export async function GET(req: NextRequest) {
       allDomains,
       seoScore,
       projectedScore,
+      currentProjected,
       totalPoints,
       earnedPoints,
     };
