@@ -5,6 +5,48 @@ import Link from 'next/link';
 import { BLOG_POSTS, type BlogPost as BlogPostType } from '@/lib/blog-posts';
 import { Clock, ArrowLeft, ArrowRight } from 'lucide-react';
 
+const CTA_COPY: Record<BlogPostType['category'], { heading: string; sub: string; cta: string }> = {
+  'Technical SEO': {
+    heading: 'Find these issues on your site right now',
+    sub: 'RankyPulse checks canonicals, redirects, meta tags, and 50+ more signals in 30 seconds.',
+    cta: 'Run your technical audit →',
+  },
+  'Strategy': {
+    heading: 'Put this strategy to work on your site',
+    sub: 'See exactly where your site stands today. Free audit, no signup, 30 seconds.',
+    cta: 'Audit my site →',
+  },
+  'Tools': {
+    heading: 'See how your site compares',
+    sub: 'Free audit. No signup. Results in 30 seconds.',
+    cta: 'Run free audit →',
+  },
+  'Case Study': {
+    heading: 'Get results like this on your site',
+    sub: 'See what RankyPulse finds on your pages. Free, instant, no signup.',
+    cta: 'Audit my site free →',
+  },
+};
+
+function InlineCTA({ category }: { category: BlogPostType['category'] }) {
+  const copy = CTA_COPY[category] ?? CTA_COPY['Strategy'];
+  return (
+    <div className="my-10 p-6 bg-indigo-500/[0.07] border border-indigo-500/20 rounded-2xl">
+      <p className="font-['Fraunces'] text-lg font-bold text-white mb-1">{copy.heading}</p>
+      <p className="font-['DM_Sans'] text-gray-400 text-sm mb-4">{copy.sub}</p>
+      <Link
+        href="/audit"
+        className="inline-flex items-center gap-2 px-5 py-2.5
+          bg-indigo-500 text-white rounded-xl
+          font-['DM_Sans'] font-semibold text-sm
+          hover:bg-indigo-400 transition-colors"
+      >
+        {copy.cta}
+      </Link>
+    </div>
+  );
+}
+
 export function BlogPost({ post }: { post: BlogPostType }) {
   // Same-category posts, excluding current, up to 3
   const related = BLOG_POSTS
@@ -91,7 +133,10 @@ export function BlogPost({ post }: { post: BlogPostType }) {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          {post.content.trim().split('\n\n').map((block, i) => {
+          {(() => {
+            const blocks = post.content.trim().split('\n\n').filter(b => b.trim());
+            const midpoint = Math.floor(blocks.length / 2);
+            return blocks.map((block, i) => {
             const trimmed = block.trim();
             if (!trimmed) return null;
 
@@ -213,34 +258,42 @@ export function BlogPost({ post }: { post: BlogPostType }) {
               '<a href="$2" class="text-blue-400 hover:text-blue-300 underline underline-offset-2">$1</a>'
             );
             return (
-              <p
-                key={i}
-                className="font-['DM_Sans'] text-gray-300 leading-relaxed text-base mb-6"
-                dangerouslySetInnerHTML={{ __html: withLinks }}
-              />
+              <span key={i}>
+                <p
+                  className="font-['DM_Sans'] text-gray-300 leading-relaxed text-base mb-6"
+                  dangerouslySetInnerHTML={{ __html: withLinks }}
+                />
+                {i === midpoint && <InlineCTA category={post.category} />}
+              </span>
             );
-          })}
+            });
+          })()}
         </motion.div>
 
         {/* CTA */}
-        <div className="mt-16 p-8 bg-indigo-500/[0.08] border border-indigo-500/20
-          rounded-2xl text-center">
-          <h3 className="font-['Fraunces'] text-2xl font-bold text-white mb-2">
-            See this in action on your site
-          </h3>
-          <p className="font-['DM_Sans'] text-gray-400 text-sm mb-6">
-            Free audit. No signup. 30 seconds.
-          </p>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 px-6 py-3
-              bg-indigo-500 text-white rounded-xl
-              font-['DM_Sans'] font-semibold text-sm
-              hover:bg-indigo-400 transition-colors"
-          >
-            Run free audit →
-          </Link>
-        </div>
+        {(() => {
+          const copy = CTA_COPY[post.category] ?? CTA_COPY['Strategy'];
+          return (
+            <div className="mt-16 p-8 bg-indigo-500/[0.08] border border-indigo-500/20
+              rounded-2xl text-center">
+              <h3 className="font-['Fraunces'] text-2xl font-bold text-white mb-2">
+                {copy.heading}
+              </h3>
+              <p className="font-['DM_Sans'] text-gray-400 text-sm mb-6">
+                {copy.sub}
+              </p>
+              <Link
+                href="/audit"
+                className="inline-flex items-center gap-2 px-6 py-3
+                  bg-indigo-500 text-white rounded-xl
+                  font-['DM_Sans'] font-semibold text-sm
+                  hover:bg-indigo-400 transition-colors"
+              >
+                {copy.cta}
+              </Link>
+            </div>
+          );
+        })()}
 
         {/* Related Posts */}
         {relatedPosts.length > 0 && (
