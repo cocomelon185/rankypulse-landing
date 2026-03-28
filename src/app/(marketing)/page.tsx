@@ -11,6 +11,7 @@ import { SampleReports } from "@/components/landing/SampleReports";
 import { PricingTeaser } from "@/components/landing/PricingTeaser";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { RecentPosts } from "@/components/landing/RecentPosts";
 
 const softwareAppSchema = {
   "@context": "https://schema.org",
@@ -76,6 +77,7 @@ export default function HomePage() {
         <HowItWorks />
         <Testimonials />
         <ComparisonTable />
+        <RecentPosts />
         <SampleReports />
         <PricingTeaser />
         <FinalCTA />
