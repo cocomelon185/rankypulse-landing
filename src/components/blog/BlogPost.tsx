@@ -6,6 +6,12 @@ import type { BlogPost as BlogPostType } from '@/lib/blog-posts';
 import { Clock, ArrowLeft } from 'lucide-react';
 
 export function BlogPost({ post }: { post: BlogPostType }) {
+  const ALL_POSTS = [
+    { title: "How Google Actually Crawls Your Website", href: "/blog/how-google-actually-crawls", tag: "Technical SEO", readTime: "7 min read" },
+    { title: "Google Not Indexing Your Pages? Here's Why", href: "/blog/google-not-indexing-pages", tag: "Indexing", readTime: "9 min read" },
+    { title: "How to Read an SEO Audit Report", href: "/blog/how-to-read-an-seo-audit", tag: "SEO Audits", readTime: "6 min read" },
+  ];
+  const relatedPosts = ALL_POSTS.filter(p => p.title !== post.title);
   return (
     <main className="min-h-screen bg-[#0d0f14] pt-24 pb-24 px-6">
 
@@ -229,6 +235,29 @@ export function BlogPost({ post }: { post: BlogPostType }) {
           </Link>
         </div>
 
+        {/* Keep reading */}
+        <div className="mt-16">
+          <h3 className="font-['Fraunces'] text-xl font-bold text-white mb-6">
+            Keep reading
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {relatedPosts.map((rp) => (
+              <Link
+                key={rp.href}
+                href={rp.href}
+                className="block bg-white/[0.04] border border-white/10 rounded-xl p-5 hover:bg-white/[0.07] hover:border-indigo-500/30 transition-all duration-200 group"
+              >
+                <span className="inline-block text-xs font-semibold text-indigo-400 mb-3">
+                  {rp.tag}
+                </span>
+                <p className="font-['DM_Sans'] text-sm font-semibold text-white leading-snug group-hover:text-indigo-300 transition-colors">
+                  {rp.title}
+                </p>
+                <p className="text-xs text-gray-500 mt-2">{rp.readTime}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
         {/* Back to blog */}
         <div className="mt-10 text-center">
           <Link
