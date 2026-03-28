@@ -32,6 +32,9 @@ const NAV_LINKS = [
       { label: "Audit Template", href: "/guides/seo-audit-template" },
       { label: "Fix Core Web Vitals", href: "/guides/fix-core-web-vitals" },
       { label: "Internal Linking", href: "/guides/internal-linking-strategy" },
+      { label: "How Google Crawls", href: "/blog/how-google-actually-crawls" },
+      { label: "Pages Not Indexing?", href: "/blog/google-not-indexing-pages" },
+      { label: "Read an SEO Audit", href: "/blog/how-to-read-an-seo-audit" },
     ],
   },
   {
