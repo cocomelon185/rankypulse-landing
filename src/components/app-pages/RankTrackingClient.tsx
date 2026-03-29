@@ -301,6 +301,14 @@ export function RankTrackingClient() {
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
 
+    // GSC Click Opportunity state
+    const [gscOpps, setGscOpps] = useState<Array<{
+        query: string; impressions: number; clicks: number; position: number;
+        expectedCtr: number; actualCtr: number; opportunityClicks: number;
+    }>>([]);
+    const [gscLoading, setGscLoading] = useState(false);
+    const [gscConnected, setGscConnected] = useState<"yes" | "no" | "unknown">("unknown");
+
     useEffect(() => {
         const raw = localStorage.getItem("rankypulse_last_url") ?? "";
         const cleaned = raw.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].toLowerCase().trim();
@@ -312,6 +320,73 @@ export function RankTrackingClient() {
             if (d.keywordCap !== undefined) setPlanInfo({ plan: d.plan ?? "free", keywordsUsed: d.keywordsUsed ?? 0, keywordCap: d.keywordCap ?? 10 });
         }).catch(() => {});
     }, []);
+
+    // GSC Click Opportunity fetch — runs once when domain is set
+    useEffect(() => {
+        if (!domain) return;
+        setGscLoading(true);
+
+        // Step 1: find a matching GSC site
+        fetch("/api/gsc/sites")
+            .then((r) => r.json())
+            .then(async (sitesData) => {
+                if (sitesData.error === "no_gsc_token") {
+                    setGscConnected("no");
+                    return;
+                }
+                const siteEntries: Array<{ siteUrl: string }> = sitesData.siteEntry ?? [];
+                const match = siteEntries.find((s) =>
+                    s.siteUrl.includes(domain) || domain.includes(s.siteUrl.replace(/^sc-domain:/, "").replace(/^https?:\/\//, ""))
+                );
+                if (!match) { setGscConnected("no"); return; }
+
+                setGscConnected("yes");
+
+                // Step 2: fetch GSC performance by query (last 28 days)
+                const today = new Date();
+                const startDate = new Date(today);
+                startDate.setDate(today.getDate() - 28);
+                const res = await fetch("/api/gsc/performance", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        siteUrl: match.siteUrl,
+                        startDate: startDate.toISOString().split("T")[0],
+                        endDate: today.toISOString().split("T")[0],
+                        dimensions: ["query"],
+                    }),
+                });
+                if (!res.ok) return;
+                const perfData = await res.json();
+                const rows: Array<{ keys: string[]; impressions: number; clicks: number; position: number }> = perfData.rows ?? [];
+
+                // Step 3: filter click opportunities — high impressions, low CTR vs expected
+                const opps = rows
+                    .filter((r) => r.impressions >= 50)
+                    .map((r) => {
+                        const pos = Math.min(Math.max(Math.round(r.position), 1), 20);
+                        const expectedCtr = getCTR(pos);
+                        const actualCtr = r.impressions > 0 ? r.clicks / r.impressions : 0;
+                        const opportunityClicks = Math.round(r.impressions * (expectedCtr - actualCtr));
+                        return {
+                            query: r.keys[0] ?? "",
+                            impressions: r.impressions,
+                            clicks: r.clicks,
+                            position: r.position,
+                            expectedCtr,
+                            actualCtr,
+                            opportunityClicks,
+                        };
+                    })
+                    .filter((o) => o.actualCtr < o.expectedCtr * 0.7 && o.opportunityClicks > 0)
+                    .sort((a, b) => b.opportunityClicks - a.opportunityClicks)
+                    .slice(0, 20);
+
+                setGscOpps(opps);
+            })
+            .catch(() => setGscConnected("no"))
+            .finally(() => setGscLoading(false));
+    }, [domain]);
 
     const fetchData = useCallback(async () => {
         if (!domain) return;
@@ -820,7 +895,108 @@ export function RankTrackingClient() {
                 )}
             </div>
 
-            {/* ══ ROW 6 — Competitor Tracking (collapsed, low priority) ═════ */}
+            {/* ══ ROW 6 — GSC Click Opportunities ═════════════════════════ */}
+            {(gscConnected !== "no" || gscOpps.length > 0) && (
+                <div className="rounded-2xl border overflow-hidden" style={{ background: "#151B27", borderColor: "#1E2940" }}>
+                    <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: "#1E2940" }}>
+                        <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-lg" style={{ background: "rgba(34,197,94,0.12)" }}>
+                                <MousePointerClick size={14} style={{ color: "#22C55E" }} />
+                            </div>
+                            <div>
+                                <h2 className="text-sm font-bold text-white">GSC Click Opportunities</h2>
+                                <p className="text-[11px] mt-0.5" style={{ color: "#4A5568" }}>
+                                    Keywords you rank for but get far fewer clicks than your position should earn
+                                </p>
+                            </div>
+                        </div>
+                        {gscLoading && (
+                            <div className="w-4 h-4 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 animate-spin" />
+                        )}
+                        {!gscLoading && gscConnected === "unknown" && (
+                            <span className="text-[11px]" style={{ color: "#4A5568" }}>Checking GSC…</span>
+                        )}
+                    </div>
+
+                    {!gscLoading && (gscConnected as string) === "no" && (
+                        <div className="px-5 py-8 flex flex-col items-center gap-3 text-center">
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "#1E2940" }}>
+                                <Globe size={18} style={{ color: "#4A5568" }} />
+                            </div>
+                            <p className="text-sm font-semibold text-white">Google Search Console not connected</p>
+                            <p className="text-xs max-w-xs" style={{ color: "#4A5568" }}>
+                                Connect GSC in Integrations to unlock click gap analysis — find keywords where your title/description needs improvement.
+                            </p>
+                        </div>
+                    )}
+
+                    {!gscLoading && gscConnected === "yes" && gscOpps.length === 0 && (
+                        <div className="px-5 py-8 text-center">
+                            <p className="text-sm font-semibold text-white mb-1">No click gaps found</p>
+                            <p className="text-xs" style={{ color: "#4A5568" }}>
+                                Your CTR is close to the expected rate for each position. Good job!
+                            </p>
+                        </div>
+                    )}
+
+                    {gscOpps.length > 0 && (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-[13px]">
+                                <thead>
+                                    <tr style={{ background: "#0D1424" }}>
+                                        {["Keyword", "Position", "Impressions", "Actual CTR", "Expected CTR", "Opp. Clicks"].map((h) => (
+                                            <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest" style={{ color: "#4A5568" }}>{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {gscOpps.map((opp, i) => {
+                                        const ctrGap = opp.expectedCtr - opp.actualCtr;
+                                        const severity = ctrGap > 0.15 ? "#EF4444" : ctrGap > 0.07 ? "#F59E0B" : "#22C55E";
+                                        return (
+                                            <tr key={i} className="border-b hover:bg-white/[0.025] transition"
+                                                style={{ borderColor: "#1E2940" }}>
+                                                <td className="px-4 py-3">
+                                                    <p className="font-semibold text-white truncate max-w-[200px]">{opp.query}</p>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className={`inline-flex items-center justify-center font-bold text-xs px-2.5 py-1 rounded-lg ${posClass(Math.round(opp.position))} ${posBg(Math.round(opp.position))}`}>
+                                                        #{Math.round(opp.position)}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 font-mono text-sm" style={{ color: "#8B9BB4" }}>
+                                                    {opp.impressions.toLocaleString()}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className="font-bold text-xs px-2 py-1 rounded-lg" style={{ color: severity, background: `${severity}15` }}>
+                                                        {(opp.actualCtr * 100).toFixed(1)}%
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-xs" style={{ color: "#8B9BB4" }}>
+                                                    {(opp.expectedCtr * 100).toFixed(1)}%
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className="font-black text-sm" style={{ color: "#22C55E" }}>
+                                                        +{opp.opportunityClicks.toLocaleString()}
+                                                    </span>
+                                                    <span className="text-[10px] ml-1" style={{ color: "#4A5568" }}>clicks/mo</span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                            <div className="px-5 py-3 border-t" style={{ borderColor: "#1E2940" }}>
+                                <p className="text-[11px]" style={{ color: "#4A5568" }}>
+                                    Improve title tags and meta descriptions for these keywords to close the CTR gap · Data from Google Search Console (last 28 days)
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ══ ROW 7 — Competitor Tracking (collapsed, low priority) ═════ */}
             {domain && <CompetitorPanel domain={domain} />}
 
             {/* ── Modals & Panels ───────────────────────────────────────── */}

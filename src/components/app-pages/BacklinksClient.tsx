@@ -16,11 +16,15 @@ import {
 import {
   AreaChart,
   Area,
+  BarChart,
+  Bar,
+  Cell,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  ReferenceLine,
 } from "recharts";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -113,6 +117,13 @@ function StatCard({
   );
 }
 
+// ── Types (anchors) ───────────────────────────────────────────────────────────
+interface AnchorRow {
+  anchor: string;
+  backlinks: number;
+  referring_domains: number;
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function BacklinksClient() {
@@ -124,6 +135,10 @@ export function BacklinksClient() {
   const [error, setError] = useState<string | null>(null);
   const [providerUnavailable, setProviderUnavailable] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+
+  // Anchor text state
+  const [anchors, setAnchors] = useState<AnchorRow[]>([]);
+  const [anchorsLoading, setAnchorsLoading] = useState(false);
 
   // Resolve domain from localStorage
   useEffect(() => {
@@ -193,6 +208,19 @@ export function BacklinksClient() {
   useEffect(() => {
     if (domain) fetchData(domain);
   }, [domain, fetchData]);
+
+  // Fetch anchor text distribution once snapshot is loaded
+  useEffect(() => {
+    if (!domain || !snapshot) return;
+    setAnchorsLoading(true);
+    fetch(`/api/backlinks/anchors?domain=${encodeURIComponent(domain)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.anchors) setAnchors(d.anchors);
+      })
+      .catch(() => {/* non-critical — fail silently */})
+      .finally(() => setAnchorsLoading(false));
+  }, [domain, snapshot]);
 
   const trendFormatted = trend.map((t) => ({
     date: new Date(t.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
@@ -424,6 +452,57 @@ export function BacklinksClient() {
             </div>
           )}
 
+          {/* ── New vs. Lost Backlinks (net daily change) ──────────────── */}
+          {trendFormatted.length >= 3 && (() => {
+            const netData = trendFormatted.slice(1).map((pt, i) => {
+              const prev = trendFormatted[i];
+              const delta = (pt.backlinks ?? 0) - (prev.backlinks ?? 0);
+              return { date: pt.date, delta };
+            });
+            const maxAbs = Math.max(...netData.map((d) => Math.abs(d.delta)), 1);
+            return (
+              <div className="rounded-xl border p-5" style={{ background: CARD_BG, borderColor: BORDER }}>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                    <BarChart2 size={15} style={{ color: "#7B5CF5" }} />
+                    New vs. Lost Backlinks <span className="text-[10px] font-normal ml-1" style={{ color: TEXT_MUTED }}>(daily net change)</span>
+                  </h2>
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1 text-[11px]" style={{ color: TEXT_MUTED }}>
+                      <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#22C55E" }} /> Gained
+                    </span>
+                    <span className="flex items-center gap-1 text-[11px]" style={{ color: TEXT_MUTED }}>
+                      <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#EF4444" }} /> Lost
+                    </span>
+                  </div>
+                </div>
+                <ResponsiveContainer width="100%" height={160}>
+                  <BarChart data={netData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1E2940" vertical={false} />
+                    <XAxis dataKey="date" tick={{ fill: "#4A5568", fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[-maxAbs * 1.2, maxAbs * 1.2]} tick={{ fill: "#4A5568", fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <ReferenceLine y={0} stroke="#1E2940" strokeWidth={1.5} />
+                    <Tooltip
+                      contentStyle={{ background: "#0D1424", border: "1px solid #1E2940", borderRadius: 8, fontSize: 12 }}
+                      formatter={(value: number | undefined) => {
+                        const v = value ?? 0;
+                        return [`${v > 0 ? "+" : ""}${fmt(v)} backlinks`, v >= 0 ? "Net gained" : "Net lost"] as [string, string];
+                      }}
+                    />
+                    <Bar dataKey="delta" radius={[3, 3, 0, 0]}>
+                      {netData.map((d, i) => (
+                        <Cell key={i} fill={d.delta >= 0 ? "#22C55E" : "#EF4444"} fillOpacity={0.8} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+                <p className="text-[11px] mt-2" style={{ color: TEXT_MUTED }}>
+                  Positive bars = net new backlinks added that day · Negative = net links lost
+                </p>
+              </div>
+            );
+          })()}
+
           {/* Link quality breakdown */}
           {(snapshot.dofollow_count != null || snapshot.gov_count != null) && (
             <div
@@ -502,6 +581,56 @@ export function BacklinksClient() {
                 </p>
               </div>
             ))}
+          </div>
+
+          {/* ── Anchor Text Distribution ──────────────────────────────── */}
+          <div className="rounded-xl border overflow-hidden" style={{ background: CARD_BG, borderColor: BORDER }}>
+            <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: BORDER }}>
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                <LinkIcon size={14} style={{ color: ACCENT }} />
+                Anchor Text Distribution
+              </h2>
+              {anchorsLoading && (
+                <div className="w-4 h-4 rounded-full border-2 border-orange-500/30 border-t-orange-500 animate-spin" />
+              )}
+            </div>
+
+            {!anchorsLoading && anchors.length === 0 && (
+              <p className="px-5 py-6 text-sm text-center" style={{ color: TEXT_MUTED }}>
+                No anchor data yet — refresh backlinks to load anchor distribution.
+              </p>
+            )}
+
+            {anchors.length > 0 && (() => {
+              const maxBL = anchors[0]?.backlinks ?? 1;
+              return (
+                <div className="divide-y" style={{ borderColor: BORDER }}>
+                  <div className="grid grid-cols-[1fr_80px_100px] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest"
+                    style={{ color: TEXT_MUTED, background: "#0D1424" }}>
+                    <span>Anchor text</span>
+                    <span className="text-right">Backlinks</span>
+                    <span className="text-right">Ref. Domains</span>
+                  </div>
+                  {anchors.slice(0, 15).map((row, i) => (
+                    <div key={i} className="grid grid-cols-[1fr_80px_100px] items-center px-5 py-3 gap-3 hover:bg-white/[0.02] transition">
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-medium text-white truncate max-w-xs">
+                          {row.anchor || <span style={{ color: TEXT_MUTED, fontStyle: "italic" }}>naked URL</span>}
+                        </p>
+                        <div className="mt-1.5 h-1.5 rounded-full overflow-hidden" style={{ background: "#1E2940" }}>
+                          <div
+                            className="h-full rounded-full"
+                            style={{ width: `${Math.round((row.backlinks / maxBL) * 100)}%`, background: ACCENT, opacity: 0.7 }}
+                          />
+                        </div>
+                      </div>
+                      <p className="text-right text-[13px] font-bold text-white">{fmt(row.backlinks)}</p>
+                      <p className="text-right text-[12px]" style={{ color: TEXT_DIM }}>{fmt(row.referring_domains)}</p>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
           {/* External link to detailed report */}

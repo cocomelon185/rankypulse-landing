@@ -42,6 +42,7 @@ interface Suggestion {
   opportunityKind: "preliminary" | "full" | "unavailable";
   opportunityLabel: string;
   serpFeaturesCount: number;
+  serpFeatures: string[];
   serpPressure: "Low" | "Medium" | "High" | "Unknown";
   freshness: "cached" | "fresh";
 };
@@ -192,6 +193,64 @@ function formatCurrency(v: number | null): string {
   if (v === null) return "—";
   return `$${v.toFixed(2)}`;
 }
+
+// ── SERP Feature Badges ───────────────────────────────────────────────────────
+const SERP_BADGE_MAP: Record<string, { short: string; color: string; bg: string }> = {
+  featured_snippet:  { short: "FS",    color: "#8B5CF6", bg: "rgba(139,92,246,0.15)" },
+  people_also_ask:   { short: "PAA",   color: "#3B82F6", bg: "rgba(59,130,246,0.15)" },
+  knowledge_graph:   { short: "KG",    color: "#6366F1", bg: "rgba(99,102,241,0.15)" },
+  knowledge_panel:   { short: "KG",    color: "#6366F1", bg: "rgba(99,102,241,0.15)" },
+  shopping:          { short: "Shop",  color: "#F59E0B", bg: "rgba(245,158,11,0.15)" },
+  local_pack:        { short: "Local", color: "#10B981", bg: "rgba(16,185,129,0.15)" },
+  video:             { short: "Vid",   color: "#EF4444", bg: "rgba(239,68,68,0.15)" },
+  videos:            { short: "Vid",   color: "#EF4444", bg: "rgba(239,68,68,0.15)" },
+  images:            { short: "Img",   color: "#EC4899", bg: "rgba(236,72,153,0.15)" },
+  news:              { short: "News",  color: "#F97316", bg: "rgba(249,115,22,0.15)" },
+  top_stories:       { short: "News",  color: "#F97316", bg: "rgba(249,115,22,0.15)" },
+  jobs:              { short: "Jobs",  color: "#06B6D4", bg: "rgba(6,182,212,0.15)" },
+  ads:               { short: "Ads",   color: "#6B7280", bg: "rgba(107,114,128,0.15)" },
+};
+
+const PRESSURE_BADGE: Record<string, { color: string; bg: string }> = {
+  Low:     { color: "#22C55E", bg: "rgba(34,197,94,0.12)" },
+  Medium:  { color: "#F59E0B", bg: "rgba(245,158,11,0.12)" },
+  High:    { color: "#EF4444", bg: "rgba(239,68,68,0.12)" },
+  Unknown: { color: "#4A5568", bg: "rgba(74,85,104,0.12)" },
+};
+
+function SerpFeatureBadges({ features, count, pressure }: {
+  features: string[];
+  count: number;
+  pressure: "Low" | "Medium" | "High" | "Unknown";
+}) {
+  const known = [...new Set(features)].map((f) => SERP_BADGE_MAP[f]).filter(Boolean).slice(0, 3);
+  const extra = count - known.length;
+  const pb = PRESSURE_BADGE[pressure] ?? PRESSURE_BADGE.Unknown;
+  return (
+    <div className="flex flex-wrap items-center gap-1 mt-1">
+      {known.map((b, i) => (
+        <span key={i} className="rounded-full px-1.5 py-0.5 text-[9px] font-bold tracking-wide" style={{ color: b.color, background: b.bg }}>
+          {b.short}
+        </span>
+      ))}
+      {known.length === 0 && count > 0 && (
+        <span className="rounded-full px-1.5 py-0.5 text-[9px] font-bold" style={{ color: "#8B9BB4", background: "rgba(139,155,180,0.12)" }}>
+          {count} SERP
+        </span>
+      )}
+      {extra > 0 && known.length > 0 && (
+        <span className="rounded-full px-1.5 py-0.5 text-[9px] font-bold" style={{ color: "#8B9BB4", background: "rgba(139,155,180,0.12)" }}>
+          +{extra}
+        </span>
+      )}
+      <span className="rounded-full px-1.5 py-0.5 text-[9px] font-bold" style={{ color: pb.color, background: pb.bg }}
+        title={`SERP pressure: ${pressure}`}>
+        {pressure}
+      </span>
+    </div>
+  );
+}
+
 
 function competitionLabel(c: number | null): { label: "Low" | "Medium" | "High" | "—"; color: string; tone: string } {
   if (c === null) return { label: "—", color: TEXT_MUTED, tone: "rgba(100,116,139,0.16)" };
@@ -1266,6 +1325,13 @@ export function KeywordsClient() {
                                   <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ background: "rgba(167,139,250,0.14)", color: "#A78BFA" }}>
                                     Saved
                                   </span>
+                                )}
+                                {suggestion.serpFeaturesCount > 0 && (
+                                  <SerpFeatureBadges
+                                    features={suggestion.serpFeatures ?? []}
+                                    count={suggestion.serpFeaturesCount}
+                                    pressure={suggestion.serpPressure}
+                                  />
                                 )}
                               </div>
                             </div>

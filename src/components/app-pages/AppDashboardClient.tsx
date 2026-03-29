@@ -237,6 +237,9 @@ export function AppDashboardClient({ userName }: { userName: string }) {
     // SEO Opportunities (Phase 5.2 — from seo_opportunities table)
     const [dashOpps, setDashOpps] = useState<DashboardOpportunity[]>([]);
     const [oppPotential, setOppPotential] = useState<number>(0);
+
+    // Audit score history (real per-domain time-series)
+    const [auditScoreHistory, setAuditScoreHistory] = useState<Array<{ month: string; score: number }>>([]);
     const [dismissingOpp, setDismissingOpp] = useState<string | null>(null);
 
     // ── Domain resolution ─────────────────────────────────────────────────────
@@ -252,9 +255,10 @@ export function AppDashboardClient({ userName }: { userName: string }) {
     // ── Fetch rank data once domain is known ──────────────────────────────────
 
     const fetchRankData = useCallback(async (domain: string) => {
-        const [overviewRes, keywordsRes] = await Promise.all([
+        const [overviewRes, keywordsRes, scoreHistRes] = await Promise.all([
             fetch(`/api/rank/overview?domain=${encodeURIComponent(domain)}`).catch(() => null),
             fetch(`/api/rank/keywords?domain=${encodeURIComponent(domain)}`).catch(() => null),
+            fetch(`/api/audit/score-history?domain=${encodeURIComponent(domain)}`).catch(() => null),
         ]);
         if (overviewRes?.ok) {
             setRankOverview(await overviewRes.json());
@@ -262,6 +266,12 @@ export function AppDashboardClient({ userName }: { userName: string }) {
         if (keywordsRes?.ok) {
             const d = await keywordsRes.json();
             setRankKeywords(d.keywords ?? []);
+        }
+        if (scoreHistRes?.ok) {
+            const d = await scoreHistRes.json();
+            if (d.history?.length > 1) {
+                setAuditScoreHistory(d.history.map((h: { month: string; score: number }) => ({ month: h.month, score: h.score })));
+            }
         }
     }, []);
 
@@ -1119,17 +1129,27 @@ export function AppDashboardClient({ userName }: { userName: string }) {
                             </motion.div>
 
                             {/* ── Health Trend Chart (supplemental, when data available) */}
-                            {completedProjects.length > 0 && healthTrend.length > 1 && (
+                            {completedProjects.length > 0 && (auditScoreHistory.length > 1 || healthTrend.length > 1) && (
                                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.18 }}>
                                     <Card className="p-5">
                                         <div className="flex items-center justify-between mb-5">
-                                            <h2 className="text-sm font-bold text-white">SEO Health Trend</h2>
+                                            <div>
+                                                <h2 className="text-sm font-bold text-white">SEO Health Trend</h2>
+                                                {auditScoreHistory.length > 1 && (
+                                                    <p className="text-[11px] mt-0.5" style={{ color: TEXT_MUTED }}>
+                                                        Real score from each completed audit · {auditScoreHistory.length} data points
+                                                    </p>
+                                                )}
+                                            </div>
                                             <span className="text-xs px-2 py-1 rounded-lg" style={{ color: TEXT_MUTED, background: BORDER }}>
-                                                Recent audits
+                                                {auditScoreHistory.length > 1 ? "Actual history" : "Recent audits"}
                                             </span>
                                         </div>
                                         <ResponsiveContainer width="100%" height={180}>
-                                            <AreaChart data={healthTrend} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                            <AreaChart
+                                                data={auditScoreHistory.length > 1 ? auditScoreHistory : healthTrend}
+                                                margin={{ top: 5, right: 5, left: -20, bottom: 0 }}
+                                            >
                                                 <defs>
                                                     <linearGradient id="healthGrad" x1="0" y1="0" x2="0" y2="1">
                                                         <stop offset="5%" stopColor={ACCENT} stopOpacity={0.3} />
@@ -1140,7 +1160,10 @@ export function AppDashboardClient({ userName }: { userName: string }) {
                                                 <XAxis dataKey="month" tick={{ fill: "#4A5568", fontSize: 11 }} axisLine={false} tickLine={false} />
                                                 <YAxis domain={[0, 100]} tick={{ fill: "#4A5568", fontSize: 11 }} axisLine={false} tickLine={false} />
                                                 <Tooltip content={<ChartTooltip />} />
-                                                <Area type="monotone" dataKey="score" stroke={ACCENT} strokeWidth={2.5} fill="url(#healthGrad)" dot={false} />
+                                                <Area type="monotone" dataKey="score" stroke={ACCENT} strokeWidth={2.5} fill="url(#healthGrad)"
+                                                    dot={{ r: 3, fill: ACCENT, strokeWidth: 0 }}
+                                                    activeDot={{ r: 5, fill: ACCENT, stroke: "#0D1424", strokeWidth: 2 }}
+                                                />
                                             </AreaChart>
                                         </ResponsiveContainer>
                                     </Card>

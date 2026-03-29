@@ -62,6 +62,7 @@ export async function POST(req: Request) {
         difficultyLabel: row?.difficultyLabel ?? "Difficulty unavailable",
         difficultyStatus: row?.difficultyStatus ?? "unavailable",
         serpFeaturesCount: row?.serpFeaturesCount ?? 0,
+        serpFeatures: row?.serpFeatures ?? [],
         searchResultsCount: row?.searchResultsCount ?? null,
       };
     });
