@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { BLOG_POSTS } from '@/lib/blog-posts';
 import { BlogPost } from '@/components/blog/BlogPost';
 import { clampTitle, clampDesc } from '@/lib/metadata';
@@ -79,6 +80,15 @@ export default async function BlogPostPage({
     },
   };
 
+  // Server-rendered related posts — always in initial HTML for crawlers
+  const related = BLOG_POSTS
+    .filter(p => p.slug !== post.slug && p.category === post.category)
+    .slice(0, 3);
+  const fallback = related.length < 3
+    ? BLOG_POSTS.filter(p => p.slug !== post.slug && p.category !== post.category).slice(0, 3 - related.length)
+    : [];
+  const relatedPosts = [...related, ...fallback];
+
   return (
     <>
       <script
@@ -86,6 +96,13 @@ export default async function BlogPostPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <BlogPost post={post} />
+      {/* Server-rendered related post links — ensures every blog post has inlinks regardless of JS */}
+      <nav className="sr-only" aria-label="Related posts">
+        <Link href="/blog">All blog posts</Link>
+        {relatedPosts.map(p => (
+          <Link key={p.slug} href={`/blog/${p.slug}`}>{p.title}</Link>
+        ))}
+      </nav>
     </>
   );
 }
