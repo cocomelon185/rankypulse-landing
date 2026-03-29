@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isDataProviderUnavailableCode } from "@/lib/data-provider";
 import {
   ArrowRight,
@@ -22,7 +22,6 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { isDataProviderUnavailableCode } from "@/lib/data-provider";
 import { computeFullOpportunityScore } from "@/lib/dataforseo/opportunity-score";
 import { KeywordOpportunityMap } from "@/components/keywords/KeywordOpportunityMap";
 import { DifficultyDistributionBar } from "@/components/keywords/DifficultyDistributionBar";
@@ -465,6 +464,8 @@ export function KeywordsClient() {
   const [batchProgress, setBatchProgress] = useState(0);
   const batchRef = useRef(false);
   const seededFromAuditRef = useRef(false);
+  const [data, setData] = useState<KeywordSearchResponse | null>(null);
+  const [didAutoLoadSuggestions, setDidAutoLoadSuggestions] = useState(false);
 
   function resetResults() {
     batchRef.current = false;
@@ -513,13 +514,7 @@ export function KeywordsClient() {
     resetResults();
   }
 
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    const cleanedSeed = seed.trim();
-    if (!cleanedSeed || !domain) return;
-
-  function resetResults(preserveDomain = false) {
-    setData(null);
+  const runSuggestionDiscovery = useCallback(async ({ nextDomain }: { nextDomain: string }) => {
     setError(null);
     setProviderUnavailable(false);
     setFromCache(false);
@@ -530,7 +525,7 @@ export function KeywordsClient() {
 
     try {
       const cacheRes = await fetch(
-        `/api/keywords/research?domain=${encodeURIComponent(domain)}&seed=${encodeURIComponent(cleanedSeed)}`
+        `/api/keywords/research?domain=${encodeURIComponent(nextDomain)}&seed=${encodeURIComponent(seed)}`
       );
       if (cacheRes.ok) {
         const cacheJson = await cacheRes.json() as { suggestions?: Suggestion[]; cached?: boolean };
@@ -541,11 +536,17 @@ export function KeywordsClient() {
           return;
         }
       }
-      setSuggestions(json as KeywordSuggestionResponse);
     } catch {
       // Fall through to live request.
     }
-  }, [country, domain, seed]);
+  }, [seed]);
+
+  async function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const cleanedSeed = seed.trim();
+    if (!cleanedSeed || !domain) return;
+    await runSearch();
+  }
 
   useEffect(() => {
     if (!lastAuditDomain || didAutoLoadSuggestions) return;
@@ -567,21 +568,21 @@ export function KeywordsClient() {
       const res = await fetch("/api/keywords/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain, seed: cleanedSeed, country }),
+        body: JSON.stringify({ domain, seed: activeSeed, country }),
       });
 
       const json = await res.json();
       if (!res.ok) {
-        if (isDataProviderUnavailableCode(data.code)) {
+        if (isDataProviderUnavailableCode(json.code)) {
           setProviderUnavailable(true);
           setSuggestions([]);
           return;
         }
-        setError(data.error ?? "Failed to fetch keyword opportunities.");
+        setError(json.error ?? "Failed to fetch keyword opportunities.");
         setSuggestions([]);
       } else {
-        setSuggestions(data.suggestions ?? []);
-        setFromCache(Boolean(data.cached));
+        setSuggestions(json.suggestions ?? []);
+        setFromCache(Boolean(json.cached));
       }
 
       setLimit(requestedLimit);
