@@ -36,5 +36,25 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function FixCoreWebVitalsPage() {
-  return <FixCoreWebVitalsClient />;
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: 'How to Fix Core Web Vitals',
+    description: 'Step-by-step guide to diagnosing and fixing LCP, INP, and CLS issues to pass Google\'s Core Web Vitals assessment.',
+    url: 'https://rankypulse.com/guides/fix-core-web-vitals',
+    tool: { '@type': 'HowToTool', name: 'RankyPulse SEO Audit Tool', url: 'https://rankypulse.com/audit' },
+    step: [
+      { '@type': 'HowToStep', name: 'Measure current scores', text: 'Run PageSpeed Insights or use RankyPulse to get your current LCP, INP, and CLS scores.' },
+      { '@type': 'HowToStep', name: 'Fix Largest Contentful Paint (LCP)', text: 'Optimise server response time, eliminate render-blocking resources, and preload the hero image.' },
+      { '@type': 'HowToStep', name: 'Fix Interaction to Next Paint (INP)', text: 'Reduce JavaScript execution time, split long tasks, and defer non-critical scripts.' },
+      { '@type': 'HowToStep', name: 'Fix Cumulative Layout Shift (CLS)', text: 'Add explicit width/height to images and embeds, reserve space for dynamic content.' },
+      { '@type': 'HowToStep', name: 'Verify fixes in field data', text: 'Monitor CrUX data in Google Search Console for 28-day rolling improvement.' },
+    ],
+  };
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <FixCoreWebVitalsClient />
+    </>
+  );
 }
