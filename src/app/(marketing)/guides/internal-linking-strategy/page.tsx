@@ -36,5 +36,25 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function InternalLinkingStrategyPage() {
-  return <InternalLinkingStrategyClient />;
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: 'Internal Linking Strategy for SEO',
+    description: 'How to build an internal linking strategy that distributes PageRank, reduces orphan pages, and improves crawlability.',
+    url: 'https://rankypulse.com/guides/internal-linking-strategy',
+    tool: { '@type': 'HowToTool', name: 'RankyPulse Internal Link Checker', url: 'https://rankypulse.com/internal-link-checker' },
+    step: [
+      { '@type': 'HowToStep', name: 'Audit current internal links', text: 'Crawl your site to map all internal links and find orphan pages with no inbound links.' },
+      { '@type': 'HowToStep', name: 'Identify your pillar pages', text: 'Determine which pages you most want to rank and ensure they receive the most internal links.' },
+      { '@type': 'HowToStep', name: 'Use descriptive anchor text', text: 'Link using keyword-rich anchor text that describes the destination page topic.' },
+      { '@type': 'HowToStep', name: 'Build topic clusters', text: 'Group related content together with bi-directional links to create clear topical authority.' },
+      { '@type': 'HowToStep', name: 'Fix broken internal links', text: 'Identify and redirect or repair any broken internal links that waste crawl budget.' },
+    ],
+  };
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <InternalLinkingStrategyClient />
+    </>
+  );
 }
