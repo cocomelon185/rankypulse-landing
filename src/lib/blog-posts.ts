@@ -729,7 +729,7 @@ Run your first audit. See what it surfaces. If you outgrow it, you will know exa
 
       This to-do list is called the **Crawl Queue**. 
 
-      *The SEO Lesson:* If a page has no internal links pointing to it AND isn't in your sitemap, it is an "Orphan Page." Google will likely never find it. Internal linking matters.
+      *The SEO Lesson:* If a page has no [internal links](/internal-link-checker) pointing to it AND isn't in your sitemap, it is an "Orphan Page." Google will likely never find it. Internal linking matters.
 
       ### Phase 2: Crawling (The Download)
       Once your URL reaches the front of the queue, Googlebot visits your server. 
@@ -808,7 +808,7 @@ Run your first audit. See what it surfaces. If you outgrow it, you will know exa
       If your HTTP, HTTPS, WWW, and non-WWW versions all return 200 OK statuses without redirecting to one canonical version, Google sees four identical websites. Your PageRank (authority) dilutes across all four.
       *Action:* Enforce a strict global redirect to your preferred URL structure, and ensure self-referencing canonical tags on every page.
 
-      **3. Orphan Pages and Broken Internal Links**
+      **3. Orphan Pages and Broken [Internal Links](/internal-link-checker)**
       Google travels via links. If you publish a brilliant blog post but don't link to it from anywhere else on your site, it is an orphan. Furthermore, if your site is littered with 404 broken internal links, Google's crawler hits a dead end and leaves.
       *Action:* Have a logical hierarchy, use breadcrumbs, and link to your best content from your homepage.
 
@@ -1083,7 +1083,7 @@ Most sites have a PageRank problem they don't know about: authority is pooled on
 **The three-step internal linking audit:**
 
 **1. Find your orphaned pages**
-Pages with zero internal links pointing to them. Google finds them eventually, but they rank far below their potential. Run a crawl tool or search your own site for pages you can't reach by clicking from the homepage. These are your biggest quick wins.
+Pages with zero [internal links](/internal-link-checker) pointing to them. Google finds them eventually, but they rank far below their potential. Run a crawl tool or search your own site for pages you can't reach by clicking from the homepage. These are your biggest quick wins.
 
 **2. Find your high-authority pages**
 These are usually your homepage, your most-linked blog posts, and your pricing page. These pages have the most authority to give away. Check Google Search Console → Links → Top linked pages internally to confirm.
@@ -1181,7 +1181,7 @@ With schema: you tell Google exactly what it is, and Google can show enhanced "r
 
 **FAQPage** — Turns your FAQ section into expandable dropdowns directly in search results. One of the highest-CTR rich result types available — users can read answers without even clicking through to your site, which sounds bad but actually improves your CTR because the result takes up more space.
 
-**Product** — Enables price, availability, and star rating display for e-commerce. Non-negotiable for any product page.
+**Product** — Enables price, availability, and star rating display for [e-commerce](/seo-audit-for-ecommerce). Non-negotiable for any product page.
 
 **How to add it:**
 The easiest method: add a JSON-LD script tag to your page's HTML head. It doesn't touch your visible content at all.
@@ -1257,7 +1257,7 @@ What to exclude:
 Each sitemap file can contain a maximum of 50,000 URLs. Large sites use a sitemap index file that references multiple individual sitemaps — one for blog posts, one for products, one for landing pages.
 
 **After submitting:**
-Submit your sitemap in Google Search Console under Sitemaps. Check the "Coverage" report weekly for the first month to see which pages Google has indexed and which have issues. Pages that are "Discovered but not indexed" usually need more internal links pointing to them.
+Submit your sitemap in Google Search Console under Sitemaps. Check the "Coverage" report weekly for the first month to see which pages Google has indexed and which have issues. Pages that are "Discovered but not indexed" usually need more [internal links](/internal-link-checker) pointing to them.
     `,
   },
   {
@@ -1276,7 +1276,7 @@ When Google follows a link and gets a 404, two things happen:
 1. The crawl path ends — Google can't discover anything beyond that broken link
 2. Any PageRank that was flowing through that link is lost
 
-On small sites this is a minor issue. On sites with hundreds of pages, broken internal links can quietly starve entire sections from Google's attention.
+On small sites this is a minor issue. On sites with hundreds of pages, broken [internal links](/internal-link-checker) can quietly starve entire sections from Google's attention.
 
 **The three types of broken links:**
 
@@ -1412,7 +1412,7 @@ This is the most common response to an audit, and it leads to one of two outcome
 
 Not all issues are equal. A missing canonical tag on your homepage is worth more than 50 missing alt texts on product images. Triage ruthlessly:
 
-- **Critical**: issues that directly prevent indexing or ranking (broken robots.txt, redirect chains on main pages, missing canonical, crawl errors)
+- **Critical**: issues that directly prevent indexing or ranking (broken robots.txt, [redirect chains](/redirect-checker) on main pages, missing canonical, crawl errors)
 - **High**: issues that suppress rankings on important pages (missing title tags, no schema, slow LCP on key pages)
 - **Medium**: issues that improve existing rankings (meta descriptions, internal linking gaps)
 - **Low**: polish items that have marginal impact (alt text on decorative images, minor header hierarchy)
@@ -1604,7 +1604,7 @@ Technical SEO is the foundation. If Google cannot crawl and index your pages cor
 **Site Structure**
 - [ ] All pages are reachable within 3 clicks from the homepage
 - [ ] No orphan pages (pages with no internal links pointing to them)
-- [ ] No redirect chains (A → B → C instead of A → C directly)
+- [ ] No [redirect chains](/redirect-checker) (A → B → C instead of A → C directly)
 - [ ] No broken internal links (404 errors)
 - [ ] Consistent URL structure (no mixed /category/post and /post formats)
 
@@ -2010,7 +2010,7 @@ Most configuration fixes (canonicals, meta tags, redirects) take a few hours onc
 It depends on how often Google crawls your site. For most small to medium sites, changes are reflected within 1–2 weeks. You can speed this up by submitting updated URLs for re-crawling in Google Search Console (URL Inspection → Request Indexing). Core Web Vitals improvements appear in Google's field data reports after 28+ days.
 
 **Can I fix technical SEO errors without a developer?**
-Many technical fixes require no coding: meta tags and canonicals can be set in CMS settings (WordPress SEO plugin, Shopify admin, etc.), sitemaps can be regenerated, and robots.txt can be edited via hosting control panels. For speed improvements and schema implementation on custom-built sites, a developer will usually be needed.
+Many technical fixes require no coding: meta tags and canonicals can be set in CMS settings (WordPress SEO plugin, [Shopify](/seo-audit-for-shopify) admin, etc.), sitemaps can be regenerated, and robots.txt can be edited via hosting control panels. For speed improvements and schema implementation on custom-built sites, a developer will usually be needed.
 
 **What is the single highest-impact technical SEO fix?**
 For most sites, fixing missing or incorrect canonical tags has the highest impact because it affects authority distribution across the entire site. For newly launched sites, ensuring no pages are accidentally blocked by robots.txt or noindex is the most critical fix.
@@ -2364,7 +2364,7 @@ This checklist covers every technical factor that affects rankings in 2026.
 - [ ] Contains a Sitemap: directive pointing to your sitemap URL
 
 **Crawl Budget**
-- [ ] No redirect chains longer than 1 hop
+- [ ] No [redirect chains](/redirect-checker) longer than 1 hop
 - [ ] No redirect loops
 - [ ] Broken internal links resolved (404s fixed or redirected)
 - [ ] Paginated pages handled correctly (self-canonical or proper pagination)
@@ -2885,7 +2885,7 @@ Add a self-referencing canonical to every page:
 
 For pages with URL parameters, the canonical should point to the version without parameters (usually):
 
-If your CMS supports it, enable automatic canonical tag generation. Most modern platforms (WordPress, Shopify, etc.) have this built-in.
+If your CMS supports it, enable automatic canonical tag generation. Most modern platforms (WordPress, [Shopify](/seo-audit-for-shopify), etc.) have this built-in.
 
 **Error #3: Slow Largest Contentful Paint (LCP)**
 
@@ -3279,7 +3279,7 @@ Recommendation: Screaming Frog Business License ($910/year)
 
 Why? One-time purchase is cheaper than annual subscriptions. Screaming Frog's power and flexibility is worth it for a dedicated team. Plus, you get unlimited crawls.
 
-**Scenario 3: Enterprise SaaS Company**
+**Scenario 3: Enterprise [SaaS](/seo-audit-for-saas) Company**
 
 Goal: Monitor own site, analyze competitors' backlinks, integrate with other SEO tools
 
@@ -3405,7 +3405,7 @@ Run a mobile usability test in Google Search Console. Ensure your site is respon
 
 Use canonical tags to point to the preferred version of duplicate pages. Self-referencing canonicals should be present on all pages, including those with parameters and multiple versions.
 
-**Redirect chains**
+**[Redirect chains](/redirect-checker)**
 
 Check for redirect chains (A→B→C). These waste crawl budget and can pass less authority. All old URLs should redirect directly to their final destination.
 
@@ -3555,7 +3555,7 @@ While the crawl runs, it will identify:
 
 • Broken links (404 errors)
 
-• Redirect chains and loops
+• [Redirect chains](/redirect-checker) and loops
 
 • Pages with missing title tags or meta descriptions
 
