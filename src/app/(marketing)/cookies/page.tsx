@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { SEOContentWrapper } from "@/components/landing/SEOContentWrapper";
 
 export const metadata: Metadata = {
@@ -97,6 +98,13 @@ export default function CookiesPage() {
                         </p>
                     </div>
                 </section>
+                <nav className="mt-12 pt-8 border-t border-gray-800 flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-500">
+                    <Link href="/" className="hover:text-white transition-colors">← RankyPulse Home</Link>
+                    <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+                    <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+                    <Link href="/auth/signin" className="hover:text-white transition-colors">Sign In</Link>
+                    <Link href="/audit" className="hover:text-white transition-colors">Free SEO Audit</Link>
+                </nav>
                 <SEOContentWrapper />
             </div>
         </div>
