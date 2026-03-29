@@ -28,7 +28,7 @@ import { DifficultyDistributionBar } from "@/components/keywords/DifficultyDistr
 
 interface Suggestion {
   keyword: string;
-  searchVolume: number | null;
+  volume: number | null;
   cpc: number | null;
   competition: number | null;
   difficultyScore: number | null;
@@ -45,6 +45,8 @@ interface Suggestion {
   serpPressure: "Low" | "Medium" | "High" | "Unknown";
   freshness: "cached" | "fresh";
 };
+
+type SearchRow = Suggestion;
 
 type KeywordSearchResponse = {
   cacheKey: string;
@@ -143,10 +145,6 @@ type RecentKeywordSearch = {
   country: string;
 };
 
-type VolumeFilter = "all" | "50" | "100" | "1000";
-type DifficultyFilter = "all" | "pending" | "easy" | "medium" | "hard" | "very-hard" | "unavailable";
-type OpportunityFilter = "all" | "top" | "quick-wins" | "low-competition";
-
 type VolumeFilter = "all" | "1k" | "5k" | "10k";
 type DifficultyFilter = "all" | "low" | "medium" | "high";
 type CpcFilter = "all" | "low" | "mid" | "high";
@@ -189,22 +187,6 @@ function normalizeDomainInput(raw: string): string {
     .trim();
 }
 
-function IntentIcon({ intent }: { intent: SearchRow["intent"] }) {
-  const map: Record<SearchRow["intent"], { icon: typeof Info; color: string; label: string }> = {
-    informational: { icon: Info, color: "#60A5FA", label: "Informational" },
-    commercial: { icon: ShoppingCart, color: "#F59E0B", label: "Commercial" },
-    transactional: { icon: Zap, color: "#FF642D", label: "Transactional" },
-    navigational: { icon: Compass, color: "#A78BFA", label: "Navigational" },
-    unknown: { icon: HelpCircle, color: "#4A5568", label: "Unknown" },
-  };
-  const { icon: Icon, color, label } = map[intent] ?? map.unknown;
-  return (
-    <div className="flex items-center gap-1.5">
-      <Icon size={11} style={{ color }} />
-      <span className="text-[10px] font-semibold" style={{ color }}>{label}</span>
-    </div>
-  );
-}
 
 function formatCurrency(v: number | null): string {
   if (v === null) return "—";
@@ -229,6 +211,13 @@ function classifyIntent(keyword: string): IntentFilter {
 function intentLabel(intent: IntentFilter): string {
   if (intent === "all") return "All intents";
   return intent.charAt(0).toUpperCase() + intent.slice(1);
+}
+
+function formatVolume(value: number | null): string {
+  if (value === null) return "—";
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  return String(value);
 }
 
 function cpcBand(value: number | null): CpcFilter {
@@ -466,6 +455,7 @@ export function KeywordsClient() {
   const seededFromAuditRef = useRef(false);
   const [data, setData] = useState<KeywordSearchResponse | null>(null);
   const [didAutoLoadSuggestions, setDidAutoLoadSuggestions] = useState(false);
+  const [limit, setLimit] = useState(DEFAULT_LIMIT);
 
   function resetResults() {
     batchRef.current = false;
@@ -484,6 +474,39 @@ export function KeywordsClient() {
   function clearSearch() {
     setSeed("");
     resetResults();
+  }
+
+  function persistRecentSearch(entry: RecentKeywordSearch) {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = JSON.parse(localStorage.getItem("rankypulse_recent_keyword_searches") ?? "[]") as RecentKeywordSearch[];
+        const deduped = [
+          entry,
+          ...stored.filter((item) => !(item.domain === entry.domain && item.seed === entry.seed && item.country === entry.country)),
+        ].slice(0, 6);
+        localStorage.setItem("rankypulse_recent_keyword_searches", JSON.stringify(deduped));
+      } catch {
+        // ignore storage errors
+      }
+    }
+  }
+
+  async function trackSelected() {
+    if (selected.size === 0) return;
+    batchRef.current = true;
+    setBatchState("running");
+    setBatchProgress(0);
+    const keywords = Array.from(selected);
+    for (let index = 0; index < keywords.length; index += 1) {
+      if (!batchRef.current) break;
+      await fetch("/api/rank/keywords", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain, keyword: keywords[index], country }),
+      });
+      setBatchProgress(index + 1);
+    }
+    setBatchState("done");
   }
 
   useEffect(() => {
@@ -617,11 +640,7 @@ export function KeywordsClient() {
       });
       setBatchProgress(index + 1);
     }
-
-      const updates = new Map<string, { difficultyScore: number | null; difficultyLabel: string; difficultyStatus: "pending" | "available" | "unavailable"; serpFeaturesCount: number; }>();
-      for (const row of json.rows ?? []) {
-        updates.set(String(row.keyword).toLowerCase().trim(), row);
-      }
+  }
 
   function toggleSelect(keyword: string) {
     setSelected((prev) => {
