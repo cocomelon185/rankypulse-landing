@@ -1038,8 +1038,6 @@ export function KeywordsClient() {
                   Export CSV
                 </button>
               </div>
-            )}
-          </div>
 
               <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
                 <div className="relative">
