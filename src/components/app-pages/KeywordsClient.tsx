@@ -272,6 +272,15 @@ function intentLabel(intent: IntentFilter): string {
   return intent.charAt(0).toUpperCase() + intent.slice(1);
 }
 
+// Normalise API rows: the backend returns `searchVolume` but the component
+// uses `volume` throughout. Map the field so nothing shows as undefined.
+function normaliseRow(row: Record<string, unknown>): Suggestion {
+  return {
+    ...row,
+    volume: (row.volume ?? row.searchVolume ?? null) as number | null,
+  } as Suggestion;
+}
+
 function formatVolume(value: number | null): string {
   if (value === null) return "—";
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
@@ -611,7 +620,7 @@ export function KeywordsClient() {
       );
       if (cacheRes.ok) {
         const cacheJson = await cacheRes.json() as { rows?: Suggestion[]; suggestions?: Suggestion[]; cached?: boolean };
-        const cacheRows = cacheJson.rows ?? cacheJson.suggestions ?? [];
+        const cacheRows = (cacheJson.rows ?? cacheJson.suggestions ?? []).map((r) => normaliseRow(r as Record<string, unknown>));
         if (cacheRows.length > 0) {
           setSuggestions(cacheRows);
           setFromCache(Boolean(cacheJson.cached));
@@ -664,7 +673,7 @@ export function KeywordsClient() {
         setError(json.error ?? "Failed to fetch keyword opportunities.");
         setSuggestions([]);
       } else {
-        setSuggestions(json.rows ?? []);
+        setSuggestions((json.rows ?? []).map((r: Record<string, unknown>) => normaliseRow(r)));
         setFromCache(Boolean(json.cached));
       }
 
