@@ -274,10 +274,11 @@ function intentLabel(intent: IntentFilter): string {
 
 // Normalise API rows: the backend returns `searchVolume` but the component
 // uses `volume` throughout. Map the field so nothing shows as undefined.
-function normaliseRow(row: Record<string, unknown>): Suggestion {
+function normaliseRow(row: unknown): Suggestion {
+  const r = row as Record<string, unknown>;
   return {
-    ...row,
-    volume: (row.volume ?? row.searchVolume ?? null) as number | null,
+    ...r,
+    volume: (r.volume ?? r.searchVolume ?? null) as number | null,
   } as Suggestion;
 }
 
@@ -620,7 +621,7 @@ export function KeywordsClient() {
       );
       if (cacheRes.ok) {
         const cacheJson = await cacheRes.json() as { rows?: Suggestion[]; suggestions?: Suggestion[]; cached?: boolean };
-        const cacheRows = (cacheJson.rows ?? cacheJson.suggestions ?? []).map((r) => normaliseRow(r as Record<string, unknown>));
+        const cacheRows = (cacheJson.rows ?? cacheJson.suggestions ?? []).map(normaliseRow);
         if (cacheRows.length > 0) {
           setSuggestions(cacheRows);
           setFromCache(Boolean(cacheJson.cached));
@@ -673,7 +674,7 @@ export function KeywordsClient() {
         setError(json.error ?? "Failed to fetch keyword opportunities.");
         setSuggestions([]);
       } else {
-        setSuggestions((json.rows ?? []).map((r: Record<string, unknown>) => normaliseRow(r)));
+        setSuggestions((json.rows ?? []).map(normaliseRow));
         setFromCache(Boolean(json.cached));
       }
 
