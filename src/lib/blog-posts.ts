@@ -1574,7 +1574,7 @@ Stop guessing. Find out exactly what Google sees — and fix it.
     `,
   },
   {
-    slug: 'seo-audit-checklist-2026',
+    slug: 'free-seo-audit-checklist',
     title: 'The Complete Free SEO Audit Checklist for 2026',
     subtitle: 'A practical, step-by-step checklist covering every factor that affects how your site ranks — with clear instructions on what to check and fix.',
     category: 'Technical SEO',

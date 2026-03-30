@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import TechnicalSEOChecklistClient from "./TechnicalSEOChecklistClient";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "Technical SEO Checklist | 2024 Guide | RankyPulse";
+  const title = "Technical SEO Checklist | 2026 Guide | RankyPulse";
   const description = "Technical SEO checklist: site speed, mobile, XML sitemaps, robots.txt, structured data, and more. Ensure your site's technical foundation is SEO-ready.";
 
   return {

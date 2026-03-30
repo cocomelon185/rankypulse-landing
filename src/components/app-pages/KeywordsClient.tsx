@@ -610,9 +610,10 @@ export function KeywordsClient() {
         `/api/keywords/research?domain=${encodeURIComponent(nextDomain)}&seed=${encodeURIComponent(seed)}`
       );
       if (cacheRes.ok) {
-        const cacheJson = await cacheRes.json() as { suggestions?: Suggestion[]; cached?: boolean };
-        if (cacheJson.suggestions && cacheJson.suggestions.length > 0) {
-          setSuggestions(cacheJson.suggestions);
+        const cacheJson = await cacheRes.json() as { rows?: Suggestion[]; suggestions?: Suggestion[]; cached?: boolean };
+        const cacheRows = cacheJson.rows ?? cacheJson.suggestions ?? [];
+        if (cacheRows.length > 0) {
+          setSuggestions(cacheRows);
           setFromCache(Boolean(cacheJson.cached));
           setLoading(false);
           return;
@@ -663,7 +664,7 @@ export function KeywordsClient() {
         setError(json.error ?? "Failed to fetch keyword opportunities.");
         setSuggestions([]);
       } else {
-        setSuggestions(json.suggestions ?? []);
+        setSuggestions(json.rows ?? []);
         setFromCache(Boolean(json.cached));
       }
 
