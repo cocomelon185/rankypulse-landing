@@ -13,6 +13,360 @@ export interface BlogPost {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: 'technical-seo-audit',
+    title: 'Technical SEO Audit: The Complete 2026 Guide',
+    subtitle: 'What a technical SEO audit actually checks, why most sites fail it, and how to fix every issue in priority order.',
+    category: 'Technical SEO',
+    readingMinutes: 12,
+    publishedAt: '2026-03-28',
+    pullQuote: "A technical SEO audit does not find problems — it finds the specific problems that are costing you rankings right now. Everything else is noise.",
+    excerpt: "A technical SEO audit systematically checks crawlability, indexation, page speed, structured data, and on-page signals. This guide covers every element, what failing looks like, and exactly how to fix it.",
+    featured: true,
+    content: `
+A technical SEO audit is a structured review of the factors that control whether search engines can find, crawl, understand, and rank your website. It is not a vague "check if your SEO is good" exercise — it is a specific checklist with measurable pass/fail criteria for each element.
+
+Done right, a technical SEO audit tells you precisely what is costing you traffic and exactly what to fix first. Done wrong — or not done at all — your site bleeds rankings to competitors who just did the work.
+
+This guide covers every element of a proper technical SEO audit: what to check, what good looks like, what failure costs you, and how to fix each issue. We will also show you how to run the whole audit in under 30 minutes using RankyPulse.
+
+---
+
+### What Is a Technical SEO Audit?
+
+A technical SEO audit evaluates the infrastructure of your website — the parts that exist below the content layer. While on-page SEO focuses on what your content says, technical SEO determines whether search engines can reach your content at all, how fast it loads, whether it is structured correctly, and whether Google trusts it enough to rank it.
+
+The word "technical" puts many people off. It should not. A technical SEO audit follows a checklist. Each item has a clear definition, a clear way to check it, and a clear way to fix it.
+
+The reason it matters: Google's crawler has a finite budget per site. If your site wastes that budget on broken pages, redirect chains, and duplicate URLs, your best content may never get indexed — no matter how good it is.
+
+---
+
+### The 8 Core Elements of a Technical SEO Audit
+
+#### 1. Crawlability
+
+**What it is:** Whether Google can reach every page you want ranked.
+
+**What to check:**
+- Your \`robots.txt\` file — make sure it is not blocking any pages you want indexed. A leftover \`Disallow: /\` from a development environment is one of the most common (and most devastating) mistakes in technical SEO.
+- Your XML sitemap — it should list every indexable URL with correct absolute paths (HTTPS, no trailing slash inconsistencies).
+- Crawl errors in Google Search Console — 404s and 5xx errors waste crawl budget and signal poor site health.
+
+**What failure costs you:** Google stops crawling pages it consistently cannot reach. Low crawl frequency means new content takes weeks or months to appear in search.
+
+**How to fix it:** Update \`robots.txt\` to allow the paths you want indexed. Regenerate your sitemap and resubmit it in Google Search Console. Fix server errors at the root (not just redirecting them).
+
+---
+
+#### 2. Indexation
+
+**What it is:** Whether Google has actually indexed your pages — meaning they are eligible to appear in search results.
+
+**What to check:**
+- Search Google for \`site:yourdomain.com\`. The number of results gives a rough count of indexed pages. Compare this to the number of pages you actually have.
+- Check for accidental \`noindex\` meta tags. These are often added to pages under development and forgotten. A single \`<meta name="robots" content="noindex">\` on a page removes it from Google entirely.
+- Check canonical tags — if all your pages canonicalize to a single URL, only that URL will be indexed.
+
+**What failure costs you:** Non-indexed pages cannot rank. If Google Search Console shows your pages as "Excluded" or "Crawled — currently not indexed," you have zero organic visibility for those pages regardless of their content quality.
+
+**How to fix it:** Remove noindex tags from pages you want ranked. Add and verify correct canonical tags. For pages Google is crawling but not indexing, improve their content depth and uniqueness — thin pages get deprioritised.
+
+---
+
+#### 3. Page Speed & Core Web Vitals
+
+**What it is:** How fast your pages load, measured by Google's Core Web Vitals metrics — LCP, INP, and CLS.
+
+**What to check:**
+- **LCP (Largest Contentful Paint):** Should be under 2.5 seconds. This measures how long until the main content on your page is visible.
+- **INP (Interaction to Next Paint):** Should be under 200ms. This measures how fast your page responds to user input.
+- **CLS (Cumulative Layout Shift):** Should be under 0.1. This measures how much the layout jumps as the page loads (the "content jumping" problem).
+
+Run Google PageSpeed Insights on your five most important pages. Note which metric is failing and by how much.
+
+**What failure costs you:** Core Web Vitals are a confirmed Google ranking factor since the 2021 Page Experience update. Pages with Poor scores are at a disadvantage against faster competitors, particularly in competitive niches.
+
+**How to fix it:** LCP failures are usually caused by unoptimized hero images — compress them and add \`loading="eager"\` with proper preloading. INP failures often trace to excessive JavaScript. CLS failures usually come from images and embeds without explicit dimensions, or web fonts loading late.
+
+---
+
+#### 4. Mobile Friendliness
+
+**What it is:** Whether your site renders correctly on mobile devices.
+
+**What to check:**
+- Use Google's Mobile-Friendly Test tool on your key pages.
+- Manually test on a real phone (not just Chrome DevTools). Check that text is readable without zooming, buttons are tappable, and no content overflows horizontally.
+
+**What failure costs you:** Google uses mobile-first indexing. The mobile version of your site is what gets crawled and ranked. A desktop-only site is effectively invisible to the majority of Google's index.
+
+**How to fix it:** Ensure your CSS uses responsive breakpoints. Test at 375px width as your minimum. Fix text that is too small to read (minimum 16px for body copy) and buttons that are too close together (minimum 48px touch target).
+
+---
+
+#### 5. Duplicate Content & Canonical Tags
+
+**What it is:** Whether multiple URLs serve the same (or very similar) content, splitting your ranking signal.
+
+**What to check:**
+- Do \`https://example.com/page\` and \`https://www.example.com/page\` both resolve to the same content? If so, you need a canonical.
+- Do URLs with query parameters (\`?ref=email\`, \`?utm_source=newsletter\`) serve the same content as the clean URL?
+- Do you have paginated content that Google might interpret as duplicate pages?
+
+**What failure costs you:** When Google encounters multiple URLs with the same content, it picks one to index and ignores the rest — often not the one you want. Your internal link equity gets split. Your ranking signal weakens.
+
+**How to fix it:** Add \`<link rel="canonical" href="[preferred URL]">\` to every page. Make sure your preferred URL is HTTPS, does not have a trailing slash inconsistency, and is the one you link to internally. Set up proper redirects so duplicate URL variants all point to the canonical version.
+
+---
+
+#### 6. Internal Linking
+
+**What it is:** How well your site distributes ranking authority (PageRank) through internal links.
+
+**What to check:**
+- **Orphan pages:** Pages with zero internal links pointing to them. Google rarely finds or ranks these, even if they are in your sitemap.
+- **Broken internal links:** 404 errors from your own anchor links. These waste crawl budget and create a poor user experience.
+- **Anchor text patterns:** Generic anchor text like "click here" or "read more" wastes the context signal that helps Google understand what the linked page is about.
+
+**What failure costs you:** Orphan pages accumulate no PageRank and get crawled infrequently. A site with poor internal linking structure forces Google to work harder, resulting in fewer pages indexed and ranked.
+
+**How to fix it:** Identify your most important pages and ensure they are linked from at least 3–5 other pages within your site. Use descriptive anchor text (e.g., "technical SEO audit guide" instead of "read more"). Fix broken internal links immediately — they are easy wins.
+
+---
+
+#### 7. Structured Data (Schema Markup)
+
+**What it is:** Machine-readable metadata that tells Google explicitly what your content represents — Article, Product, FAQ, LocalBusiness, etc.
+
+**What to check:**
+- Use Google's Rich Results Test to check your key pages.
+- Look for schema validation errors in Google Search Console (Enhancements section).
+- Check whether you are missing schema types that your competitors are using (especially FAQ schema, which can dramatically increase your search result footprint).
+
+**What failure costs you:** Without schema, you cannot unlock rich results — star ratings, FAQ dropdowns, site links, and other SERP enhancements that increase click-through rates by 20–30% on average. You are not penalised for missing schema, but your competitors who have it get more clicks.
+
+**How to fix it:** Add Article schema to blog posts, FAQPage schema to FAQ sections, and Organization schema to your homepage. Validate with Google's Rich Results Test. Deploy via JSON-LD (the cleanest implementation method).
+
+---
+
+#### 8. Title Tags, Meta Descriptions & On-Page Signals
+
+**What it is:** The on-page elements that tell Google and searchers what each page is about.
+
+**What to check:**
+- **Missing title tags:** Every page needs one. Pages with no title tag let Google write its own — and Google's auto-generated titles are often poor.
+- **Duplicate title tags:** If ten pages share the same title, Google treats them as competing for the same query.
+- **Overlong title tags:** Truncated titles (over ~60 characters) lose their keyword signal and look broken in search results.
+- **Missing or thin meta descriptions:** Not a direct ranking factor, but a major driver of click-through rate.
+
+**What failure costs you:** Poor title tags mean lower click-through rates and weaker keyword signals. Duplicate titles mean self-competition. Missing titles hand Google full creative control over how your page appears in search results.
+
+**How to fix it:** Write unique title tags for every page in the format: Primary Keyword – Supporting Keyword | Brand. Keep them under 58 characters. Write meta descriptions of 120–155 characters that answer the searcher's question and include a call to action.
+
+---
+
+### How to Run a Technical SEO Audit with RankyPulse
+
+You can check all eight elements above manually across dozens of tools. Or you can run a single audit in RankyPulse and get everything in one report.
+
+Here is the process:
+
+**Step 1:** Go to [RankyPulse.com](https://rankypulse.com) and enter your domain in the audit field. No account required.
+
+**Step 2:** RankyPulse crawls your site and checks all eight elements — crawlability, indexation, page speed, mobile friendliness, duplicate content, internal links, schema, and on-page signals — in one pass.
+
+**Step 3:** Review the score breakdown. Each issue is categorized by severity (Critical, Warning, Info) and by the element it affects.
+
+**Step 4:** Fix issues in priority order. Start with Critical items that block indexation. Then address page speed and mobile issues. Then move to on-page and schema improvements.
+
+**Step 5:** Re-run the audit after fixes. Track your score improvement over time. Set a monthly recurring audit to catch regressions.
+
+---
+
+### Prioritizing Your Technical SEO Audit Findings
+
+Not every issue deserves immediate attention. Use this framework:
+
+**Fix this week (blocks indexation or rankings directly):**
+- Crawl errors on key pages
+- noindex tags on pages that should rank
+- Broken redirects on important URLs
+- Missing or broken canonical tags causing duplicate content
+
+**Fix this sprint (significant ranking impact):**
+- Core Web Vitals failures (especially LCP)
+- Pages with no internal links (orphan pages)
+- Missing or duplicate title tags on your top 20 pages
+
+**Fix this quarter (important, not urgent):**
+- Schema markup on key page types
+- Meta description optimization
+- Mobile experience improvements on secondary pages
+- Internal linking depth across the full site
+
+---
+
+### How Often Should You Run a Technical SEO Audit?
+
+For most sites: once a month, or after any significant site change (relaunch, migration, major content push).
+
+A 30-minute audit once a month is enough to catch issues before they compound. Technical SEO problems rarely appear suddenly — they accumulate over weeks until they reach a tipping point. Monthly audits catch them while they are still small.
+
+---
+
+**Ready to run your technical SEO audit?** [Start a free audit on RankyPulse](https://rankypulse.com) — no account needed, results in under 60 seconds.
+    `,
+  },
+  {
+    slug: 'free-technical-seo-audit',
+    title: 'Free Technical SEO Audit: What It Checks and How to Use the Results',
+    subtitle: 'A plain-English breakdown of what a free technical SEO audit tool actually analyses — and what to do with the findings.',
+    category: 'Technical SEO',
+    readingMinutes: 7,
+    publishedAt: '2026-03-26',
+    pullQuote: "Most sites have at least three fixable technical SEO issues costing them rankings. A free audit finds them in under a minute.",
+    excerpt: "A free technical SEO audit checks the core health signals that determine whether Google can find, crawl, and rank your pages. Here is what every check means and how to act on it.",
+    featured: false,
+    content: `
+If you have never run a technical SEO audit on your website, there is a reasonable chance your pages are losing rankings to a preventable problem. Not a content problem. Not a backlink problem. A technical problem that a free audit can surface in under 60 seconds.
+
+This guide explains what a free technical SEO audit actually checks (many tools are vaguer than they should be about this), what each result means, and the exact steps to take when something fails.
+
+---
+
+### What Does a Free Technical SEO Audit Check?
+
+A proper free technical SEO audit checks the signals that Google uses to decide whether your pages are worth crawling, indexing, and ranking. These fall into four categories:
+
+**Crawlability signals** — Can Google reach your pages?
+**Indexation signals** — Has Google added your pages to its index?
+**Performance signals** — Do your pages load fast enough to rank?
+**On-page signals** — Are your pages correctly structured for search?
+
+Here is what each check looks for:
+
+---
+
+### Crawlability Checks
+
+**robots.txt validation**
+
+Your \`robots.txt\` file tells Google which parts of your site it is allowed to crawl. A free audit checks whether this file is accessible and whether it is accidentally blocking pages you want indexed.
+
+A common failure: developers add \`Disallow: /\` to block Googlebot during staging, then forget to remove it before launch. This single line can prevent your entire site from being indexed.
+
+What you want to see: your \`robots.txt\` should allow crawling of all pages you want ranked and explicitly disallow only the ones you do not (admin areas, duplicate URL variants, etc.).
+
+**XML sitemap validation**
+
+Your sitemap tells Google which pages exist on your site and when they were last updated. A free audit checks whether your sitemap is accessible, correctly formatted, and consistent with your actual site structure.
+
+Common failures: sitemap lists HTTP URLs when your site is HTTPS, sitemap references pages that return 404 errors, or sitemap is missing entirely.
+
+**Broken link detection**
+
+Broken internal links waste crawl budget and signal poor site maintenance. A free audit flags any links on your site that point to pages returning errors.
+
+---
+
+### Indexation Checks
+
+**noindex tag detection**
+
+A \`noindex\` meta tag or HTTP header tells Google not to include a page in its search index. These are legitimate for some pages (admin dashboards, thank-you pages, duplicate URL variants) but devastating when applied to pages you want to rank.
+
+A free audit identifies which of your pages carry noindex signals — and flags any that look like they should be ranking.
+
+**Canonical tag analysis**
+
+Canonical tags tell Google which version of a URL is the authoritative one when duplicates exist. An audit checks that your canonical tags are self-referential on primary pages, point to the correct URL, and are not creating redirect loops or pointing to non-existent pages.
+
+**Duplicate content detection**
+
+If multiple URLs on your site serve identical or near-identical content, Google splits your ranking signal between them. Common causes are URL parameters (\`?ref=email\`), WWW/non-WWW variants, and pagination.
+
+A free audit identifies duplicate URL clusters so you can consolidate them with canonical tags or redirects.
+
+---
+
+### Performance Checks
+
+**Core Web Vitals scoring**
+
+Google's Core Web Vitals — LCP, INP, and CLS — are confirmed ranking factors. A free audit gives you a score for each metric on your key pages and flags which ones fall below Google's recommended thresholds.
+
+- LCP should be under 2.5 seconds (how fast the main content appears)
+- INP should be under 200ms (how fast the page responds to clicks)
+- CLS should be under 0.1 (how much the layout jumps during loading)
+
+**Page speed analysis**
+
+Beyond Core Web Vitals, a free audit surfaces the specific technical causes of slow page loads — large unoptimized images, render-blocking scripts, no browser caching, missing CDN. This tells you not just that a page is slow, but why.
+
+**Mobile friendliness**
+
+Since Google uses mobile-first indexing, your mobile site is what gets ranked. A free audit checks text readability on small screens, touch target sizes, and viewport configuration.
+
+---
+
+### On-Page Signal Checks
+
+**Title tag audit**
+
+Every page needs a unique, keyword-relevant title tag under 60 characters. A free audit flags pages with missing titles, duplicate titles, and titles that are too long (truncated in search results).
+
+**Meta description audit**
+
+Meta descriptions do not directly affect rankings, but they control your organic click-through rate. An audit flags pages with missing or duplicate meta descriptions.
+
+**Heading structure**
+
+A clear H1–H6 heading hierarchy helps Google understand your page's content structure. An audit flags pages with missing H1 tags or multiple competing H1s.
+
+**Image optimization**
+
+Images without alt text are invisible to screen readers and provide no keyword signal to Google. An audit flags images that are missing descriptive alt attributes.
+
+---
+
+### How to Use Your Free Technical SEO Audit Results
+
+Getting the audit results is only step one. Here is how to act on them:
+
+**Step 1: Sort by severity**
+
+Most audit tools assign severity levels (Critical, Warning, Info). Always address Critical issues first — these are problems actively preventing your pages from being indexed or ranked.
+
+**Step 2: Fix indexation blockers immediately**
+
+If the audit flags noindex tags, robots.txt blocks, or crawl errors on pages you want to rank — fix these first, today. Everything else is secondary until your pages are indexable.
+
+**Step 3: Address Core Web Vitals failures**
+
+After indexation issues, page speed problems have the highest ranking impact. For LCP failures, start by compressing your hero image and ensuring it preloads. For CLS failures, add explicit width and height attributes to images.
+
+**Step 4: Clean up on-page signals**
+
+Missing and duplicate title tags are quick wins. Spend 30–60 minutes writing unique, keyword-focused title tags for your ten most important pages.
+
+**Step 5: Schedule a re-audit**
+
+Set a monthly reminder to re-run your technical SEO audit. Technical SEO is not a one-time task — new pages, site updates, and plugin changes can introduce new issues at any time. Monthly audits catch them early.
+
+---
+
+### Run Your Free Technical SEO Audit on RankyPulse
+
+[RankyPulse](https://rankypulse.com) runs a full technical SEO audit — crawlability, indexation, Core Web Vitals, on-page signals — in under 60 seconds. No account required, no credit card, no upsell wall.
+
+Enter your domain. Get your results. Start fixing.
+
+**The most common finding:** over 80% of sites audited by RankyPulse have at least one Critical issue affecting their indexation. Most take under 15 minutes to fix once identified.
+
+[Run your free technical SEO audit now →](https://rankypulse.com)
+    `,
+  },
+  {
     slug: 'site-seo-audit-complete-guide',
     title: 'Site SEO Audit: The Complete 2026 Guide',
     subtitle: 'Everything you need to know to run a thorough site SEO audit — and actually fix what you find.',
@@ -3481,6 +3835,12 @@ Vary your internal link anchor text. Use descriptive anchors that include releva
 Quality content is the foundation of modern SEO. Without it, all the technical optimization in the world won't help you rank for competitive keyword
 
 **Ready to check your site?** Run a free audit at RankyPulse — no signup required.
+
+---
+
+**Related reading:**
+- [Technical SEO Audit: The Complete 2026 Guide](/blog/technical-seo-audit) — every element an audit must cover, with prioritized fix guides.
+- [Free Technical SEO Audit: What It Checks and How to Use Results](/blog/free-technical-seo-audit) — what each check means and exactly what to do when something fails.
     `,
   },
   {
@@ -3753,6 +4113,12 @@ Fix issues in this order:
 • 
 
 **Ready to check your site?** Run a free audit at RankyPulse — no signup required.
+
+---
+
+**Related reading:**
+- [Technical SEO Audit: The Complete 2026 Guide](/blog/technical-seo-audit) — a deep-dive into every element an audit must cover, with prioritized fix guides.
+- [Free Technical SEO Audit: What It Checks and How to Use Results](/blog/free-technical-seo-audit) — plain-English breakdown of what each audit check means and exactly what to do when something fails.
     `,
   }
 ];

@@ -179,6 +179,23 @@ export default function TechnicalSEOChecklistClient() {
             </ul>
           </div>
 
+          {/* Related Reading */}
+          <div>
+            <h2 className="mb-6 text-2xl font-bold text-gray-900">Related Guides</h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Link href="/blog/technical-seo-audit" className="block rounded-lg border border-gray-200 p-6 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
+                <h3 className="font-semibold text-gray-900">Technical SEO Audit: The Complete 2026 Guide</h3>
+                <p className="mt-2 text-sm text-gray-600">Every element a technical SEO audit must cover — what to check, what failure costs you, and how to fix each issue in priority order.</p>
+                <span className="mt-3 inline-block text-sm font-medium text-indigo-600">Read the guide →</span>
+              </Link>
+              <Link href="/blog/free-technical-seo-audit" className="block rounded-lg border border-gray-200 p-6 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
+                <h3 className="font-semibold text-gray-900">Free Technical SEO Audit: What It Checks and How to Use Results</h3>
+                <p className="mt-2 text-sm text-gray-600">A plain-English breakdown of what each audit check actually means — and the exact steps to take when something fails.</p>
+                <span className="mt-3 inline-block text-sm font-medium text-indigo-600">Read the guide →</span>
+              </Link>
+            </div>
+          </div>
+
           {/* CTA Section */}
           <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-8">
             <h3 className="mb-3 text-lg font-semibold text-gray-900">Use RankyPulse to Audit Your Technical SEO</h3>
