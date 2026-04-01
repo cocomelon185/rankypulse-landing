@@ -10,14 +10,30 @@ const LINKS = {
   ],
   Learn: [
     { label: "Blog", href: "/blog" },
+    { label: "Technical SEO Audit", href: "/blog/technical-seo-audit" },
+    { label: "Free SEO Audit Guide", href: "/blog/free-seo-audit-guide" },
+    { label: "Site SEO Audit Guide", href: "/blog/site-seo-audit-complete-guide" },
     { label: "SEO Checklist", href: "/guides/technical-seo-checklist" },
     { label: "How to Audit", href: "/guides/how-to-do-seo-audit" },
+    { label: "Internal Linking", href: "/guides/internal-linking-strategy" },
+    { label: "SEO Audit Template", href: "/guides/seo-audit-template" },
     { label: "Fix Core Web Vitals", href: "/guides/fix-core-web-vitals" },
+  ],
+  "SEO Audit For": [
+    { label: "Agencies", href: "/seo-audit-for-agencies" },
+    { label: "E-commerce", href: "/seo-audit-for-ecommerce" },
+    { label: "SaaS", href: "/seo-audit-for-saas" },
+    { label: "Local Business", href: "/seo-audit-for-local-business" },
+    { label: "Nonprofits", href: "/seo-audit-for-nonprofits" },
+    { label: "Small Business", href: "/seo-audit-for-small-business" },
+    { label: "WordPress", href: "/seo-audit-for-wordpress" },
+    { label: "Shopify", href: "/seo-audit-for-shopify" },
   ],
   Company: [
     { label: "About", href: "/about" },
     { label: "Contact", href: "/contact" },
     { label: "Privacy Policy", href: "/privacy" },
+    { label: "Cookies Policy", href: "/cookies" },
     { label: "Terms of Service", href: "/terms" },
   ],
 };
@@ -30,7 +46,7 @@ export function LandingFooter() {
     >
       <div className="mx-auto max-w-6xl px-6">
         {/* Top row: logo + columns */}
-        <div className="mb-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-4" aria-label="Footer navigation">
+        <div className="mb-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-5" aria-label="Footer navigation">
           {/* Brand */}
           <div>
             <Link href="/" className="mb-4 flex items-center gap-2">
