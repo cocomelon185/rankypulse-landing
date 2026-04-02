@@ -34,11 +34,13 @@ export async function generateMetadata({
       publishedTime: post.publishedAt,
       url: `${BASE}/blog/${post.slug}`,
       siteName: 'RankyPulse',
+      images: [{ url: `${BASE}/og.jpg`, width: 1200, height: 630, alt: post.title }],
     },
     twitter: {
       card: 'summary_large_image',
       title: post.title,
       description: post.excerpt,
+      images: [`${BASE}/og.jpg`],
     },
   };
 }

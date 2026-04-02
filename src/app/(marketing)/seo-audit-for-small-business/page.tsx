@@ -19,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       images: [
         {
-          url: "https://rankypulse.com/og/seo-audit-small-business.png",
+          url: "https://rankypulse.com/og.jpg",
           width: 1200,
           height: 630,
           alt: "SEO Audit for Small Business",
@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       title,
       description,
-      images: ["https://rankypulse.com/og/seo-audit-small-business.png"],
+      images: ["https://rankypulse.com/og.jpg"],
     },
   };
 }

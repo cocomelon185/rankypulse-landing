@@ -23,6 +23,7 @@ const LINKS = {
     { label: "Agencies", href: "/seo-audit-for-agencies" },
     { label: "E-commerce", href: "/seo-audit-for-ecommerce" },
     { label: "SaaS", href: "/seo-audit-for-saas" },
+    { label: "Freelancers", href: "/seo-audit-for-freelancers" },
     { label: "Local Business", href: "/seo-audit-for-local-business" },
     { label: "Nonprofits", href: "/seo-audit-for-nonprofits" },
     { label: "Small Business", href: "/seo-audit-for-small-business" },
@@ -31,6 +32,9 @@ const LINKS = {
   ],
   Company: [
     { label: "About", href: "/about" },
+    { label: "Changelog", href: "/changelog" },
+    { label: "Roadmap", href: "/roadmap" },
+    { label: "vs Ahrefs", href: "/compare/rankypulse-vs-ahrefs" },
     { label: "Contact", href: "/contact" },
     { label: "Privacy Policy", href: "/privacy" },
     { label: "Cookies Policy", href: "/cookies" },

@@ -20,14 +20,14 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: "RankyPulse",
       type: "website",
       images: [
-        { url: "/og/signup", width: 1200, height: 630, alt: "RankyPulse — Sign Up" },
+        { url: "/og.jpg", width: 1200, height: 630, alt: "RankyPulse — Sign Up" },
       ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: ["/og/signup"],
+      images: ["/og.jpg"],
     },
   };
 }

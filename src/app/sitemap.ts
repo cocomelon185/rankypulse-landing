@@ -37,8 +37,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/guides/seo-audit-template`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/guides/fix-core-web-vitals`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/guides/internal-linking-strategy`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
+    // New pages
+    { url: `${BASE}/changelog`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
+    { url: `${BASE}/compare/rankypulse-vs-ahrefs`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/roadmap`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
     // Solutions
     { url: `${BASE}/seo-audit-for-small-business`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/seo-audit-for-freelancers`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/seo-audit-for-ecommerce`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/seo-audit-for-shopify`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/seo-audit-for-wordpress`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },

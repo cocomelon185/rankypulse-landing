@@ -17,9 +17,9 @@ export async function generateMetadata(): Promise<Metadata> {
       url: "https://rankypulse.com/seo-audit-for-nonprofits",
       siteName: "RankyPulse",
       type: "website",
-      images: [{url: "https://rankypulse.com/og/seo-audit-for-nonprofits.png", width: 1200, height: 630, alt: "SEO Audit for Nonprofits | Mission-Driven Marketing | RankyPulse"}],
+      images: [{url: "https://rankypulse.com/og.jpg", width: 1200, height: 630, alt: "SEO Audit for Nonprofits | Mission-Driven Marketing | RankyPulse"}],
     },
-    twitter: {card: "summary_large_image", title, description, images: ["https://rankypulse.com/og/seo-audit-for-nonprofits.png"]},
+    twitter: {card: "summary_large_image", title, description, images: ["https://rankypulse.com/og.jpg"]},
   };
 }
 
