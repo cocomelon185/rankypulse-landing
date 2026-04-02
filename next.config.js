@@ -70,6 +70,12 @@ module.exports = {
         destination: "https://rankypulse.com/:path*",
         permanent: true,
       },
+      // Fix rank-tracker typo → correct URL
+      {
+        source: "/app/rank-tracker",
+        destination: "/app/rank-tracking",
+        permanent: true,
+      },
     ];
   },
 };
