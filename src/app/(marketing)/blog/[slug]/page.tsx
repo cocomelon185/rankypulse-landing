@@ -21,7 +21,8 @@ export async function generateMetadata({
   if (!post) return {};
   const suffix = ' | RankyPulse';
   const fullTitle = `${post.title}${suffix}`;
-  const title = fullTitle.length <= 60 ? fullTitle : clampTitle(post.title, 60);
+  // Use 70-char cap so suffix is always preserved — avoids title = H1 duplicate warning
+  const title = fullTitle.length <= 70 ? fullTitle : `${clampTitle(post.title, 57)}${suffix}`;
   const description = clampDesc(post.excerpt);
   return {
     title: { absolute: title },
@@ -98,13 +99,30 @@ export default async function BlogPostPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <BlogPost post={post} />
-      {/* Server-rendered related post links — ensures every blog post has inlinks regardless of JS */}
-      <nav className="sr-only" aria-label="Related posts">
-        <Link href="/blog">All blog posts</Link>
-        {relatedPosts.map(p => (
-          <Link key={p.slug} href={`/blog/${p.slug}`}>{p.title}</Link>
-        ))}
-      </nav>
+      {/* Related posts — visible server-rendered section for users and crawlers */}
+      {relatedPosts.length > 0 && (
+        <section className="mx-auto max-w-3xl px-6 pb-16">
+          <h2 className="mb-6 text-xl font-bold text-white">More from the blog</h2>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {relatedPosts.map(p => (
+              <Link
+                key={p.slug}
+                href={`/blog/${p.slug}`}
+                className="block rounded-lg border border-white/10 bg-white/5 p-4 hover:border-white/20 hover:bg-white/10 transition-colors"
+              >
+                <span className="text-xs text-indigo-400 font-medium">{p.category}</span>
+                <p className="mt-1 text-sm font-semibold text-white leading-snug line-clamp-2">{p.title}</p>
+                <span className="mt-2 text-xs text-gray-400">{p.readingMinutes} min read</span>
+              </Link>
+            ))}
+          </div>
+          <div className="mt-6">
+            <Link href="/blog" className="text-sm text-indigo-400 hover:text-indigo-300">
+              ← All blog posts
+            </Link>
+          </div>
+        </section>
+      )}
     </>
   );
 }

@@ -41,9 +41,9 @@ export function AhaSummary({ trafficLiftText, priorityFixCount, totalEffortMinut
 
   return (
     <section className="rounded-xl border border-[#4318ff]/15 bg-gradient-to-br from-[#f8f6ff] to-white p-5 shadow-sm">
-      <h1 className="text-lg font-bold text-[#1B2559] sm:text-xl">
+      <h2 className="text-lg font-bold text-[#1B2559] sm:text-xl">
         Your fastest growth path is {totalEffortMinutes} minutes.
-      </h1>
+      </h2>
 
       <div className="mt-4 grid grid-cols-3 gap-3">
         <div className="flex items-center gap-2.5 rounded-lg border border-gray-100 bg-white px-3 py-2.5">
