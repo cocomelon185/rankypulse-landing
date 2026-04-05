@@ -6,7 +6,16 @@ export const metadata: Metadata = {
     title: { absolute: "Cookie Policy | How RankyPulse Uses Cookies" },
     description:
         "Learn how RankyPulse uses cookies. We keep it minimal: only essential session cookies and optional analytics.",
+    robots: { index: true, follow: true },
     alternates: { canonical: "https://rankypulse.com/cookies" },
+    openGraph: {
+        title: "Cookie Policy | How RankyPulse Uses Cookies",
+        description: "Learn how RankyPulse uses cookies. We keep it minimal: only essential session cookies and optional analytics.",
+        url: "https://rankypulse.com/cookies",
+        siteName: "RankyPulse",
+        type: "website",
+        images: [{ url: "https://rankypulse.com/og.jpg", width: 1200, height: 630, alt: "RankyPulse Cookie Policy" }],
+    },
 };
 
 export default function CookiesPage() {

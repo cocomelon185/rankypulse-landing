@@ -9,7 +9,15 @@ export const metadata: Metadata = {
   description:
     "Privacy Policy for RankyPulse — how we collect, use, and protect your data when you use our SEO audit platform.",
   robots: { index: true, follow: true },
-  alternates: { canonical: "/privacy" },
+  alternates: { canonical: "https://rankypulse.com/privacy" },
+  openGraph: {
+    title: "RankyPulse Privacy Policy",
+    description: "How RankyPulse collects, uses, and protects your data when you use our SEO audit platform.",
+    url: "https://rankypulse.com/privacy",
+    siteName: "RankyPulse",
+    type: "website",
+    images: [{ url: "https://rankypulse.com/og.jpg", width: 1200, height: 630, alt: "RankyPulse Privacy Policy" }],
+  },
 };
 
 export default function PrivacyPage() {

@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { clampTitle, clampDesc } from "@/lib/metadata";
 import Link from "next/link";
+
+const BASE = "https://rankypulse.com";
 
 interface PageContent {
   title: string;
@@ -206,7 +209,7 @@ export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
-}) {
+}): Promise<Metadata> {
   const { slug } = await params;
   const page = pages[slug as keyof typeof pages];
 
@@ -214,10 +217,28 @@ export async function generateMetadata({
     return { title: "Page Not Found | RankyPulse" };
   }
 
+  const title = clampTitle(`${page.title} | RankyPulse`);
+  const description = clampDesc(page.description);
+
   return {
-    title: { absolute: clampTitle(`${page.title} | RankyPulse`) },
-    description: clampDesc(page.description),
+    title: { absolute: title },
+    description,
+    robots: { index: true, follow: true },
     alternates: { canonical: page.canonical },
+    openGraph: {
+      title,
+      description,
+      url: page.canonical,
+      siteName: "RankyPulse",
+      type: "website",
+      images: [{ url: `${BASE}/og.jpg`, width: 1200, height: 630, alt: page.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [`${BASE}/og.jpg`],
+    },
   };
 }
 

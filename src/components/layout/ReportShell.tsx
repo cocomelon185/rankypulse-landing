@@ -21,12 +21,14 @@ export function ReportShell({ children }: { children: React.ReactNode }) {
             <TopNav onMenuClick={() => setMobileMenuOpen(true)} />
 
             <div className="flex flex-1 overflow-hidden h-[calc(100vh-56px)]">
-                {/* Sidebar — always visible for dashboard feel */}
-                <Sidebar hFull />
-                <MobileSidebar
-                    isOpen={mobileMenuOpen}
-                    onClose={() => setMobileMenuOpen(false)}
-                />
+                {/* Sidebar — only shown to authenticated users to avoid SEO redirect signals */}
+                {isLoggedIn && <Sidebar hFull />}
+                {isLoggedIn && (
+                    <MobileSidebar
+                        isOpen={mobileMenuOpen}
+                        onClose={() => setMobileMenuOpen(false)}
+                    />
+                )}
 
                 {/* Main Content Area */}
                 <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto scrollbar-hide">

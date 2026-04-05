@@ -10,23 +10,23 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: { absolute: title },
     description,
-    alternates: { canonical: "/about" },
+    alternates: { canonical: "https://rankypulse.com/about" },
     robots: { index: true, follow: true },
     openGraph: {
       title,
       description,
-      url: "/about",
+      url: "https://rankypulse.com/about",
       siteName: "RankyPulse",
       type: "website",
       images: [
-        { url: "/og.jpg", width: 1200, height: 630, alt: "RankyPulse — About" },
+        { url: "https://rankypulse.com/og.jpg", width: 1200, height: 630, alt: "RankyPulse — About" },
       ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: ["/og.jpg"],
+      images: ["https://rankypulse.com/og.jpg"],
     },
   };
 }

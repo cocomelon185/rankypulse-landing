@@ -11,6 +11,20 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://rankypulse.com/compare/rankypulse-vs-ahrefs" },
   robots: { index: true, follow: true },
   keywords: ["rankypulse vs ahrefs", "ahrefs alternative", "ahrefs competitor", "cheap ahrefs alternative", "seo tool comparison 2026"],
+  openGraph: {
+    title: "RankyPulse vs Ahrefs: Which SEO Tool Is Right for You? (2026)",
+    description: "An honest head-to-head comparison of RankyPulse and Ahrefs on price, features, ease of use, and target audience.",
+    url: "https://rankypulse.com/compare/rankypulse-vs-ahrefs",
+    siteName: "RankyPulse",
+    type: "article",
+    images: [{ url: "https://rankypulse.com/og.jpg", width: 1200, height: 630, alt: "RankyPulse vs Ahrefs comparison" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "RankyPulse vs Ahrefs: Which SEO Tool Is Right for You? (2026)",
+    description: "Honest comparison for 2026 — price, features, ease of use, and who each tool is built for.",
+    images: ["https://rankypulse.com/og.jpg"],
+  },
 };
 
 type Status = "yes" | "no" | "partial";

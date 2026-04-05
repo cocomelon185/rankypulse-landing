@@ -5,9 +5,23 @@ import { SEOContentWrapper } from "@/components/landing/SEOContentWrapper";
 export const metadata: Metadata = {
   title: { absolute: "30-Day SEO Growth Roadmap | Fix & Rank Fast | RankyPulse" },
   description:
-    "Your personalised 30-day SEO sprint — synthesised from audit, link, and keyword data.",
+    "Your personalised 30-day SEO sprint — synthesised from audit, link, and keyword data. Fix the right issues in the right order and start ranking faster.",
   alternates: { canonical: "https://rankypulse.com/roadmap" },
   robots: { index: true, follow: true },
+  openGraph: {
+    title: "30-Day SEO Growth Roadmap | RankyPulse",
+    description: "Your personalised 30-day SEO sprint — synthesised from audit, link, and keyword data.",
+    url: "https://rankypulse.com/roadmap",
+    siteName: "RankyPulse",
+    type: "website",
+    images: [{ url: "https://rankypulse.com/og.jpg", width: 1200, height: 630, alt: "RankyPulse 30-Day SEO Growth Roadmap" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "30-Day SEO Growth Roadmap | RankyPulse",
+    description: "Your personalised 30-day SEO sprint — synthesised from audit, link, and keyword data.",
+    images: ["https://rankypulse.com/og.jpg"],
+  },
 };
 
 export default function RoadmapPage() {

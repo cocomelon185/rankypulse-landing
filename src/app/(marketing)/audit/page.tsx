@@ -6,13 +6,13 @@ export const metadata: Metadata = {
   title: { absolute: "Free SEO Audit Tool | Website SEO Checker | RankyPulse" },
   description:
     "Browse SEO audit guides by niche and platform. WordPress, Shopify, e‑commerce, local SEO, and more. Run a free audit in 30 seconds.",
-  alternates: { canonical: "/audit" },
+  alternates: { canonical: "https://rankypulse.com/audit" },
   robots: { index: true, follow: true },
   openGraph: {
     title: "SEO Audit Guides | Run a Free Audit | RankyPulse",
     description:
       "Browse SEO audit guides by niche and platform. Run a free audit in 30 seconds. No signup required.",
-    url: "/audit",
+    url: "https://rankypulse.com/audit",
     siteName: "RankyPulse",
     type: "website",
     images: [{ url: "https://rankypulse.com/og.jpg", width: 1200, height: 630, alt: "RankyPulse — Audit" }],
@@ -22,6 +22,7 @@ export const metadata: Metadata = {
     title: "SEO Audit Guides | Run a Free Audit | RankyPulse",
     description:
       "Browse SEO audit guides by niche and platform. Run a free audit in 30 seconds.",
+    images: ["https://rankypulse.com/og.jpg"],
   },
 };
 

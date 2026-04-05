@@ -9,6 +9,20 @@ export const metadata: Metadata = {
     "See everything new in RankyPulse — feature releases, bug fixes, and improvements to your SEO audit and rank tracking tools.",
   alternates: { canonical: "https://rankypulse.com/changelog" },
   robots: { index: true, follow: true },
+  openGraph: {
+    title: "Changelog | What's New in RankyPulse",
+    description: "Feature releases, bug fixes, and improvements to your SEO audit and rank tracking tools.",
+    url: "https://rankypulse.com/changelog",
+    siteName: "RankyPulse",
+    type: "website",
+    images: [{ url: "https://rankypulse.com/og.jpg", width: 1200, height: 630, alt: "RankyPulse Changelog" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Changelog | What's New in RankyPulse",
+    description: "See the latest RankyPulse feature releases, bug fixes, and improvements.",
+    images: ["https://rankypulse.com/og.jpg"],
+  },
 };
 
 const CHANGELOG = [

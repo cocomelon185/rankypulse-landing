@@ -157,9 +157,9 @@ export function AuditHero() {
       {/* Header row */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-display text-xl font-semibold text-[var(--text-primary)]">
+          <h2 className="font-display text-xl font-semibold text-[var(--text-primary)]">
             {data.domain}
-          </h1>
+          </h2>
           <a
             href={`https://${data.domain}`}
             target="_blank"

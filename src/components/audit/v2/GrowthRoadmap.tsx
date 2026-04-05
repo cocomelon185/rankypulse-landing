@@ -155,7 +155,7 @@ export function GrowthRoadmap() {
             <Calendar size={16} />
             30-Day Growth Sprint
           </div>
-          <h1 className="text-3xl font-bold text-white">Your SEO Roadmap</h1>
+          <h2 className="text-3xl font-bold text-white">Your SEO Roadmap</h2>
           <p className="text-slate-400 mt-2">
             Personalised tasks based on your Audit, Link, and Keyword data.
           </p>

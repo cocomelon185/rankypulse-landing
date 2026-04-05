@@ -10,19 +10,21 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: { absolute: title },
     description,
-    alternates: { canonical: "/contact" },
+    alternates: { canonical: "https://rankypulse.com/contact" },
     robots: { index: true, follow: true },
     openGraph: {
       title,
       description,
-      url: "/contact",
+      url: "https://rankypulse.com/contact",
       siteName: "RankyPulse",
       type: "website",
+      images: [{ url: "https://rankypulse.com/og.jpg", width: 1200, height: 630, alt: "Contact RankyPulse" }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: ["https://rankypulse.com/og.jpg"],
     },
   };
 }

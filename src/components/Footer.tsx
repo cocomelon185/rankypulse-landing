@@ -18,6 +18,7 @@ const FOOTER_LINKS = {
     { href: "/seo-audit-for-ecommerce", label: "Ecommerce SEO" },
     { href: "/seo-audit-for-saas", label: "SaaS SEO Audit" },
     { href: "/seo-audit-for-agencies", label: "Agency SEO Audit" },
+    { href: "/seo-audit-for-freelancers", label: "Freelancer SEO Audit" },
     { href: "/seo-audit-for-local-business", label: "Local Business SEO" },
     { href: "/seo-audit-for-nonprofits", label: "Nonprofit SEO Audit" },
   ],

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { AuditDomainClient } from "./AuditDomainClient";
 import { ReportShell } from "@/components/layout/ReportShell";
 import { getDomainInsight } from "@/lib/report-insights";
+import { clampDesc } from "@/lib/metadata";
 
 const BASE = "https://rankypulse.com";
 
@@ -14,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { domain } = await params;
   return {
     title: { absolute: `Free SEO Audit for ${domain} — Scores, Issues & Fixes | RankyPulse` },
-    description: `See the full SEO audit for ${domain}: health score, broken links, missing meta tags, page speed, Core Web Vitals and a prioritised fix list. Free and instant.`,
+    description: clampDesc(`Free SEO audit for ${domain} — health score, broken links, meta tags, page speed, and Core Web Vitals. Instant prioritised fix list. No signup needed.`),
     robots: { index: true, follow: true },
     alternates: { canonical: `${BASE}/report/${domain}` },
     openGraph: {
@@ -23,11 +24,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url: `${BASE}/report/${domain}`,
       siteName: "RankyPulse",
       type: "website",
+      images: [{ url: `${BASE}/og.jpg`, width: 1200, height: 630, alt: `RankyPulse SEO Audit Report for ${domain}` }],
     },
     twitter: {
       card: "summary_large_image",
       title: `SEO Audit Report: ${domain}`,
       description: `Full SEO analysis for ${domain} — health score, issues, and step-by-step fixes.`,
+      images: [`${BASE}/og.jpg`],
     },
   };
 }

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { BLOG_POSTS } from "@/lib/blog-posts";
+import { getAllAuditLandings } from "@/lib/pseo/auditPages";
 
 const BASE = "https://rankypulse.com";
 
@@ -66,6 +67,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
+    // Programmatic SEO: /audit/[slug] landing pages
+    ...getAllAuditLandings().map((page) => ({
+      url: `${BASE}/audit/${page.slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+    // Programmatic SEO: /seo/[slug] pages with their own canonical URLs
+    { url: `${BASE}/seo/competitor-seo-analysis`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.7 },
+    { url: `${BASE}/seo/keyword-gap-analysis`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.7 },
     // NOTE: /audit/results, /dashboard, /auth/*, and all app routes
     // are intentionally excluded — they require auth or are session-specific.
     ...blogEntries,

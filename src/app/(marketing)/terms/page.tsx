@@ -9,7 +9,15 @@ export const metadata: Metadata = {
   description:
     "Terms of Service for RankyPulse — the SEO audit platform. Please read these terms carefully before using our services.",
   robots: { index: true, follow: true },
-  alternates: { canonical: "/terms" },
+  alternates: { canonical: "https://rankypulse.com/terms" },
+  openGraph: {
+    title: "RankyPulse Terms of Service",
+    description: "Terms of Service for RankyPulse — the SEO audit platform. Please read these terms carefully before using our services.",
+    url: "https://rankypulse.com/terms",
+    siteName: "RankyPulse",
+    type: "website",
+    images: [{ url: "https://rankypulse.com/og.jpg", width: 1200, height: 630, alt: "RankyPulse Terms of Service" }],
+  },
 };
 
 export default function TermsPage() {

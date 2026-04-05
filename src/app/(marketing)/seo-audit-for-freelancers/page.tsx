@@ -4,7 +4,7 @@ import FreelancerSEOClient from "./FreelancerSEOClient";
 export async function generateMetadata(): Promise<Metadata> {
   const title = "SEO Audit Tool for Freelancers | Audit Clients in 60 Seconds | RankyPulse";
   const description =
-    "RankyPulse is the SEO audit tool built for freelance SEO consultants. Run a full technical audit in 60 seconds, generate white-label PDF reports, and impress clients from day one. Free to start.";
+    "SEO audit tool built for freelance consultants. Run a full technical audit in 60 seconds, generate white-label PDF reports, and impress clients. Free to start.";
 
   return {
     title,
