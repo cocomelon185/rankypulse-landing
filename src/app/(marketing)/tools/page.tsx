@@ -46,7 +46,7 @@ const TOOLS = [
         name: "Keyword Research",
         description:
             "Discover high-opportunity keywords with low difficulty for your niche.",
-        href: "/app/keywords",
+        href: "/pricing",
         icon: "📊",
         badge: "Pro",
     },
@@ -54,7 +54,7 @@ const TOOLS = [
         name: "Backlink Analyzer",
         description:
             "See who's linking to your site, their domain rating, and detect toxic links.",
-        href: "/app/backlinks",
+        href: "/pricing",
         icon: "🔗",
         badge: "Pro",
     },
@@ -62,7 +62,7 @@ const TOOLS = [
         name: "Rank Tracker",
         description:
             "Track daily rankings for your target keywords on desktop and mobile.",
-        href: "/app/rank-tracking",
+        href: "/pricing",
         icon: "📈",
         badge: "Pro",
     },
@@ -70,7 +70,7 @@ const TOOLS = [
         name: "Competitor Analysis",
         description:
             "Benchmark your SEO metrics against up to 5 competitors side by side.",
-        href: "/app/competitor-intelligence",
+        href: "/pricing",
         icon: "⚔️",
         badge: "Pro",
     },
