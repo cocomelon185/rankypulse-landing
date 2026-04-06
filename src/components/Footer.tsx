@@ -9,6 +9,8 @@ const FOOTER_LINKS = {
     { href: "/redirect-checker", label: "Redirect Checker" },
     { href: "/internal-link-checker", label: "Internal Link Checker" },
     { href: "/competitor-seo-analysis", label: "Competitor SEO Analysis" },
+    { href: "/seo/competitor-seo-analysis", label: "Competitor SEO Guide" },
+    { href: "/seo/keyword-gap-analysis", label: "Keyword Gap Analysis" },
     { href: "/tools", label: "All Tools" },
   ],
   Solutions: [
@@ -24,6 +26,7 @@ const FOOTER_LINKS = {
   ],
   Resources: [
     { href: "/blog", label: "Blog" },
+    { href: "/blog/seo-audit-checklist-2026", label: "SEO Audit Checklist 2026" },
     { href: "/guides/technical-seo-checklist", label: "SEO Checklist" },
     { href: "/guides/how-to-do-seo-audit", label: "How to Do an SEO Audit" },
     { href: "/guides/seo-audit-template", label: "SEO Audit Template" },
