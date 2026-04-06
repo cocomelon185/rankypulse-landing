@@ -1,4 +1,12 @@
 {
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "www.rankypulse.com" }],
+      "destination": "https://rankypulse.com/$1",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/api/:path*",
