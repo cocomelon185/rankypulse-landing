@@ -69,6 +69,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <head>
+        {/* Ahrefs Web Analytics */}
+        <Script
+          src="https://analytics.ahrefs.com/analytics.js"
+          data-key="8p39K6aYbluxblU/+5QjrW"
+          strategy="afterInteractive"
+        />
+
+        {/* Google Analytics 4 */}
         {GA_ID ? (
           <>
             <Script

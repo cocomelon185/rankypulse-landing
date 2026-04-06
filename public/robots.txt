@@ -1,13 +1,13 @@
-# Block user-generated audit result pages
+# Allow public-facing tool pages
 User-agent: *
-Disallow: /audit/
+Allow: /audit
+Allow: /report/
+
+# Block auth, API, and app-only routes
 Disallow: /dashboard/
 Disallow: /app/
 Disallow: /auth/
 Disallow: /api/
-
-# Allow indexing of public report pages
-Allow: /report/
 
 # Sitemap for discovery
 Sitemap: https://rankypulse.com/sitemap.xml
