@@ -70,10 +70,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head>
         {/* Ahrefs Web Analytics */}
-        <script
+        <Script
           src="https://analytics.ahrefs.com/analytics.js"
           data-key="8p39K6aYbluxblU/+5QjrW"
-          async
+          strategy="beforeInteractive"
         />
 
         {/* Google Analytics 4 */}
