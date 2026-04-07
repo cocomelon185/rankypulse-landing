@@ -64,7 +64,7 @@ The reason it matters: Google's crawler has a finite budget per site. If your si
 
 **What to check:**
 - Search Google for \`site:yourdomain.com\`. The number of results gives a rough count of indexed pages. Compare this to the number of pages you actually have.
-- Check for accidental \`noindex\` meta tags. These are often added to pages under development and forgotten. A single \`<meta name="robots" content="noindex">\` on a page removes it from Google entirely.
+- Check for accidental noindex meta tags. These are often added to pages under development and forgotten. A single noindex robots tag on a page removes it from Google entirely.
 - Check canonical tags — if all your pages canonicalize to a single URL, only that URL will be indexed.
 
 **What failure costs you:** Non-indexed pages cannot rank. If Google Search Console shows your pages as "Excluded" or "Crawled — currently not indexed," you have zero organic visibility for those pages regardless of their content quality.
@@ -1155,7 +1155,7 @@ Run your first audit. See what it surfaces. If you outgrow it, you will know exa
       These issues actively prevent Google from understanding, indexing, or ranking your site.
 
       **1. Broken Indexability (Robots.txt & Meta Robots)**
-      If you accidentally leave a \`<meta name="robots" content="noindex">\` tag on your production pages, or trap your site behind a carelessly written \`robots.txt\`, nothing else matters. You are invisible.
+      If you accidentally leave a noindex robots tag on your production pages, or trap your site behind a carelessly written robots.txt, nothing else matters. You are invisible.
       *Action:* Always check your indexability status first.
 
       **2. Canonical Tag Chaos**
@@ -2289,7 +2289,7 @@ Here are the 12 errors you are most likely to find, in order of average traffic 
    - \`Disallow: /\` (blocks entire site — only appropriate for staging environments)
    - Blocked CSS or JS files needed to render your pages
    - Blocked API endpoints that serve content to the page
-4. Never block pages from robots.txt that you want indexed — use \`<meta name="robots" content="noindex">\` for individual pages you want to de-index instead
+4. Never block pages from robots.txt that you want indexed — use a noindex robots meta tag for individual pages you want to de-index instead
 5. Ensure your production site's robots.txt does not contain staging-environment disallow rules
 
 ---
