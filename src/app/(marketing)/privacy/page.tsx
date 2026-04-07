@@ -87,7 +87,7 @@ export default function PrivacyPage() {
               </p>
               <ul className="mt-2 list-inside list-disc space-y-2 text-gray-400">
                 <li><strong className="text-gray-300">Stripe</strong> — for USD payments. Stripe&apos;s privacy policy applies to payment data they process: <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 transition-colors">stripe.com/privacy</a></li>
-                <li><strong className="text-gray-300">Razorpay</strong> — for INR payments. Razorpay&apos;s privacy practices are described at: <a href="https://razorpay.com/privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 transition-colors">razorpay.com/privacy</a></li>
+                <li><strong className="text-gray-300">Razorpay</strong> — for INR payments. Razorpay&apos;s privacy practices are described at: <a href="https://razorpay.com/privacy-policy/" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 transition-colors">razorpay.com/privacy-policy</a></li>
               </ul>
               <p className="mt-3 leading-relaxed">
                 We do not store your full payment card details. For international

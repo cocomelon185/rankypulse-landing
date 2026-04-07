@@ -115,7 +115,7 @@ Run Google PageSpeed Insights on your five most important pages. Note which metr
 
 **What failure costs you:** When Google encounters multiple URLs with the same content, it picks one to index and ignores the rest — often not the one you want. Your internal link equity gets split. Your ranking signal weakens.
 
-**How to fix it:** Add \`<link rel="canonical" href="[preferred URL]">\` to every page. Make sure your preferred URL is HTTPS, does not have a trailing slash inconsistency, and is the one you link to internally. Set up proper redirects so duplicate URL variants all point to the canonical version.
+**How to fix it:** Add a self-referencing canonical tag to every page pointing to its clean, preferred URL. Make sure your preferred URL is HTTPS, does not have a trailing slash inconsistency, and is the one you link to internally. Set up proper redirects so duplicate URL variants all point to the canonical version.
 
 ---
 
@@ -1009,7 +1009,7 @@ Run your first audit. See what it surfaces. If you outgrow it, you will know exa
       The title tag remains the single strongest on-page ranking signal. 
       - **The Rule:** Primary Keyword + Secondary Keyword/Context + Brand Name.
       - **Length:** Keep it strictly under 60 characters so it doesn't truncate.
-      - **Example:** \`<title>On-Page SEO Guide: The Blueprint for 2026 | RankyPulse</title>\`
+      - **Example format:** Primary Keyword: Secondary Context | Brand Name
 
       **2. The Meta Description (Your Pitch)**
       This doesn't directly influence rank, but it dictates your Click-Through Rate (CTR). A high CTR tells Google your page is exactly what the searcher wanted.
@@ -1079,7 +1079,7 @@ Run your first audit. See what it surfaces. If you outgrow it, you will know exa
       ### Phase 1: Discovery (The Queue)
       Google does not magically know when you publish a new page. It has to discover the URL. It does this in two ways:
       1. **Sitemaps:** You hand Google a map (sitemap.xml) and say, "Here is a list of my URLs."
-      2. **Following Links:** Googlebot is crawling an existing page, spots a \`<a href="...">\` link to your new page, and adds it to its to-do list.
+      2. **Following Links:** Googlebot is crawling an existing page, spots an anchor link to your new page, and adds it to its to-do list.
 
       This to-do list is called the **Crawl Queue**. 
 
