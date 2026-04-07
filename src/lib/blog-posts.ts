@@ -1019,7 +1019,7 @@ Run your first audit. See what it surfaces. If you outgrow it, you will know exa
       **3. The Canonical Tag (The Source of Truth)**
       If you learn one technical SEO concept today, learn this. The canonical tag tells Google, "No matter how many URL parameters or tracking codes are attached to this link, *this* is the official version."
       - **The Rule:** Every page must self-canonicalize unless it's intentionally a duplicate.
-      - \`<link rel="canonical" href="https://rankypulse.com/blog/anatomy-of-a-perfect-seo-page" />\`
+      - \`<link rel="canonical" href="https://rankypulse.com/blog/anatomy-of-a-perfect-seo-page-2026" />\`
 
       **4. Schema Markup (Speaking Google's Native Language)**
       Browsers read HTML. Google prefers JSON-LD. Schema markup is explicitly telling Google what entities exist on your page (an Article, an Author, a FAQ, a Product). 
