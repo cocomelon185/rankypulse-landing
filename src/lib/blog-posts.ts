@@ -1239,9 +1239,7 @@ Run your first audit. See what it surfaces. If you outgrow it, you will know exa
     excerpt: "Canonical tags tell Google which version of a URL is the \"real\" one. Get it wrong and you're splitting your PageRank between two versions of the same page.",
     featured: false,
     content: `
-A canonical tag looks like this:
-
-\`<link rel="canonical" href="https://yoursite.com/page" />\`
+A canonical tag looks like this — a single line placed in the HTML head section pointing to the preferred URL of that page.
 
 It tells Google: "This is the real URL. If you find duplicates, credit this one."
 
@@ -2189,10 +2187,7 @@ Here are the 12 errors you are most likely to find, in order of average traffic 
 4. For paginated content (/blog/page/2): each paginated page can have its own canonical pointing to itself — do not force all pages to point to page 1
 5. Check that your canonical URLs are not themselves redirected
 
-**Example canonical tag:**
-\`\`\`html
-<link rel="canonical" href="https://yoursite.com/blog/technical-seo-guide" />
-\`\`\`
+**Example canonical tag:** A self-referencing canonical placed in the HTML head section pointing to the clean, preferred version of the page URL — using HTTPS, no trailing slash inconsistency, and no UTM parameters.
 
 ---
 
@@ -2921,7 +2916,7 @@ LCP is the single most impactful Core Web Vital for search rankings.
 **Identify your LCP element:** Run PageSpeed Insights and look for "LCP element" in the diagnostics. It is usually your hero image or hero text.
 
 **If LCP is an image:**
-1. Add a preload hint in your \`<head>\`: \`<link rel="preload" as="image" href="/hero.webp">\`
+1. Add a preload hint for your hero image in your HTML head section using a rel="preload" tag
 2. Convert the image to WebP (25–35% smaller)
 3. Ensure the image is not lazy-loaded (remove \`loading="lazy"\` from your LCP image)
 4. Serve the image from a CDN (Cloudflare free tier takes 15 minutes to set up)
@@ -2938,7 +2933,7 @@ Scripts and stylesheets that load in your \`<head>\` block the browser from rend
 **Check for render-blocking resources:** PageSpeed Insights → "Eliminate render-blocking resources" opportunity.
 
 **Fix:**
-- Add \`defer\` attribute to non-critical JavaScript: \`<script src="app.js" defer>\`
+- Add \`defer\` attribute to non-critical JavaScript files so they load after the HTML is parsed
 - Add \`async\` to independent scripts (analytics, chat widgets)
 - Inline critical CSS (the CSS needed to render above-the-fold content) directly in the \`<head>\`
 - Move non-critical CSS to load after the page paints
