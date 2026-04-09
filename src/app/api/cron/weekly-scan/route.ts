@@ -5,7 +5,7 @@ import { WeeklyReportTemplate } from "@/emails/WeeklyReportTemplate";
 
 export const runtime = "edge";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY || "placeholder");
 
 export async function GET(req: NextRequest) {
     // 1. Verify Vercel Cron Secret

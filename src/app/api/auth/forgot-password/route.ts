@@ -3,7 +3,9 @@ import { Resend } from "resend";
 import { supabaseAdmin } from "@/lib/supabase";
 import { findUserByEmail } from "@/lib/db-users";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+export const dynamic = "force-dynamic";
+
+const resend = new Resend(process.env.RESEND_API_KEY || "placeholder");
 const appUrl =
   process.env.NEXTAUTH_URL ??
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ??

@@ -8,7 +8,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { RankReportTemplate } from "@/emails/RankReportTemplate";
 import { getWinnersLosers } from "@/lib/rank-engine";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY || "placeholder");
 
 interface WeeklyRankParams {
   userId: string;
