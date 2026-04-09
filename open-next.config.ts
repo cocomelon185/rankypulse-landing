@@ -3,11 +3,24 @@ import type { Config } from '@opennextjs/aws';
 const config: Config = {
   default: {
     override: {
-      wrapper: 'cloudflare',
-      queue: 'cloudflare',
-      tagCache: 'cloudflare',
-      incrementalCache: 'cloudflare',
-      kv: 'cloudflare_kv',
+      wrapper: 'cloudflare-node',
+      converter: 'edge',
+      proxyExternalRequest: 'fetch',
+      incrementalCache: 'dummy',
+      tagCache: 'dummy',
+      queue: 'direct',
+    },
+  },
+  edgeExternals: ['node:crypto'],
+  middleware: {
+    external: true,
+    override: {
+      wrapper: 'cloudflare-edge',
+      converter: 'edge',
+      proxyExternalRequest: 'fetch',
+      incrementalCache: 'dummy',
+      tagCache: 'dummy',
+      queue: 'direct',
     },
   },
 };
