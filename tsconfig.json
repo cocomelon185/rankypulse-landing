@@ -41,6 +41,7 @@
     "vite.config.ts",
     "vite.config.js",
     "vitest.config.ts",
-    "vitest.config.js"
+    "vitest.config.js",
+    "open-next.config.ts"
   ]
 }
