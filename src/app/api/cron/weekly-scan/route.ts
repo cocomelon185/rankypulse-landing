@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { Resend } from "resend";
+import { getResend } from "@/lib/resend";
 import { WeeklyReportTemplate } from "@/emails/WeeklyReportTemplate";
 
 export const runtime = "edge";
-
-const resend = new Resend(process.env.RESEND_API_KEY || "placeholder");
 
 export async function GET(req: NextRequest) {
     // 1. Verify Vercel Cron Secret
@@ -88,7 +86,7 @@ export async function GET(req: NextRequest) {
 
                 // 5. Send the Email via Resend
                 if (process.env.RESEND_API_KEY) {
-                    await resend.emails.send({
+                    await getResend().emails.send({
                         from: "RankyPulse <reports@rankypulse.com>",
                         to: userEmail,
                         subject: `Your Weekly SEO Score: ${currentScore}/100 (${domain})`,

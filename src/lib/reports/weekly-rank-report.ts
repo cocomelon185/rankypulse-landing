@@ -3,12 +3,10 @@
  * Builds and sends the weekly rank intelligence email via Resend.
  */
 
-import { Resend } from "resend";
+import { getResend } from "@/lib/resend";
 import { supabaseAdmin } from "@/lib/supabase";
 import { RankReportTemplate } from "@/emails/RankReportTemplate";
 import { getWinnersLosers } from "@/lib/rank-engine";
-
-const resend = new Resend(process.env.RESEND_API_KEY || "placeholder");
 
 interface WeeklyRankParams {
   userId: string;
@@ -76,7 +74,7 @@ export async function sendWeeklyRankReport(params: WeeklyRankParams): Promise<vo
   const from =
     process.env.RESEND_FROM ?? "RankyPulse <reports@rankypulse.com>";
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from,
     to: userEmail,
     subject: `RankyPulse Weekly SEO Report — ${domain}`,

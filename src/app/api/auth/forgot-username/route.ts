@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
+import { getResend } from "@/lib/resend";
 import { findUserByEmail } from "@/lib/db-users";
 
 export const dynamic = "force-dynamic";
-
-const resend = new Resend(process.env.RESEND_API_KEY || "placeholder");
 const appUrl =
   process.env.NEXTAUTH_URL ??
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ??
@@ -32,7 +30,7 @@ export async function POST(req: NextRequest) {
 
     if (user) {
       const signInUrl = `${appUrl}/auth/signin`;
-      await resend.emails.send({
+      await getResend().emails.send({
         from: fromAddress,
         to: email,
         subject: "Your RankyPulse username",

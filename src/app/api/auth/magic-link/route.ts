@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
+import { getResend } from "@/lib/resend";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
-
-const resend = new Resend(process.env.RESEND_API_KEY || "placeholder");
 const appUrl =
   process.env.NEXTAUTH_URL ??
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ??
@@ -43,7 +41,7 @@ export async function POST(req: NextRequest) {
 
     const signInUrl = `${appUrl}/auth/verify?token=${token}&email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
-    const { error } = await resend.emails.send({
+    const { error } = await getResend().emails.send({
       from: process.env.RESEND_FROM ?? "RankyPulse <onboarding@resend.dev>",
       to: email,
       subject: "Your RankyPulse sign-in link",

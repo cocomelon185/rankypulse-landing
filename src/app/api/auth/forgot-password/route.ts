@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
+import { getResend } from "@/lib/resend";
 import { supabaseAdmin } from "@/lib/supabase";
 import { findUserByEmail } from "@/lib/db-users";
 
 export const dynamic = "force-dynamic";
-
-const resend = new Resend(process.env.RESEND_API_KEY || "placeholder");
 const appUrl =
   process.env.NEXTAUTH_URL ??
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ??
@@ -33,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     // If user exists but signed up with Google only, send a "use Google" email instead
     if (user && !user.password_hash && user.google_id) {
-      await resend.emails.send({
+      await getResend().emails.send({
         from: fromAddress,
         to: email,
         subject: "Sign in to RankyPulse",
@@ -56,7 +54,7 @@ export async function POST(req: NextRequest) {
 
     const resetUrl = `${appUrl}/auth/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
-    const { error } = await resend.emails.send({
+    const { error } = await getResend().emails.send({
       from: fromAddress,
       to: email,
       subject: "Reset your RankyPulse password",
