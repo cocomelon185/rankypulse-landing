@@ -1,7 +1,5 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
-
 type Props = {
   params: Promise<{ slug: string }>;
 };
